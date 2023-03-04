@@ -1,0 +1,117 @@
+---
+title: "Stimuli List Generation"
+author: "Micah E. Hirsch"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Randomizing Order of Phrases in Counterbalanced Lists
+ 
+In this block of code, the two counterbalanced phrase lists are first uploaded. Then, the order of the stimulus presentation is randomized separately for each list. Then, 5 practice trial information is added to the beginning of the list (this is done after the randomization because the same 5 practice trials appear before actual data collection begins). Then, new variables in each of the lists are created (this is needed to create the data source csv file)
+
+```{r}
+
+#Loading needed packages
+
+library(rio) #install.packages("rio")
+library(tidyverse) #install.packages("tidyverse")
+
+Phrase_List_1 <- rio::import("Phrase List 1.xlsx")
+Phrase_List_2 <-rio::import("Phrase List 2.xlsx")
+
+# randomize order of list 1
+
+set.seed(1000)
+Phrase_List_1_random <- Phrase_List_1[sample(1:nrow(Phrase_List_1)), ]
+
+# Randomize order of list 2
+
+set.seed(7036)
+Phrase_List_2_random <- Phrase_List_2[sample(1:nrow(Phrase_List_2)), ]
+
+# create data frame for 5 practice trials
+
+Practice_trials <- data.frame(
+  targetPhrase = c("sticks are best for pencils", "ballot formal circles", "friendly slogan catch it",
+                   "she describes a nuisance", "younger rusty viewers"),
+  speaker = "Practice") %>%
+  mutate(code = paste("PM", row_number(), sep = "_"))
+
+# Adding 5 practice trials to the beginning of new list one
+
+List_1_New <- dplyr::full_join(Practice_trials, Phrase_List_1_random) %>%
+  dplyr::relocate(., targetPhrase, .after = speaker) %>%
+  dplyr::relocate(., code, .before = speaker) %>%
+  #creating new trial number, block number, and counter balance variables
+  dplyr::mutate(., trial = row_number(),
+                counterBalance = 1,
+                block = ifelse(speaker == "Practice", 1, ceiling((row_number() - 5)/ 10) + 1)) %>%
+  #moving trial and block variables in the data frame
+  dplyr::relocate(trial, .before = code) %>%
+  dplyr::relocate(block, .before = counterBalance)
+
+# Adding 5 practice trials to beginning of new list 2
+
+List_2_New <- dplyr::full_join(Practice_trials, Phrase_List_2_random) %>%
+  dplyr::relocate(., targetPhrase, .after = speaker) %>%
+  dplyr::relocate(., code, .before = speaker) %>%
+  #creating new trial, block number, and counter balance variables
+  dplyr::mutate(., trial = row_number(),
+                counterBalance = 2,
+                block = ifelse(speaker == "Practice", 1, ceiling((row_number() - 5) /10) + 1)) %>%
+  # relocating trial and block variables in data frame
+  dplyr::relocate(trial, .before = code) %>%
+  dplyr::relocate(block, .before = counterBalance)
+
+#exporting the separate phrase lists in excel (used to eventually create RA stimuli lists in word)
+
+rio::export(List_1_New, "Phrase List 1 New.xlsx")
+rio::export(List_2_New, "Phrase List 2 New.xlsx")
+
+## removing objects that are no longer needed from environment
+
+rm(Phrase_List_1_random, Phrase_List_2_random, Phrase_List_1, Phrase_List_2, Practice_trials)
+
+```
+
+## Creating the DataSource file
+
+In this block of code, the DataSource file will be created. This file will be uploaded into experiment builder to inform the program about the order in which to present the stimuli in the experiment. There are two counter balanced conditions that were created in order to control for possible phrase effects.
+
+```{r}
+
+# Merging the two lists together
+
+DataSource <- dplyr::full_join(List_1_New, List_2_New)
+
+# Creating the soundFile and number of target words variables
+
+## soundFile refers to the name of the .wav file that is associated with each phrase/stimulus
+## number of target words is a variable created for experiment builder. When listeners repeat the phrase they heard aloud in the pupillometry experiment, the experimenter will record the number of correct words by selecting the appropriate key on the host computer keyboard. Most of the phrases have 3 target words (with the exception of 2 phrases. Those only have 2 target words). Experiment Builder will compare the experimenter's input with this variable to record whether the phrase was repeated correctly (i.e. all target words recognized).
+
+DataSource <- DataSource %>%
+  dplyr::mutate(soundFile = case_when(speaker == "Practice" ~ "PM",
+                                      speaker == "PD" ~ "PDM10",
+                                      TRUE ~ "CM1")) %>%
+  dplyr::mutate(soundFile = ifelse(soundFile == "PM", paste(soundFile, trial, sep = "_"), 
+                                   paste(soundFile, code, sep = "_"))) %>%
+  dplyr::mutate(soundFile = paste(soundFile, "wav", sep = ".")) %>%
+  dplyr::mutate(num_targetWords = ifelse(code == "EXP_18" | code == "EXP_75", 2, 3)) %>%
+  dplyr::relocate(soundFile, .before = targetPhrase) %>%
+  dplyr::relocate(num_targetWords, .before = block)
+
+# Exporting the data source data frame as a csv file. Will be imported into Experiment Builder for programming pupillometry experiment.
+
+rio::export(DataSource, "Dysarthria_LE_DataSource.csv")
+
+#Removing objects from the environment that are not needed anymore
+
+rm(List_1_New, List_2_New)
+
+```
+
