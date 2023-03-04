@@ -4,10 +4,6 @@ format: html
 editor: visual
 ---
 
-## Quarto
-
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
-
 # About this Document
 
 This is the standing document used for preliminary data analysis for the Listening Effort in Dysarthria project. This document contains all code for processing data from pilot data collection.
