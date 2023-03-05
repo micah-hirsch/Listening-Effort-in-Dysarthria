@@ -37,7 +37,8 @@ Phrase_List_2_random <- Phrase_List_2[sample(1:nrow(Phrase_List_2)), ]
 # create data frame for 5 practice trials
 
 Practice_trials <- data.frame(
-  targetPhrase = c("sticks are best for pencils", "ballot formal circles", "friendly slogan catch it",
+  targetPhrase = c("sticks are best for pencils", "ballot formal circles", 
+                   "friendly slogan catch it",
                    "she describes a nuisance", "younger rusty viewers"),
   speaker = "Practice") %>%
   mutate(code = paste("PM", row_number(), sep = "_"))
@@ -50,10 +51,12 @@ List_1_New <- dplyr::full_join(Practice_trials, Phrase_List_1_random) %>%
   #creating new trial number, block number, and counter balance variables
   dplyr::mutate(., trial = row_number(),
                 counterBalance = 1,
-                block = ifelse(speaker == "Practice", 1, ceiling((row_number() - 5)/ 10) + 1)) %>%
-  #moving trial and block variables in the data frame
+                block = ifelse(speaker == "Practice", 1, ceiling((row_number() - 5)/ 10) + 1),
+                practiceTrial = ifelse(speaker == "Practice", "Practice", "Experimental")) %>%
+  #moving new variables in the data frame
   dplyr::relocate(trial, .before = code) %>%
-  dplyr::relocate(block, .before = counterBalance)
+  dplyr::relocate(block, .before = counterBalance) %>%
+  dplyr::relocate(practiceTrial, .after = targetPhrase)
 
 # Adding 5 practice trials to beginning of new list 2
 
@@ -63,10 +66,12 @@ List_2_New <- dplyr::full_join(Practice_trials, Phrase_List_2_random) %>%
   #creating new trial, block number, and counter balance variables
   dplyr::mutate(., trial = row_number(),
                 counterBalance = 2,
-                block = ifelse(speaker == "Practice", 1, ceiling((row_number() - 5) /10) + 1)) %>%
-  # relocating trial and block variables in data frame
+                block = ifelse(speaker == "Practice", 1, ceiling((row_number() - 5) /10) + 1),
+                practiceTrial = ifelse(speaker == "Practice", "Practice", "Experimental")) %>%
+  # relocating new variables in data frame
   dplyr::relocate(trial, .before = code) %>%
-  dplyr::relocate(block, .before = counterBalance)
+  dplyr::relocate(block, .before = counterBalance) %>%
+  dplyr::relocate(practiceTrial, .after = targetPhrase)
 
 #exporting the separate phrase lists in excel (used to eventually create RA stimuli lists in word)
 

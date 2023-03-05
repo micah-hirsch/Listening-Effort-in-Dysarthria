@@ -1,171 +1,171 @@
-trial,code,speaker,soundFile,targetPhrase,num_targetWords,block,counterBalance
-1,PM_1,Practice,PM_1.wav,sticks are best for pencils,3,1,1
-2,PM_2,Practice,PM_2.wav,ballot formal circles,3,1,1
-3,PM_3,Practice,PM_3.wav,friendly slogan catch it,3,1,1
-4,PM_4,Practice,PM_4.wav,she describes a nuisance,3,1,1
-5,PM_5,Practice,PM_5.wav,younger rusty viewers,3,1,1
-6,EXP_10,PD,PDM10_EXP_10.wav,attack became concerned,3,2,1
-7,EXP_12,PD,PDM10_EXP_12.wav,avoid or beat command,3,2,1
-8,EXP_53,PD,PDM10_EXP_53.wav,pain can follow agents,3,2,1
-9,EXP_27,Control,CM1_EXP_27.wav,define respect instead,3,2,1
-10,EXP_32,PD,PDM10_EXP_32.wav,for coke a great defeat,3,2,1
-11,EXP_36,Control,CM1_EXP_36.wav,had eaten junk and train,3,2,1
-12,EXP_72,Control,CM1_EXP_72.wav,support with dock and cheer,3,2,1
-13,EXP_52,PD,PDM10_EXP_52.wav,or spent sincere aside,3,2,1
-14,EXP_80,Control,CM1_EXP_80.wav,vital seats with wonder,3,2,1
-15,EXP_26,Control,CM1_EXP_26.wav,darker painted baskets,3,2,1
-16,EXP_08,PD,PDM10_EXP_08.wav,appear to wait then turn,3,3,1
-17,EXP_15,PD,PDM10_EXP_15.wav,beside a sunken bat,3,3,1
-18,EXP_33,Control,CM1_EXP_33.wav,forget the joke below,3,3,1
-19,EXP_75,PD,PDM10_EXP_75.wav,thinking for the hearing,2,3,1
-20,EXP_58,PD,PDM10_EXP_58.wav,rampant boasting captain,3,3,1
-21,EXP_55,PD,PDM10_EXP_55.wav,pick a chain for action,3,3,1
-22,EXP_41,Control,CM1_EXP_41.wav,its harmful note abounds,3,3,1
-23,EXP_50,Control,CM1_EXP_50.wav,model sad and local,3,3,1
-24,EXP_16,Control,CM1_EXP_16.wav,bolder ground from justice,3,3,1
-25,EXP_65,PD,PDM10_EXP_65.wav,seat for locking runners,3,3,1
-26,EXP_06,PD,PDM10_EXP_06.wav,amend estate approach,3,4,1
-27,EXP_05,PD,PDM10_EXP_05.wav,afraid beneath demand,3,4,1
-28,EXP_14,Control,CM1_EXP_14.wav,balance clamp and bottle,3,4,1
-29,EXP_54,Control,CM1_EXP_54.wav,perceive sustained supplies,3,4,1
-30,EXP_79,Control,CM1_EXP_79.wav,unseen machines agree,3,4,1
-31,EXP_11,Control,CM1_EXP_11.wav,attend the trend success,3,4,1
-32,EXP_44,Control,CM1_EXP_44.wav,mark a single ladder,3,4,1
-33,EXP_77,PD,PDM10_EXP_77.wav,transcend almost betrayed,3,4,1
-34,EXP_40,PD,PDM10_EXP_40.wav,indeed a tax ascent,3,4,1
-35,EXP_19,Control,CM1_EXP_19.wav,career despite research,3,4,1
-36,EXP_29,Control,CM1_EXP_29.wav,divide across retreat,3,5,1
-37,EXP_60,Control,CM1_EXP_60.wav,resting older earring,3,5,1
-38,EXP_74,Control,CM1_EXP_74.wav,technique but sent result,3,5,1
-39,EXP_23,Control,CM1_EXP_23.wav,connect the beer device,3,5,1
-40,EXP_38,PD,PDM10_EXP_38.wav,hold a page of fortune,3,5,1
-41,EXP_64,PD,PDM10_EXP_64.wav,rowing farther matters,3,5,1
-42,EXP_51,PD,PDM10_EXP_51.wav,narrow seated member,3,5,1
-43,EXP_78,PD,PDM10_EXP_78.wav,unless escape can learn,3,5,1
-44,EXP_39,PD,PDM10_EXP_39.wav,increase a grade sedate,3,5,1
-45,EXP_73,Control,CM1_EXP_73.wav,target keeping season,3,5,1
-46,EXP_02,PD,PDM10_EXP_02.wav,address her meeting time,3,6,1
-47,EXP_17,PD,PDM10_EXP_17.wav,bush is chosen after,3,6,1
-48,EXP_28,PD,PDM10_EXP_28.wav,distant leaking basement,3,6,1
-49,EXP_07,Control,CM1_EXP_07.wav,and spoke behind her sin,3,6,1
-50,EXP_71,PD,PDM10_EXP_71.wav,submit his cash report,3,6,1
-51,EXP_30,PD,PDM10_EXP_30.wav,done with finest handle,3,6,1
-52,EXP_34,Control,CM1_EXP_34.wav,frame her seed to answer,3,6,1
-53,EXP_03,Control,CM1_EXP_03.wav,admit the gear beyond,3,6,1
-54,EXP_24,Control,CM1_EXP_24.wav,constant willing walker,3,6,1
-55,EXP_69,Control,CM1_EXP_69.wav,sparkle enter broken,3,6,1
-56,EXP_20,Control,CM1_EXP_20.wav,cheap control in paper,3,7,1
-57,EXP_59,PD,PDM10_EXP_59.wav,remove and name for stake,3,7,1
-58,EXP_35,Control,CM1_EXP_35.wav,functions aim his acid,3,7,1
-59,EXP_56,PD,PDM10_EXP_56.wav,pooling pill or cattle,3,7,1
-60,EXP_67,PD,PDM10_EXP_67.wav,signal breakfast pilot,3,7,1
-61,EXP_42,PD,PDM10_EXP_42.wav,kick a tad above them,3,7,1
-62,EXP_62,PD,PDM10_EXP_62.wav,rode the lamp for teasing,3,7,1
-63,EXP_49,Control,CM1_EXP_49.wav,mode campaign for budget,3,7,1
-64,EXP_43,PD,PDM10_EXP_43.wav,listen final station,3,7,1
-65,EXP_61,Control,CM1_EXP_61.wav,rocking modern poster,3,7,1
-66,EXP_66,Control,CM1_EXP_66.wav,secure but lease apart,3,8,1
-67,EXP_63,PD,PDM10_EXP_63.wav,round and bad for carpet,3,8,1
-68,EXP_37,PD,PDM10_EXP_37.wav,her owners arm the phone,3,8,1
-69,EXP_09,Control,CM1_EXP_09.wav,assume to catch control,3,8,1
-70,EXP_48,Control,CM1_EXP_48.wav,mistake delight for heat,3,8,1
-71,EXP_22,PD,PDM10_EXP_22.wav,confused but roared again,3,8,1
-72,EXP_68,Control,CM1_EXP_68.wav,sinking rather tundra,3,8,1
-73,EXP_45,PD,PDM10_EXP_45.wav,mate denotes a judgement,3,8,1
-74,EXP_13,PD,PDM10_EXP_13.wav,award his drain away,3,8,1
-75,EXP_01,Control,CM1_EXP_01.wav,account for who could knock,3,8,1
-76,EXP_25,Control,CM1_EXP_25.wav,cool the jar in private,3,9,1
-77,EXP_46,Control,CM1_EXP_46.wav,may the same pursued it,3,9,1
-78,EXP_31,PD,PDM10_EXP_31.wav,embark or take her sheet,3,9,1
-79,EXP_70,Control,CM1_EXP_70.wav,stable wrist and load it,3,9,1
-80,EXP_47,Control,CM1_EXP_47.wav,measure fame with legal,3,9,1
-81,EXP_18,PD,PDM10_EXP_18.wav,butcher in the middle,2,9,1
-82,EXP_76,Control,CM1_EXP_76.wav,to sort but fear inside,3,9,1
-83,EXP_57,PD,PDM10_EXP_57.wav,push her equal culture,3,9,1
-84,EXP_21,PD,PDM10_EXP_21.wav,commit such used advice,3,9,1
-85,EXP_04,Control,CM1_EXP_04.wav,advance but sat appeal,3,9,1
-1,PM_1,Practice,PM_1.wav,sticks are best for pencils,3,1,2
-2,PM_2,Practice,PM_2.wav,ballot formal circles,3,1,2
-3,PM_3,Practice,PM_3.wav,friendly slogan catch it,3,1,2
-4,PM_4,Practice,PM_4.wav,she describes a nuisance,3,1,2
-5,PM_5,Practice,PM_5.wav,younger rusty viewers,3,1,2
-6,EXP_23,PD,PDM10_EXP_23.wav,connect the beer device,3,2,2
-7,EXP_13,Control,CM1_EXP_13.wav,award his drain away,3,2,2
-8,EXP_48,PD,PDM10_EXP_48.wav,mistake delight for heat,3,2,2
-9,EXP_64,Control,CM1_EXP_64.wav,rowing farther matters,3,2,2
-10,EXP_40,Control,CM1_EXP_40.wav,indeed a tax ascent,3,2,2
-11,EXP_52,Control,CM1_EXP_52.wav,or spent sincere aside,3,2,2
-12,EXP_71,Control,CM1_EXP_71.wav,submit his cash report,3,2,2
-13,EXP_09,PD,PDM10_EXP_09.wav,assume to catch control,3,2,2
-14,EXP_18,Control,CM1_EXP_18.wav,butcher in the middle,2,2,2
-15,EXP_12,Control,CM1_EXP_12.wav,avoid or beat command,3,2,2
-16,EXP_03,PD,PDM10_EXP_03.wav,admit the gear beyond,3,3,2
-17,EXP_46,PD,PDM10_EXP_46.wav,may the same pursued it,3,3,2
-18,EXP_58,Control,CM1_EXP_58.wav,rampant boasting captain,3,3,2
-19,EXP_32,Control,CM1_EXP_32.wav,for coke a great defeat,3,3,2
-20,EXP_74,PD,PDM10_EXP_74.wav,technique but sent result,3,3,2
-21,EXP_79,PD,PDM10_EXP_79.wav,unseen machines agree,3,3,2
-22,EXP_19,PD,PDM10_EXP_19.wav,career despite research,3,3,2
-23,EXP_24,PD,PDM10_EXP_24.wav,constant willing walker,3,3,2
-24,EXP_57,Control,CM1_EXP_57.wav,push her equal culture,3,3,2
-25,EXP_67,Control,CM1_EXP_67.wav,signal breakfast pilot,3,3,2
-26,EXP_22,Control,CM1_EXP_22.wav,confused but roared again,3,4,2
-27,EXP_41,PD,PDM10_EXP_41.wav,its harmful note abounds,3,4,2
-28,EXP_59,Control,CM1_EXP_59.wav,remove and name for stake,3,4,2
-29,EXP_51,Control,CM1_EXP_51.wav,narrow seated member,3,4,2
-30,EXP_08,Control,CM1_EXP_08.wav,appear to wait then turn,3,4,2
-31,EXP_16,PD,PDM10_EXP_16.wav,bolder ground from justice,3,4,2
-32,EXP_73,PD,PDM10_EXP_73.wav,target keeping season,3,4,2
-33,EXP_65,Control,CM1_EXP_65.wav,seat for locking runners,3,4,2
-34,EXP_35,PD,PDM10_EXP_35.wav,functions aim his acid,3,4,2
-35,EXP_76,PD,PDM10_EXP_76.wav,to sort but fear inside,3,4,2
-36,EXP_61,PD,PDM10_EXP_61.wav,rocking modern poster,3,5,2
-37,EXP_28,Control,CM1_EXP_28.wav,distant leaking basement,3,5,2
-38,EXP_42,Control,CM1_EXP_42.wav,kick a tad above them,3,5,2
-39,EXP_31,Control,CM1_EXP_31.wav,embark or take her sheet,3,5,2
-40,EXP_02,Control,CM1_EXP_02.wav,address her meeting time,3,5,2
-41,EXP_72,PD,PDM10_EXP_72.wav,support with dock and cheer,3,5,2
-42,EXP_06,Control,CM1_EXP_06.wav,amend estate approach,3,5,2
-43,EXP_01,PD,PDM10_EXP_01.wav,account for who could knock,3,5,2
-44,EXP_53,Control,CM1_EXP_53.wav,pain can follow agents,3,5,2
-45,EXP_34,PD,PDM10_EXP_34.wav,frame her seed to answer,3,5,2
-46,EXP_63,Control,CM1_EXP_63.wav,round and bad for carpet,3,6,2
-47,EXP_15,Control,CM1_EXP_15.wav,beside a sunken bat,3,6,2
-48,EXP_44,PD,PDM10_EXP_44.wav,mark a single ladder,3,6,2
-49,EXP_07,PD,PDM10_EXP_07.wav,and spoke behind her sin,3,6,2
-50,EXP_69,PD,PDM10_EXP_69.wav,sparkle enter broken,3,6,2
-51,EXP_75,Control,CM1_EXP_75.wav,thinking for the hearing,2,6,2
-52,EXP_33,PD,PDM10_EXP_33.wav,forget the joke below,3,6,2
-53,EXP_43,Control,CM1_EXP_43.wav,listen final station,3,6,2
-54,EXP_70,PD,PDM10_EXP_70.wav,stable wrist and load it,3,6,2
-55,EXP_36,PD,PDM10_EXP_36.wav,had eaten junk and train,3,6,2
-56,EXP_11,PD,PDM10_EXP_11.wav,attend the trend success,3,7,2
-57,EXP_10,Control,CM1_EXP_10.wav,attack became concerned,3,7,2
-58,EXP_77,Control,CM1_EXP_77.wav,transcend almost betrayed,3,7,2
-59,EXP_66,PD,PDM10_EXP_66.wav,secure but lease apart,3,7,2
-60,EXP_56,Control,CM1_EXP_56.wav,pooling pill or cattle,3,7,2
-61,EXP_60,PD,PDM10_EXP_60.wav,resting older earring,3,7,2
-62,EXP_29,PD,PDM10_EXP_29.wav,divide across retreat,3,7,2
-63,EXP_54,PD,PDM10_EXP_54.wav,perceive sustained supplies,3,7,2
-64,EXP_55,Control,CM1_EXP_55.wav,pick a chain for action,3,7,2
-65,EXP_21,Control,CM1_EXP_21.wav,commit such used advice,3,7,2
-66,EXP_14,PD,PDM10_EXP_14.wav,balance clamp and bottle,3,8,2
-67,EXP_62,Control,CM1_EXP_62.wav,rode the lamp for teasing,3,8,2
-68,EXP_78,Control,CM1_EXP_78.wav,unless escape can learn,3,8,2
-69,EXP_17,Control,CM1_EXP_17.wav,bush is chosen after,3,8,2
-70,EXP_20,PD,PDM10_EXP_20.wav,cheap control in paper,3,8,2
-71,EXP_68,PD,PDM10_EXP_68.wav,sinking rather tundra,3,8,2
-72,EXP_30,Control,CM1_EXP_30.wav,done with finest handle,3,8,2
-73,EXP_37,Control,CM1_EXP_37.wav,her owners arm the phone,3,8,2
-74,EXP_27,PD,PDM10_EXP_27.wav,define respect instead,3,8,2
-75,EXP_49,PD,PDM10_EXP_49.wav,mode campaign for budget,3,8,2
-76,EXP_39,Control,CM1_EXP_39.wav,increase a grade sedate,3,9,2
-77,EXP_04,PD,PDM10_EXP_04.wav,advance but sat appeal,3,9,2
-78,EXP_26,PD,PDM10_EXP_26.wav,darker painted baskets,3,9,2
-79,EXP_80,PD,PDM10_EXP_80.wav,vital seats with wonder,3,9,2
-80,EXP_25,PD,PDM10_EXP_25.wav,cool the jar in private,3,9,2
-81,EXP_50,PD,PDM10_EXP_50.wav,model sad and local,3,9,2
-82,EXP_38,Control,CM1_EXP_38.wav,hold a page of fortune,3,9,2
-83,EXP_05,Control,CM1_EXP_05.wav,afraid beneath demand,3,9,2
-84,EXP_45,Control,CM1_EXP_45.wav,mate denotes a judgement,3,9,2
-85,EXP_47,PD,PDM10_EXP_47.wav,measure fame with legal,3,9,2
+trial,code,speaker,soundFile,targetPhrase,practiceTrial,num_targetWords,block,counterBalance
+1,PM_1,Practice,PM_1.wav,sticks are best for pencils,Practice,3,1,1
+2,PM_2,Practice,PM_2.wav,ballot formal circles,Practice,3,1,1
+3,PM_3,Practice,PM_3.wav,friendly slogan catch it,Practice,3,1,1
+4,PM_4,Practice,PM_4.wav,she describes a nuisance,Practice,3,1,1
+5,PM_5,Practice,PM_5.wav,younger rusty viewers,Practice,3,1,1
+6,EXP_10,PD,PDM10_EXP_10.wav,attack became concerned,Experimental,3,2,1
+7,EXP_12,PD,PDM10_EXP_12.wav,avoid or beat command,Experimental,3,2,1
+8,EXP_53,PD,PDM10_EXP_53.wav,pain can follow agents,Experimental,3,2,1
+9,EXP_27,Control,CM1_EXP_27.wav,define respect instead,Experimental,3,2,1
+10,EXP_32,PD,PDM10_EXP_32.wav,for coke a great defeat,Experimental,3,2,1
+11,EXP_36,Control,CM1_EXP_36.wav,had eaten junk and train,Experimental,3,2,1
+12,EXP_72,Control,CM1_EXP_72.wav,support with dock and cheer,Experimental,3,2,1
+13,EXP_52,PD,PDM10_EXP_52.wav,or spent sincere aside,Experimental,3,2,1
+14,EXP_80,Control,CM1_EXP_80.wav,vital seats with wonder,Experimental,3,2,1
+15,EXP_26,Control,CM1_EXP_26.wav,darker painted baskets,Experimental,3,2,1
+16,EXP_08,PD,PDM10_EXP_08.wav,appear to wait then turn,Experimental,3,3,1
+17,EXP_15,PD,PDM10_EXP_15.wav,beside a sunken bat,Experimental,3,3,1
+18,EXP_33,Control,CM1_EXP_33.wav,forget the joke below,Experimental,3,3,1
+19,EXP_75,PD,PDM10_EXP_75.wav,thinking for the hearing,Experimental,2,3,1
+20,EXP_58,PD,PDM10_EXP_58.wav,rampant boasting captain,Experimental,3,3,1
+21,EXP_55,PD,PDM10_EXP_55.wav,pick a chain for action,Experimental,3,3,1
+22,EXP_41,Control,CM1_EXP_41.wav,its harmful note abounds,Experimental,3,3,1
+23,EXP_50,Control,CM1_EXP_50.wav,model sad and local,Experimental,3,3,1
+24,EXP_16,Control,CM1_EXP_16.wav,bolder ground from justice,Experimental,3,3,1
+25,EXP_65,PD,PDM10_EXP_65.wav,seat for locking runners,Experimental,3,3,1
+26,EXP_06,PD,PDM10_EXP_06.wav,amend estate approach,Experimental,3,4,1
+27,EXP_05,PD,PDM10_EXP_05.wav,afraid beneath demand,Experimental,3,4,1
+28,EXP_14,Control,CM1_EXP_14.wav,balance clamp and bottle,Experimental,3,4,1
+29,EXP_54,Control,CM1_EXP_54.wav,perceive sustained supplies,Experimental,3,4,1
+30,EXP_79,Control,CM1_EXP_79.wav,unseen machines agree,Experimental,3,4,1
+31,EXP_11,Control,CM1_EXP_11.wav,attend the trend success,Experimental,3,4,1
+32,EXP_44,Control,CM1_EXP_44.wav,mark a single ladder,Experimental,3,4,1
+33,EXP_77,PD,PDM10_EXP_77.wav,transcend almost betrayed,Experimental,3,4,1
+34,EXP_40,PD,PDM10_EXP_40.wav,indeed a tax ascent,Experimental,3,4,1
+35,EXP_19,Control,CM1_EXP_19.wav,career despite research,Experimental,3,4,1
+36,EXP_29,Control,CM1_EXP_29.wav,divide across retreat,Experimental,3,5,1
+37,EXP_60,Control,CM1_EXP_60.wav,resting older earring,Experimental,3,5,1
+38,EXP_74,Control,CM1_EXP_74.wav,technique but sent result,Experimental,3,5,1
+39,EXP_23,Control,CM1_EXP_23.wav,connect the beer device,Experimental,3,5,1
+40,EXP_38,PD,PDM10_EXP_38.wav,hold a page of fortune,Experimental,3,5,1
+41,EXP_64,PD,PDM10_EXP_64.wav,rowing farther matters,Experimental,3,5,1
+42,EXP_51,PD,PDM10_EXP_51.wav,narrow seated member,Experimental,3,5,1
+43,EXP_78,PD,PDM10_EXP_78.wav,unless escape can learn,Experimental,3,5,1
+44,EXP_39,PD,PDM10_EXP_39.wav,increase a grade sedate,Experimental,3,5,1
+45,EXP_73,Control,CM1_EXP_73.wav,target keeping season,Experimental,3,5,1
+46,EXP_02,PD,PDM10_EXP_02.wav,address her meeting time,Experimental,3,6,1
+47,EXP_17,PD,PDM10_EXP_17.wav,bush is chosen after,Experimental,3,6,1
+48,EXP_28,PD,PDM10_EXP_28.wav,distant leaking basement,Experimental,3,6,1
+49,EXP_07,Control,CM1_EXP_07.wav,and spoke behind her sin,Experimental,3,6,1
+50,EXP_71,PD,PDM10_EXP_71.wav,submit his cash report,Experimental,3,6,1
+51,EXP_30,PD,PDM10_EXP_30.wav,done with finest handle,Experimental,3,6,1
+52,EXP_34,Control,CM1_EXP_34.wav,frame her seed to answer,Experimental,3,6,1
+53,EXP_03,Control,CM1_EXP_03.wav,admit the gear beyond,Experimental,3,6,1
+54,EXP_24,Control,CM1_EXP_24.wav,constant willing walker,Experimental,3,6,1
+55,EXP_69,Control,CM1_EXP_69.wav,sparkle enter broken,Experimental,3,6,1
+56,EXP_20,Control,CM1_EXP_20.wav,cheap control in paper,Experimental,3,7,1
+57,EXP_59,PD,PDM10_EXP_59.wav,remove and name for stake,Experimental,3,7,1
+58,EXP_35,Control,CM1_EXP_35.wav,functions aim his acid,Experimental,3,7,1
+59,EXP_56,PD,PDM10_EXP_56.wav,pooling pill or cattle,Experimental,3,7,1
+60,EXP_67,PD,PDM10_EXP_67.wav,signal breakfast pilot,Experimental,3,7,1
+61,EXP_42,PD,PDM10_EXP_42.wav,kick a tad above them,Experimental,3,7,1
+62,EXP_62,PD,PDM10_EXP_62.wav,rode the lamp for teasing,Experimental,3,7,1
+63,EXP_49,Control,CM1_EXP_49.wav,mode campaign for budget,Experimental,3,7,1
+64,EXP_43,PD,PDM10_EXP_43.wav,listen final station,Experimental,3,7,1
+65,EXP_61,Control,CM1_EXP_61.wav,rocking modern poster,Experimental,3,7,1
+66,EXP_66,Control,CM1_EXP_66.wav,secure but lease apart,Experimental,3,8,1
+67,EXP_63,PD,PDM10_EXP_63.wav,round and bad for carpet,Experimental,3,8,1
+68,EXP_37,PD,PDM10_EXP_37.wav,her owners arm the phone,Experimental,3,8,1
+69,EXP_09,Control,CM1_EXP_09.wav,assume to catch control,Experimental,3,8,1
+70,EXP_48,Control,CM1_EXP_48.wav,mistake delight for heat,Experimental,3,8,1
+71,EXP_22,PD,PDM10_EXP_22.wav,confused but roared again,Experimental,3,8,1
+72,EXP_68,Control,CM1_EXP_68.wav,sinking rather tundra,Experimental,3,8,1
+73,EXP_45,PD,PDM10_EXP_45.wav,mate denotes a judgement,Experimental,3,8,1
+74,EXP_13,PD,PDM10_EXP_13.wav,award his drain away,Experimental,3,8,1
+75,EXP_01,Control,CM1_EXP_01.wav,account for who could knock,Experimental,3,8,1
+76,EXP_25,Control,CM1_EXP_25.wav,cool the jar in private,Experimental,3,9,1
+77,EXP_46,Control,CM1_EXP_46.wav,may the same pursued it,Experimental,3,9,1
+78,EXP_31,PD,PDM10_EXP_31.wav,embark or take her sheet,Experimental,3,9,1
+79,EXP_70,Control,CM1_EXP_70.wav,stable wrist and load it,Experimental,3,9,1
+80,EXP_47,Control,CM1_EXP_47.wav,measure fame with legal,Experimental,3,9,1
+81,EXP_18,PD,PDM10_EXP_18.wav,butcher in the middle,Experimental,2,9,1
+82,EXP_76,Control,CM1_EXP_76.wav,to sort but fear inside,Experimental,3,9,1
+83,EXP_57,PD,PDM10_EXP_57.wav,push her equal culture,Experimental,3,9,1
+84,EXP_21,PD,PDM10_EXP_21.wav,commit such used advice,Experimental,3,9,1
+85,EXP_04,Control,CM1_EXP_04.wav,advance but sat appeal,Experimental,3,9,1
+1,PM_1,Practice,PM_1.wav,sticks are best for pencils,Practice,3,1,2
+2,PM_2,Practice,PM_2.wav,ballot formal circles,Practice,3,1,2
+3,PM_3,Practice,PM_3.wav,friendly slogan catch it,Practice,3,1,2
+4,PM_4,Practice,PM_4.wav,she describes a nuisance,Practice,3,1,2
+5,PM_5,Practice,PM_5.wav,younger rusty viewers,Practice,3,1,2
+6,EXP_23,PD,PDM10_EXP_23.wav,connect the beer device,Experimental,3,2,2
+7,EXP_13,Control,CM1_EXP_13.wav,award his drain away,Experimental,3,2,2
+8,EXP_48,PD,PDM10_EXP_48.wav,mistake delight for heat,Experimental,3,2,2
+9,EXP_64,Control,CM1_EXP_64.wav,rowing farther matters,Experimental,3,2,2
+10,EXP_40,Control,CM1_EXP_40.wav,indeed a tax ascent,Experimental,3,2,2
+11,EXP_52,Control,CM1_EXP_52.wav,or spent sincere aside,Experimental,3,2,2
+12,EXP_71,Control,CM1_EXP_71.wav,submit his cash report,Experimental,3,2,2
+13,EXP_09,PD,PDM10_EXP_09.wav,assume to catch control,Experimental,3,2,2
+14,EXP_18,Control,CM1_EXP_18.wav,butcher in the middle,Experimental,2,2,2
+15,EXP_12,Control,CM1_EXP_12.wav,avoid or beat command,Experimental,3,2,2
+16,EXP_03,PD,PDM10_EXP_03.wav,admit the gear beyond,Experimental,3,3,2
+17,EXP_46,PD,PDM10_EXP_46.wav,may the same pursued it,Experimental,3,3,2
+18,EXP_58,Control,CM1_EXP_58.wav,rampant boasting captain,Experimental,3,3,2
+19,EXP_32,Control,CM1_EXP_32.wav,for coke a great defeat,Experimental,3,3,2
+20,EXP_74,PD,PDM10_EXP_74.wav,technique but sent result,Experimental,3,3,2
+21,EXP_79,PD,PDM10_EXP_79.wav,unseen machines agree,Experimental,3,3,2
+22,EXP_19,PD,PDM10_EXP_19.wav,career despite research,Experimental,3,3,2
+23,EXP_24,PD,PDM10_EXP_24.wav,constant willing walker,Experimental,3,3,2
+24,EXP_57,Control,CM1_EXP_57.wav,push her equal culture,Experimental,3,3,2
+25,EXP_67,Control,CM1_EXP_67.wav,signal breakfast pilot,Experimental,3,3,2
+26,EXP_22,Control,CM1_EXP_22.wav,confused but roared again,Experimental,3,4,2
+27,EXP_41,PD,PDM10_EXP_41.wav,its harmful note abounds,Experimental,3,4,2
+28,EXP_59,Control,CM1_EXP_59.wav,remove and name for stake,Experimental,3,4,2
+29,EXP_51,Control,CM1_EXP_51.wav,narrow seated member,Experimental,3,4,2
+30,EXP_08,Control,CM1_EXP_08.wav,appear to wait then turn,Experimental,3,4,2
+31,EXP_16,PD,PDM10_EXP_16.wav,bolder ground from justice,Experimental,3,4,2
+32,EXP_73,PD,PDM10_EXP_73.wav,target keeping season,Experimental,3,4,2
+33,EXP_65,Control,CM1_EXP_65.wav,seat for locking runners,Experimental,3,4,2
+34,EXP_35,PD,PDM10_EXP_35.wav,functions aim his acid,Experimental,3,4,2
+35,EXP_76,PD,PDM10_EXP_76.wav,to sort but fear inside,Experimental,3,4,2
+36,EXP_61,PD,PDM10_EXP_61.wav,rocking modern poster,Experimental,3,5,2
+37,EXP_28,Control,CM1_EXP_28.wav,distant leaking basement,Experimental,3,5,2
+38,EXP_42,Control,CM1_EXP_42.wav,kick a tad above them,Experimental,3,5,2
+39,EXP_31,Control,CM1_EXP_31.wav,embark or take her sheet,Experimental,3,5,2
+40,EXP_02,Control,CM1_EXP_02.wav,address her meeting time,Experimental,3,5,2
+41,EXP_72,PD,PDM10_EXP_72.wav,support with dock and cheer,Experimental,3,5,2
+42,EXP_06,Control,CM1_EXP_06.wav,amend estate approach,Experimental,3,5,2
+43,EXP_01,PD,PDM10_EXP_01.wav,account for who could knock,Experimental,3,5,2
+44,EXP_53,Control,CM1_EXP_53.wav,pain can follow agents,Experimental,3,5,2
+45,EXP_34,PD,PDM10_EXP_34.wav,frame her seed to answer,Experimental,3,5,2
+46,EXP_63,Control,CM1_EXP_63.wav,round and bad for carpet,Experimental,3,6,2
+47,EXP_15,Control,CM1_EXP_15.wav,beside a sunken bat,Experimental,3,6,2
+48,EXP_44,PD,PDM10_EXP_44.wav,mark a single ladder,Experimental,3,6,2
+49,EXP_07,PD,PDM10_EXP_07.wav,and spoke behind her sin,Experimental,3,6,2
+50,EXP_69,PD,PDM10_EXP_69.wav,sparkle enter broken,Experimental,3,6,2
+51,EXP_75,Control,CM1_EXP_75.wav,thinking for the hearing,Experimental,2,6,2
+52,EXP_33,PD,PDM10_EXP_33.wav,forget the joke below,Experimental,3,6,2
+53,EXP_43,Control,CM1_EXP_43.wav,listen final station,Experimental,3,6,2
+54,EXP_70,PD,PDM10_EXP_70.wav,stable wrist and load it,Experimental,3,6,2
+55,EXP_36,PD,PDM10_EXP_36.wav,had eaten junk and train,Experimental,3,6,2
+56,EXP_11,PD,PDM10_EXP_11.wav,attend the trend success,Experimental,3,7,2
+57,EXP_10,Control,CM1_EXP_10.wav,attack became concerned,Experimental,3,7,2
+58,EXP_77,Control,CM1_EXP_77.wav,transcend almost betrayed,Experimental,3,7,2
+59,EXP_66,PD,PDM10_EXP_66.wav,secure but lease apart,Experimental,3,7,2
+60,EXP_56,Control,CM1_EXP_56.wav,pooling pill or cattle,Experimental,3,7,2
+61,EXP_60,PD,PDM10_EXP_60.wav,resting older earring,Experimental,3,7,2
+62,EXP_29,PD,PDM10_EXP_29.wav,divide across retreat,Experimental,3,7,2
+63,EXP_54,PD,PDM10_EXP_54.wav,perceive sustained supplies,Experimental,3,7,2
+64,EXP_55,Control,CM1_EXP_55.wav,pick a chain for action,Experimental,3,7,2
+65,EXP_21,Control,CM1_EXP_21.wav,commit such used advice,Experimental,3,7,2
+66,EXP_14,PD,PDM10_EXP_14.wav,balance clamp and bottle,Experimental,3,8,2
+67,EXP_62,Control,CM1_EXP_62.wav,rode the lamp for teasing,Experimental,3,8,2
+68,EXP_78,Control,CM1_EXP_78.wav,unless escape can learn,Experimental,3,8,2
+69,EXP_17,Control,CM1_EXP_17.wav,bush is chosen after,Experimental,3,8,2
+70,EXP_20,PD,PDM10_EXP_20.wav,cheap control in paper,Experimental,3,8,2
+71,EXP_68,PD,PDM10_EXP_68.wav,sinking rather tundra,Experimental,3,8,2
+72,EXP_30,Control,CM1_EXP_30.wav,done with finest handle,Experimental,3,8,2
+73,EXP_37,Control,CM1_EXP_37.wav,her owners arm the phone,Experimental,3,8,2
+74,EXP_27,PD,PDM10_EXP_27.wav,define respect instead,Experimental,3,8,2
+75,EXP_49,PD,PDM10_EXP_49.wav,mode campaign for budget,Experimental,3,8,2
+76,EXP_39,Control,CM1_EXP_39.wav,increase a grade sedate,Experimental,3,9,2
+77,EXP_04,PD,PDM10_EXP_04.wav,advance but sat appeal,Experimental,3,9,2
+78,EXP_26,PD,PDM10_EXP_26.wav,darker painted baskets,Experimental,3,9,2
+79,EXP_80,PD,PDM10_EXP_80.wav,vital seats with wonder,Experimental,3,9,2
+80,EXP_25,PD,PDM10_EXP_25.wav,cool the jar in private,Experimental,3,9,2
+81,EXP_50,PD,PDM10_EXP_50.wav,model sad and local,Experimental,3,9,2
+82,EXP_38,Control,CM1_EXP_38.wav,hold a page of fortune,Experimental,3,9,2
+83,EXP_05,Control,CM1_EXP_05.wav,afraid beneath demand,Experimental,3,9,2
+84,EXP_45,Control,CM1_EXP_45.wav,mate denotes a judgement,Experimental,3,9,2
+85,EXP_47,PD,PDM10_EXP_47.wav,measure fame with legal,Experimental,3,9,2
