@@ -9,32 +9,16 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-
 # Randomizing Order of Phrases in Counterbalanced Lists
  
 In this block of code, the two counterbalanced phrase lists are first uploaded. Then, the order of the stimulus presentation is randomized separately for each list. Then, 5 practice trial information is added to the beginning of the list (this is done after the randomization because the same 5 practice trials appear before actual data collection begins). Then, new variables in each of the lists are created (this is needed to create the data source csv file)
 
 ```{r}
 
-#Loading needed packages
-
 library(rio) #install.packages("rio")
 library(tidyverse) #install.packages("tidyverse")
 
-Phrase_List_1 <- rio::import("Phrase List 1.xlsx")
-Phrase_List_2 <-rio::import("Phrase List 2.xlsx")
-
-# randomize order of list 1
-
-set.seed(1000)
-Phrase_List_1_random <- Phrase_List_1[sample(1:nrow(Phrase_List_1)), ]
-
-# Randomize order of list 2
-
-set.seed(7036)
-Phrase_List_2_random <- Phrase_List_2[sample(1:nrow(Phrase_List_2)), ]
-
-# create data frame for 5 practice trials
+#Creating Practice Trials dataframe
 
 Practice_trials <- data.frame(
   targetPhrase = c("sticks are best for pencils", "ballot formal circles", 
@@ -43,48 +27,47 @@ Practice_trials <- data.frame(
   speaker = "Practice") %>%
   mutate(code = paste("PM", row_number(), sep = "_"))
 
-# Adding 5 practice trials to the beginning of new list one
+# Setting up a loop for randomizing stimuli lists
 
-List_1_New <- dplyr::full_join(Practice_trials, Phrase_List_1_random) %>%
-  dplyr::relocate(., targetPhrase, .after = speaker) %>%
-  dplyr::relocate(., code, .before = speaker) %>%
-  #creating new trial number, block number, and counter balance variables
-  dplyr::mutate(., trial = row_number(),
-                counterBalance = 1,
-                block = ifelse(speaker == "Practice", 1, ceiling((row_number() - 5)/ 10) + 1),
-                practiceTrial = ifelse(speaker == "Practice", "Practice", "Experimental")) %>%
-  #moving new variables in the data frame
-  dplyr::relocate(trial, .before = code) %>%
-  dplyr::relocate(block, .before = counterBalance) %>%
-  dplyr::relocate(practiceTrial, .after = targetPhrase)
+file_names <- c("Phrase List 1.xlsx", "Phrase List 2.xlsx")
+seed = c(1000, 7036)
 
-# Adding 5 practice trials to beginning of new list 2
+for (i in seq_along(file_names))  {
+ 
+  data <- rio::import(file_names[i])
+  set.seed(seed[i])
+  #Randomize the data
+  data_random <- data[sample(1:nrow(data)), ]
+  
+  #Merging the practice trials df with the randomized list df
+  data_random <- dplyr::full_join(Practice_trials, data_random) %>%
+    dplyr::relocate(., targetPhrase, .after = speaker) %>%
+    dplyr::relocate(., code, .before = speaker) %>%
+    #creating new trial number, block number, and counter balance variables
+    dplyr::mutate(., trial = row_number(), 
+                  counterBalance = i, 
+                  block = ifelse(speaker == "Practice", 1, ceiling((row_number() - 5)/ 10) + 1), 
+                  practiceTrial = ifelse(speaker == "Practice", "Practice", "Experimental")) %>%
+    #moving new variables in the data frame
+    dplyr::relocate(trial, .before = code) %>%
+    dplyr::relocate(block, .before = counterBalance) %>%
+    dplyr::relocate(practiceTrial, .after = targetPhrase)
+  
+  # Renaming the new dfs
+  data_name <- paste("newList", i, sep = "")
+  assign(data_name, data_random)
+  
+  # Exporting dfs (to create stimuli lists in word)
+  rio::export(data_random, paste("New_Phrase_List", i, ".csv"))
+}
 
-List_2_New <- dplyr::full_join(Practice_trials, Phrase_List_2_random) %>%
-  dplyr::relocate(., targetPhrase, .after = speaker) %>%
-  dplyr::relocate(., code, .before = speaker) %>%
-  #creating new trial, block number, and counter balance variables
-  dplyr::mutate(., trial = row_number(),
-                counterBalance = 2,
-                block = ifelse(speaker == "Practice", 1, ceiling((row_number() - 5) /10) + 1),
-                practiceTrial = ifelse(speaker == "Practice", "Practice", "Experimental")) %>%
-  # relocating new variables in data frame
-  dplyr::relocate(trial, .before = code) %>%
-  dplyr::relocate(block, .before = counterBalance) %>%
-  dplyr::relocate(practiceTrial, .after = targetPhrase)
+# Removing unneeded items from environment
 
-#exporting the separate phrase lists in excel (used to eventually create RA stimuli lists in word)
-
-rio::export(List_1_New, "Phrase List 1 New.xlsx")
-rio::export(List_2_New, "Phrase List 2 New.xlsx")
-
-## removing objects that are no longer needed from environment
-
-rm(Phrase_List_1_random, Phrase_List_2_random, Phrase_List_1, Phrase_List_2, Practice_trials)
+rm(data, data_random, Practice_trials, data_name, file_names, i, seed)
 
 ```
 
-## Creating the DataSource file
+# Creating the DataSource file
 
 In this block of code, the DataSource file will be created. This file will be uploaded into experiment builder to inform the program about the order in which to present the stimuli in the experiment. There are two counter balanced conditions that were created in order to control for possible phrase effects.
 
@@ -92,7 +75,7 @@ In this block of code, the DataSource file will be created. This file will be up
 
 # Merging the two lists together
 
-DataSource <- dplyr::full_join(List_1_New, List_2_New)
+DataSource <- dplyr::full_join(newList1, newList2)
 
 # Creating the soundFile and number of target words variables
 
@@ -116,7 +99,7 @@ rio::export(DataSource, "Dysarthria_LE_DataSource.csv")
 
 #Removing objects from the environment that are not needed anymore
 
-rm(List_1_New, List_2_New)
+rm(newList1, newList2)
 
 ```
 
