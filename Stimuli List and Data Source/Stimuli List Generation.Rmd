@@ -73,11 +73,11 @@ In this block of code, the DataSource file will be created. This file will be up
 
 ```{r}
 
-# Merging the two lists together
+# Merging the two lists together.
 
 DataSource <- dplyr::full_join(newList1, newList2)
 
-# Creating the soundFile and number of target words variables
+# Creating the soundFile and number of target words variables.
 
 ## soundFile refers to the name of the .wav file that is associated with each phrase/stimulus
 ## number of target words is a variable created for experiment builder. When listeners repeat the phrase they heard aloud in the pupillometry experiment, the experimenter will record the number of correct words by selecting the appropriate key on the host computer keyboard. Most of the phrases have 3 target words (with the exception of 2 phrases. Those only have 2 target words). Experiment Builder will compare the experimenter's input with this variable to record whether the phrase was repeated correctly (i.e. all target words recognized).
