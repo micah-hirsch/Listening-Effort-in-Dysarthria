@@ -58,7 +58,7 @@ for (i in seq_along(file_names))  {
   assign(data_name, data_random)
   
   # Exporting dfs (to create stimuli lists in word)
-  rio::export(data_random, paste("New_Phrase_List", i, ".csv"))
+  rio::export(data_random, paste("New_Phrase_List", i, ".csv", sep = ""))
 }
 
 # Removing unneeded items from environment
