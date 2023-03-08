@@ -2,8 +2,10 @@
 
 # Author: Micah E. Hirsch, M.S., mhirsch@fsu.edu
 
-# Purpose: To load in edf files from EyeLink and process the raw data 
-# files to prepare for analysis.
+# Purpose: To load in raw data files and process it to prepare for analysis 
+# Raw data files were first exported using the Data Viewer software
+# provided by EyeLink. Deblinking, smoothing, downsampling, and merging pupil
+# data with behavioral data will be done in this script.
 
 # Load Packages
 
@@ -11,12 +13,12 @@ library(gazer) #remotes::install_github("dmirman/gazer")
 library(tidyverse) #install.packages("tidyverse")
 library(zoo) # install.packages("zoo")
 library(knitr) 
-library(devtools)
+library(devtools) #install.packages("devtools")
 library(edfR) #install_github("jashubbard/edfR")
 
 # Set working directories
 
-edf.path <- "iCloud Drive/Documents/Listening Effort Experiment/results"
+edf.path <- "iCloud Drive/Documents/Listening-Effort-in-Dysarthria/Preliminary Analysis/Raw_Data"
 csv.path <- "iCloud Drive/Documents/Listening-Effort-in-Dysarthria/Preliminary Analysis/Prepped_Data"
 
 # Loading and Reading the edf files from Pilot Collection
