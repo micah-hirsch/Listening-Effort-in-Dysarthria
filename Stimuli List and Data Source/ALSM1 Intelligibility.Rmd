@@ -1,0 +1,99 @@
+---
+title: "Baseline Intelligibility Calculation"
+author: "Micah E. Hirsch"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# About this Document
+
+In the initial planning of this study, we decided to use a 80-year old male speaker with Parkinson's disease (PDM10) for our speaker with dysarthria. This decision was based on the fact that this speaker had an intelligibility level of 83.6% based on SLP ratings (Hirsch et al., 2022). However, during test runs of the experiment, the PI noticed that listeners had a harder time understanding the speaker with dysarthria. When looking at other recent work in the lab, PDM10 had an initial intelligibility level of a little over 50% (Lansford et al., 2023). This discrepancy is likely due to different speech stimuli used in the studies. This current study uses semantically anomalous phrases, like Lansford et al. (2023). Since we are aiming to choose a speaker with a milder dysarthria in our study, we decided to switch our speaker.
+
+One potential speaker is ALSM1. In Lansford et al. (2023), this speaker had a mean initial intelligibility of about 77%. ALSM1 was also a speaker included in Hirsch et al. (2022). Therefore, in this script, we are combining the data collected from these two studies to calculate an average baseline intelligibility level for ALSM1.
+
+You can find the full data sets for the Hirsch et al. (2022) and Lansford et al. (2023) studies at the links below.
+
+Hirsch et al. (2022): <https://osf.io/sr9aw/>
+
+Lansford et al. (2023): <https://osf.io/y32qc/>
+
+```{r, warning = F, message = F, echo = F}
+
+library(tidyverse)
+library(rio)
+
+# Load data from Lansford et al. (2023)
+
+lansford_data <- rio::import("Data from recent lab studies/Lansford_2021_data.csv")
+
+# Load data from Hirsch et al., (2022)
+
+hirsch_slp_data <- rio::import("Data from recent lab studies/SLP_Correlation.csv")
+
+hirsch_naive_data <- rio::import("Data from recent lab studies/NaiveListener_Correlation.csv")
+
+```
+
+## Filtering for data for ALSM1 and just pretest intelligibility (for Lansford data)
+
+The datasets from these studies went through some minor filtering processes. For the Hirsch et al. (2022) data, both the slp and naive listener groups provided two different intelligibility ratings. For the purpose of this averaging, we used the OT scores from the naive listeners and the estimations from the SLP listeners.
+
+```{r, warning = F, message = F}
+
+# Cleaning Lansford Data
+
+lansford_data <- lansford_data %>%
+  dplyr::select(c(id, phase, intel, speaker)) %>%
+  dplyr::filter(speaker == "ALSM1") %>%
+  dplyr::filter(phase == "pretest") %>%
+  dplyr::select(!phase)
+
+# Cleaning Hirsch Naive Listener Data
+
+# Naive listeners provided both VAS ratings and OT for two different intelligibility measures. When calculating the average intelligibility across studies, we will use the OT measure to be more consistent with Lansford et al. (2023)
+
+hirsch_naive_data <- hirsch_naive_data %>%
+  dplyr::select(!naive_VAS) %>%
+  dplyr::filter(SpeakerID == "ALSM1") %>%
+  dplyr::rename(speaker = "SpeakerID",
+                id = "ListenerID",
+                intel = "naive_OT")
+
+# Cleaning Hirsch SLP Data
+
+# SLP listeners provided both estimations and VAS ratings for intelligibility. When calculating the average intelligibility across studies, we will use the estimation measure since Hirsch et al. (2022) found that it was the stronger predictor of intelligibility
+
+hirsch_slp_data <- hirsch_slp_data %>%
+  dplyr::select(c(slpID, Speaker, slp_EST)) %>%
+  dplyr::filter(Speaker == "ALSM1") %>%
+  dplyr::rename(intel = "slp_EST",
+                speaker = "Speaker",
+                id = slpID)
+
+# Combining the datasets
+
+intel <- rbind(hirsch_naive_data, hirsch_slp_data)
+
+intel <- rbind(intel, lansford_data)
+
+
+```
+
+## Calculating Mean Intelligibility
+
+```{r, warning = F, message = F}
+
+intel %>%
+  dplyr::summarize(mean = mean(intel),
+                   median = median(intel),
+                   SD = sd(intel))
+
+```
+
+Therefore, across two recent studies, the mean intelligibility level for speaker ALSM1 is 77.21%. We consider this speaker to have a moderate dysarthria (Lansford et al., 2014) with relatively preserved intelligibility (intelligibility over 75%).
