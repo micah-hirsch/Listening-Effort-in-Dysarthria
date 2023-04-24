@@ -1,0 +1,171 @@
+trial,code,speaker,soundFile,targetPhrase,practiceTrial,block,counterBalance
+1,PM_1,Practice,PM_1.wav,sticks are best for pencils,Practice,1,1
+2,PM_2,Practice,PM_2.wav,ballot formal circles,Practice,1,1
+3,PM_3,Practice,PM_3.wav,friendly slogan catch it,Practice,1,1
+4,PM_4,Practice,PM_4.wav,she describes a nuisance,Practice,1,1
+5,PM_5,Practice,PM_5.wav,younger rusty viewers,Practice,1,1
+6,EXP_10,ALS,ALSM1_EXP_10.wav,attack became concerned,Experimental,2,1
+7,EXP_12,ALS,ALSM1_EXP_12.wav,avoid or beat command,Experimental,2,1
+8,EXP_53,ALS,ALSM1_EXP_53.wav,pain can follow agents,Experimental,2,1
+9,EXP_27,Control,CM1_EXP_27.wav,define respect instead,Experimental,2,1
+10,EXP_32,ALS,ALSM1_EXP_32.wav,for coke a great defeat,Experimental,2,1
+11,EXP_36,Control,CM1_EXP_36.wav,had eaten junk and train,Experimental,2,1
+12,EXP_72,Control,CM1_EXP_72.wav,support with dock and cheer,Experimental,2,1
+13,EXP_52,ALS,ALSM1_EXP_52.wav,or spent sincere aside,Experimental,2,1
+14,EXP_80,Control,CM1_EXP_80.wav,vital seats with wonder,Experimental,2,1
+15,EXP_26,Control,CM1_EXP_26.wav,darker painted baskets,Experimental,2,1
+16,EXP_08,ALS,ALSM1_EXP_08.wav,appear to wait then turn,Experimental,3,1
+17,EXP_15,ALS,ALSM1_EXP_15.wav,beside a sunken bat,Experimental,3,1
+18,EXP_33,Control,CM1_EXP_33.wav,forget the joke below,Experimental,3,1
+19,EXP_75,ALS,ALSM1_EXP_75.wav,thinking for the hearing,Experimental,3,1
+20,EXP_58,ALS,ALSM1_EXP_58.wav,rampant boasting captain,Experimental,3,1
+21,EXP_55,ALS,ALSM1_EXP_55.wav,pick a chain for action,Experimental,3,1
+22,EXP_41,Control,CM1_EXP_41.wav,its harmful note abounds,Experimental,3,1
+23,EXP_50,Control,CM1_EXP_50.wav,model sad and local,Experimental,3,1
+24,EXP_16,Control,CM1_EXP_16.wav,bolder ground from justice,Experimental,3,1
+25,EXP_65,ALS,ALSM1_EXP_65.wav,seat for locking runners,Experimental,3,1
+26,EXP_06,ALS,ALSM1_EXP_06.wav,amend estate approach,Experimental,4,1
+27,EXP_05,ALS,ALSM1_EXP_05.wav,afraid beneath demand,Experimental,4,1
+28,EXP_14,Control,CM1_EXP_14.wav,balance clamp and bottle,Experimental,4,1
+29,EXP_54,Control,CM1_EXP_54.wav,perceive sustained supplies,Experimental,4,1
+30,EXP_79,Control,CM1_EXP_79.wav,unseen machines agree,Experimental,4,1
+31,EXP_11,Control,CM1_EXP_11.wav,attend the trend success,Experimental,4,1
+32,EXP_44,Control,CM1_EXP_44.wav,mark a single ladder,Experimental,4,1
+33,EXP_77,ALS,ALSM1_EXP_77.wav,transcend almost betrayed,Experimental,4,1
+34,EXP_40,ALS,ALSM1_EXP_40.wav,indeed a tax ascent,Experimental,4,1
+35,EXP_19,Control,CM1_EXP_19.wav,career despite research,Experimental,4,1
+36,EXP_29,Control,CM1_EXP_29.wav,divide across retreat,Experimental,5,1
+37,EXP_60,Control,CM1_EXP_60.wav,resting older earring,Experimental,5,1
+38,EXP_74,Control,CM1_EXP_74.wav,technique but sent result,Experimental,5,1
+39,EXP_23,Control,CM1_EXP_23.wav,connect the beer device,Experimental,5,1
+40,EXP_38,ALS,ALSM1_EXP_38.wav,hold a page of fortune,Experimental,5,1
+41,EXP_64,ALS,ALSM1_EXP_64.wav,rowing farther matters,Experimental,5,1
+42,EXP_51,ALS,ALSM1_EXP_51.wav,narrow seated member,Experimental,5,1
+43,EXP_78,ALS,ALSM1_EXP_78.wav,unless escape can learn,Experimental,5,1
+44,EXP_39,ALS,ALSM1_EXP_39.wav,increase a grade sedate,Experimental,5,1
+45,EXP_73,Control,CM1_EXP_73.wav,target keeping season,Experimental,5,1
+46,EXP_02,ALS,ALSM1_EXP_02.wav,address her meeting time,Experimental,6,1
+47,EXP_17,ALS,ALSM1_EXP_17.wav,bush is chosen after,Experimental,6,1
+48,EXP_28,ALS,ALSM1_EXP_28.wav,distant leaking basement,Experimental,6,1
+49,EXP_07,Control,CM1_EXP_07.wav,and spoke behind her sin,Experimental,6,1
+50,EXP_71,ALS,ALSM1_EXP_71.wav,submit his cash report,Experimental,6,1
+51,EXP_30,ALS,ALSM1_EXP_30.wav,done with finest handle,Experimental,6,1
+52,EXP_34,Control,CM1_EXP_34.wav,frame her seed to answer,Experimental,6,1
+53,EXP_03,Control,CM1_EXP_03.wav,admit the gear beyond,Experimental,6,1
+54,EXP_24,Control,CM1_EXP_24.wav,constant willing walker,Experimental,6,1
+55,EXP_69,Control,CM1_EXP_69.wav,sparkle enter broken,Experimental,6,1
+56,EXP_20,Control,CM1_EXP_20.wav,cheap control in paper,Experimental,7,1
+57,EXP_59,ALS,ALSM1_EXP_59.wav,remove and name for stake,Experimental,7,1
+58,EXP_35,Control,CM1_EXP_35.wav,functions aim his acid,Experimental,7,1
+59,EXP_56,ALS,ALSM1_EXP_56.wav,pooling pill or cattle,Experimental,7,1
+60,EXP_67,ALS,ALSM1_EXP_67.wav,signal breakfast pilot,Experimental,7,1
+61,EXP_42,ALS,ALSM1_EXP_42.wav,kick a tad above them,Experimental,7,1
+62,EXP_62,ALS,ALSM1_EXP_62.wav,rode the lamp for teasing,Experimental,7,1
+63,EXP_49,Control,CM1_EXP_49.wav,mode campaign for budget,Experimental,7,1
+64,EXP_43,ALS,ALSM1_EXP_43.wav,listen final station,Experimental,7,1
+65,EXP_61,Control,CM1_EXP_61.wav,rocking modern poster,Experimental,7,1
+66,EXP_66,Control,CM1_EXP_66.wav,secure but lease apart,Experimental,8,1
+67,EXP_63,ALS,ALSM1_EXP_63.wav,round and bad for carpet,Experimental,8,1
+68,EXP_37,ALS,ALSM1_EXP_37.wav,her owners arm the phone,Experimental,8,1
+69,EXP_09,Control,CM1_EXP_09.wav,assume to catch control,Experimental,8,1
+70,EXP_48,Control,CM1_EXP_48.wav,mistake delight for heat,Experimental,8,1
+71,EXP_22,ALS,ALSM1_EXP_22.wav,confused but roared again,Experimental,8,1
+72,EXP_68,Control,CM1_EXP_68.wav,sinking rather tundra,Experimental,8,1
+73,EXP_45,ALS,ALSM1_EXP_45.wav,mate denotes a judgement,Experimental,8,1
+74,EXP_13,ALS,ALSM1_EXP_13.wav,award his drain away,Experimental,8,1
+75,EXP_01,Control,CM1_EXP_01.wav,account for who could knock,Experimental,8,1
+76,EXP_25,Control,CM1_EXP_25.wav,cool the jar in private,Experimental,9,1
+77,EXP_46,Control,CM1_EXP_46.wav,may the same pursued it,Experimental,9,1
+78,EXP_31,ALS,ALSM1_EXP_31.wav,embark or take her sheet,Experimental,9,1
+79,EXP_70,Control,CM1_EXP_70.wav,stable wrist and load it,Experimental,9,1
+80,EXP_47,Control,CM1_EXP_47.wav,measure fame with legal,Experimental,9,1
+81,EXP_18,ALS,ALSM1_EXP_18.wav,butcher in the middle,Experimental,9,1
+82,EXP_76,Control,CM1_EXP_76.wav,to sort but fear inside,Experimental,9,1
+83,EXP_57,ALS,ALSM1_EXP_57.wav,push her equal culture,Experimental,9,1
+84,EXP_21,ALS,ALSM1_EXP_21.wav,commit such used advice,Experimental,9,1
+85,EXP_04,Control,CM1_EXP_04.wav,advance but sat appeal,Experimental,9,1
+1,PM_1,Practice,PM_1.wav,sticks are best for pencils,Practice,1,2
+2,PM_2,Practice,PM_2.wav,ballot formal circles,Practice,1,2
+3,PM_3,Practice,PM_3.wav,friendly slogan catch it,Practice,1,2
+4,PM_4,Practice,PM_4.wav,she describes a nuisance,Practice,1,2
+5,PM_5,Practice,PM_5.wav,younger rusty viewers,Practice,1,2
+6,EXP_23,ALS,ALSM1_EXP_23.wav,connect the beer device,Experimental,2,2
+7,EXP_13,Control,CM1_EXP_13.wav,award his drain away,Experimental,2,2
+8,EXP_48,ALS,ALSM1_EXP_48.wav,mistake delight for heat,Experimental,2,2
+9,EXP_64,Control,CM1_EXP_64.wav,rowing farther matters,Experimental,2,2
+10,EXP_40,Control,CM1_EXP_40.wav,indeed a tax ascent,Experimental,2,2
+11,EXP_52,Control,CM1_EXP_52.wav,or spent sincere aside,Experimental,2,2
+12,EXP_71,Control,CM1_EXP_71.wav,submit his cash report,Experimental,2,2
+13,EXP_09,ALS,ALSM1_EXP_09.wav,assume to catch control,Experimental,2,2
+14,EXP_18,Control,CM1_EXP_18.wav,butcher in the middle,Experimental,2,2
+15,EXP_12,Control,CM1_EXP_12.wav,avoid or beat command,Experimental,2,2
+16,EXP_03,ALS,ALSM1_EXP_03.wav,admit the gear beyond,Experimental,3,2
+17,EXP_46,ALS,ALSM1_EXP_46.wav,may the same pursued it,Experimental,3,2
+18,EXP_58,Control,CM1_EXP_58.wav,rampant boasting captain,Experimental,3,2
+19,EXP_32,Control,CM1_EXP_32.wav,for coke a great defeat,Experimental,3,2
+20,EXP_74,ALS,ALSM1_EXP_74.wav,technique but sent result,Experimental,3,2
+21,EXP_79,ALS,ALSM1_EXP_79.wav,unseen machines agree,Experimental,3,2
+22,EXP_19,ALS,ALSM1_EXP_19.wav,career despite research,Experimental,3,2
+23,EXP_24,ALS,ALSM1_EXP_24.wav,constant willing walker,Experimental,3,2
+24,EXP_57,Control,CM1_EXP_57.wav,push her equal culture,Experimental,3,2
+25,EXP_67,Control,CM1_EXP_67.wav,signal breakfast pilot,Experimental,3,2
+26,EXP_22,Control,CM1_EXP_22.wav,confused but roared again,Experimental,4,2
+27,EXP_41,ALS,ALSM1_EXP_41.wav,its harmful note abounds,Experimental,4,2
+28,EXP_59,Control,CM1_EXP_59.wav,remove and name for stake,Experimental,4,2
+29,EXP_51,Control,CM1_EXP_51.wav,narrow seated member,Experimental,4,2
+30,EXP_08,Control,CM1_EXP_08.wav,appear to wait then turn,Experimental,4,2
+31,EXP_16,ALS,ALSM1_EXP_16.wav,bolder ground from justice,Experimental,4,2
+32,EXP_73,ALS,ALSM1_EXP_73.wav,target keeping season,Experimental,4,2
+33,EXP_65,Control,CM1_EXP_65.wav,seat for locking runners,Experimental,4,2
+34,EXP_35,ALS,ALSM1_EXP_35.wav,functions aim his acid,Experimental,4,2
+35,EXP_76,ALS,ALSM1_EXP_76.wav,to sort but fear inside,Experimental,4,2
+36,EXP_61,ALS,ALSM1_EXP_61.wav,rocking modern poster,Experimental,5,2
+37,EXP_28,Control,CM1_EXP_28.wav,distant leaking basement,Experimental,5,2
+38,EXP_42,Control,CM1_EXP_42.wav,kick a tad above them,Experimental,5,2
+39,EXP_31,Control,CM1_EXP_31.wav,embark or take her sheet,Experimental,5,2
+40,EXP_02,Control,CM1_EXP_02.wav,address her meeting time,Experimental,5,2
+41,EXP_72,ALS,ALSM1_EXP_72.wav,support with dock and cheer,Experimental,5,2
+42,EXP_06,Control,CM1_EXP_06.wav,amend estate approach,Experimental,5,2
+43,EXP_01,ALS,ALSM1_EXP_01.wav,account for who could knock,Experimental,5,2
+44,EXP_53,Control,CM1_EXP_53.wav,pain can follow agents,Experimental,5,2
+45,EXP_34,ALS,ALSM1_EXP_34.wav,frame her seed to answer,Experimental,5,2
+46,EXP_63,Control,CM1_EXP_63.wav,round and bad for carpet,Experimental,6,2
+47,EXP_15,Control,CM1_EXP_15.wav,beside a sunken bat,Experimental,6,2
+48,EXP_44,ALS,ALSM1_EXP_44.wav,mark a single ladder,Experimental,6,2
+49,EXP_07,ALS,ALSM1_EXP_07.wav,and spoke behind her sin,Experimental,6,2
+50,EXP_69,ALS,ALSM1_EXP_69.wav,sparkle enter broken,Experimental,6,2
+51,EXP_75,Control,CM1_EXP_75.wav,thinking for the hearing,Experimental,6,2
+52,EXP_33,ALS,ALSM1_EXP_33.wav,forget the joke below,Experimental,6,2
+53,EXP_43,Control,CM1_EXP_43.wav,listen final station,Experimental,6,2
+54,EXP_70,ALS,ALSM1_EXP_70.wav,stable wrist and load it,Experimental,6,2
+55,EXP_36,ALS,ALSM1_EXP_36.wav,had eaten junk and train,Experimental,6,2
+56,EXP_11,ALS,ALSM1_EXP_11.wav,attend the trend success,Experimental,7,2
+57,EXP_10,Control,CM1_EXP_10.wav,attack became concerned,Experimental,7,2
+58,EXP_77,Control,CM1_EXP_77.wav,transcend almost betrayed,Experimental,7,2
+59,EXP_66,ALS,ALSM1_EXP_66.wav,secure but lease apart,Experimental,7,2
+60,EXP_56,Control,CM1_EXP_56.wav,pooling pill or cattle,Experimental,7,2
+61,EXP_60,ALS,ALSM1_EXP_60.wav,resting older earring,Experimental,7,2
+62,EXP_29,ALS,ALSM1_EXP_29.wav,divide across retreat,Experimental,7,2
+63,EXP_54,ALS,ALSM1_EXP_54.wav,perceive sustained supplies,Experimental,7,2
+64,EXP_55,Control,CM1_EXP_55.wav,pick a chain for action,Experimental,7,2
+65,EXP_21,Control,CM1_EXP_21.wav,commit such used advice,Experimental,7,2
+66,EXP_14,ALS,ALSM1_EXP_14.wav,balance clamp and bottle,Experimental,8,2
+67,EXP_62,Control,CM1_EXP_62.wav,rode the lamp for teasing,Experimental,8,2
+68,EXP_78,Control,CM1_EXP_78.wav,unless escape can learn,Experimental,8,2
+69,EXP_17,Control,CM1_EXP_17.wav,bush is chosen after,Experimental,8,2
+70,EXP_20,ALS,ALSM1_EXP_20.wav,cheap control in paper,Experimental,8,2
+71,EXP_68,ALS,ALSM1_EXP_68.wav,sinking rather tundra,Experimental,8,2
+72,EXP_30,Control,CM1_EXP_30.wav,done with finest handle,Experimental,8,2
+73,EXP_37,Control,CM1_EXP_37.wav,her owners arm the phone,Experimental,8,2
+74,EXP_27,ALS,ALSM1_EXP_27.wav,define respect instead,Experimental,8,2
+75,EXP_49,ALS,ALSM1_EXP_49.wav,mode campaign for budget,Experimental,8,2
+76,EXP_39,Control,CM1_EXP_39.wav,increase a grade sedate,Experimental,9,2
+77,EXP_04,ALS,ALSM1_EXP_04.wav,advance but sat appeal,Experimental,9,2
+78,EXP_26,ALS,ALSM1_EXP_26.wav,darker painted baskets,Experimental,9,2
+79,EXP_80,ALS,ALSM1_EXP_80.wav,vital seats with wonder,Experimental,9,2
+80,EXP_25,ALS,ALSM1_EXP_25.wav,cool the jar in private,Experimental,9,2
+81,EXP_50,ALS,ALSM1_EXP_50.wav,model sad and local,Experimental,9,2
+82,EXP_38,Control,CM1_EXP_38.wav,hold a page of fortune,Experimental,9,2
+83,EXP_05,Control,CM1_EXP_05.wav,afraid beneath demand,Experimental,9,2
+84,EXP_45,Control,CM1_EXP_45.wav,mate denotes a judgement,Experimental,9,2
+85,EXP_47,ALS,ALSM1_EXP_47.wav,measure fame with legal,Experimental,9,2

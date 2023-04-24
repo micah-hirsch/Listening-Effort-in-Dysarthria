@@ -29,7 +29,7 @@ Practice_trials <- data.frame(
 
 # Setting up a loop for randomizing stimuli lists
 
-file_names <- c("Phrase List 1.xlsx", "Phrase List 2.xlsx")
+file_names <- c("Phrase lists/Phrase List 1.xlsx", "Phrase lists/Phrase List 2.xlsx")
 seed = c(1000, 7036)
 
 for (i in seq_along(file_names))  {
@@ -48,6 +48,9 @@ for (i in seq_along(file_names))  {
                   counterBalance = i, 
                   block = ifelse(speaker == "Practice", 1, ceiling((row_number() - 5)/ 10) + 1), 
                   practiceTrial = ifelse(speaker == "Practice", "Practice", "Experimental")) %>%
+    # Changing PD speaker to ALS speaker (we decided to use a different speaker for this study)
+    dplyr::mutate(speaker = case_when(speaker == "PD" ~ "ALS",
+                                      TRUE ~ speaker)) %>%
     #moving new variables in the data frame
     dplyr::relocate(trial, .before = code) %>%
     dplyr::relocate(block, .before = counterBalance) %>%
@@ -57,8 +60,6 @@ for (i in seq_along(file_names))  {
   data_name <- paste("newList", i, sep = "")
   assign(data_name, data_random)
   
-  # Exporting dfs (to create stimuli lists in word)
-  rio::export(data_random, paste("New_Phrase_List", i, ".csv", sep = ""))
 }
 
 # Removing unneeded items from environment
@@ -84,18 +85,16 @@ DataSource <- dplyr::full_join(newList1, newList2)
 
 DataSource <- DataSource %>%
   dplyr::mutate(soundFile = case_when(speaker == "Practice" ~ "PM",
-                                      speaker == "PD" ~ "PDM10",
+                                      speaker == "ALS" ~ "ALSM1",
                                       TRUE ~ "CM1")) %>%
   dplyr::mutate(soundFile = ifelse(soundFile == "PM", paste(soundFile, trial, sep = "_"), 
                                    paste(soundFile, code, sep = "_"))) %>%
   dplyr::mutate(soundFile = paste(soundFile, "wav", sep = ".")) %>%
-  dplyr::mutate(num_targetWords = ifelse(code == "EXP_18" | code == "EXP_75", 2, 3)) %>%
-  dplyr::relocate(soundFile, .before = targetPhrase) %>%
-  dplyr::relocate(num_targetWords, .before = block)
+  dplyr::relocate(soundFile, .before = targetPhrase) 
 
 # Exporting the data source data frame as a csv file. Will be imported into Experiment Builder for programming pupillometry experiment.
 
-rio::export(DataSource, "Dysarthria_LE_DataSource.csv")
+rio::export(DataSource, "Data Source/Dysarthria_LE_DataSource.csv")
 
 #Removing objects from the environment that are not needed anymore
 
