@@ -13,6 +13,10 @@ library(tidyverse)
 
 setwd("Stimuli List and Data Source/Counterbalance List Assignment")
 
+# Setting a Seed 
+
+set.seed(1000)
+
 # Create data frame
 
 list_assignment <- data.frame(id = paste0("LE", formatC(1:50, width = 2, flag = "0")),
