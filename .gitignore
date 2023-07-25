@@ -2,5 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
-*.DS_Store
+.DS_Store
 Data from recent lab studies/
+Data Preprocessing/Raw Data/
