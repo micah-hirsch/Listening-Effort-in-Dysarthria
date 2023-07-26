@@ -98,3 +98,21 @@ trimmed_pupil_data <- trimmed_pupil_data %>%
   dplyr::filter(practicetrial != 'Practice') %>%
   dplyr::select(!practicetrial)
 
+# Deblinking
+
+pupil_extend <- trimmed_pupil_data %>%
+  dplyr::group_by(subject, trial) %>%
+  dplyr::mutate(extendpupil = extend_blinks(pupil, fillback = 50, fillforward = 160, hz = 1000))
+
+# Interpolation and Smoothing
+
+## linear interpolation
+interp <- interpolate_pupil(pupil_extend,
+                            extendblinks = T, 
+                            type = "linear", 
+                            hz = 1000)
+
+## 10 Hz moving average filter
+smoothed <- interp %>%
+  dplyr::mutate(smoothed_pupil = moving_average_pupil(interp, n = 5))
+
