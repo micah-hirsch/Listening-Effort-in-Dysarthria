@@ -114,5 +114,9 @@ interp <- interpolate_pupil(pupil_extend,
 
 ## 10 Hz moving average filter
 smoothed <- interp %>%
-  dplyr::mutate(smoothed_pupil = moving_average_pupil(interp, n = 5))
+  dplyr::mutate(smoothed_pupil = moving_average_pupil(interp, n = 5)) %>%
+  ## Selecting relevant variables
+  dplyr::select(c(subject, trial, timestamp, code, speaker, targetphrase, counterbalance, smoothed_pupil)) %>%
+  dplyr::relocate(smoothed_pupil, .after = timestamp)
+
 
