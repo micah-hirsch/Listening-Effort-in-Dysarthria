@@ -2,11 +2,13 @@
 
 # Author: Micah E. Hirsch
 
-# Date: 7/26/2023 (Current Version - Pilot Data, Note: This script is a work-in-progress)
+# Date: 7/26/2023 
+# Current Version - Pilot Data Preprocessing
 
-## Purpose: To load in raw pupil dilation data from EyeLink, 
-## check timing intervals for baseline and retention periods, 
-## and filter out excess rows.
+## Purpose: To load in raw pupil dilation data from EyeLink and 
+## prepare data for analysis and visualization.
+
+## Note: This script is a work-in-progress.
 
 # Loading required packages
 
@@ -29,7 +31,8 @@ file_list <- list.files(path = ".", pattern = ".txt")
 
 pupil_data <- merge_pupil(file_list, blink_colname = "RIGHT_IN_BLINK", pupil_colname = "RIGHT_PUPIL_SIZE")
 
-# Checking the interval timing for the baseline and post-phrase retention periods
+# Checking the interval timing for the baseline and post-phrase retention periods.
+## We are doing this because there were some concerns about the timing of some experimental events.
 
 ## Creating mode function
 
@@ -50,7 +53,9 @@ pupil_data1 <- pupil_data %>%
   dplyr::select(!c(TRIAL_START:RESPONSE_CUE)) %>%
   tidyr::pivot_longer(cols = c(baseline_ret, retention),
                       names_to = "silence",
-                      values_to = "interval") %>%
+                      values_to = "interval") 
+
+interval_summary <- pupil_data1 %>%
   dplyr::group_by(silence) %>%
   dplyr::summarize(min = min(interval), max = max(interval), mean = mean(interval), median = median(interval), mode = mode(interval))
 
@@ -79,7 +84,7 @@ trimmed_pupil_data <- pupil_data2 %>%
 
 ## removing unneeded objects from the environment
 
-rm(trial_start, trial_end, file_list, pupil_data2, pupil_data)
+rm(trial_start, trial_end, file_list, pupil_data2, pupil_data1, pupil_data, interval_summary)
 
 # Filtering out trials/participants with too much data loss.
 ## None removed 
@@ -90,5 +95,6 @@ trimmed_pupil_data <- gazer::count_missing_pupil(trimmed_pupil_data, missingthre
 
 trimmed_pupil_data <- trimmed_pupil_data %>%
   dplyr::select(!c(time:averageMissingTrial)) %>%
-  dplyr::filter(practiceTrial != 'Practice')
+  dplyr::filter(practicetrial != 'Practice') %>%
+  dplyr::select(!practicetrial)
 
