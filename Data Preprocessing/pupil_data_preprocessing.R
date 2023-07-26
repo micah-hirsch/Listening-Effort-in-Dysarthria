@@ -2,9 +2,11 @@
 
 # Author: Micah E. Hirsch
 
-# Date: 7/26/2023 (currently wip - Preliminary Processing)
+# Date: 7/26/2023 (Current Version - Pilot Data, Note: This script is a work-in-progress)
 
-## Purpose: To load in raw pupil dilation data from EyeLink
+## Purpose: To load in raw pupil dilation data from EyeLink, 
+## check timing intervals for baseline and retention periods, 
+## and filter out excess rows.
 
 # Loading required packages
 
@@ -79,8 +81,14 @@ trimmed_pupil_data <- pupil_data2 %>%
 
 rm(trial_start, trial_end, file_list, pupil_data2, pupil_data)
 
-# Filtering out participants with too much data loss.
+# Filtering out trials/participants with too much data loss.
 ## None removed 
 
 trimmed_pupil_data <- gazer::count_missing_pupil(trimmed_pupil_data, missingthresh = 0.5)
+
+# Removing unneeded variables from df and filtering out practice trials.
+
+trimmed_pupil_data <- trimmed_pupil_data %>%
+  dplyr::select(!c(time:averageMissingTrial)) %>%
+  dplyr::filter(practiceTrial != 'Practice')
 
