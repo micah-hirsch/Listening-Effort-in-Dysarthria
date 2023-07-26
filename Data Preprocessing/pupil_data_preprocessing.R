@@ -116,7 +116,10 @@ interp <- interpolate_pupil(pupil_extend,
 smoothed <- interp %>%
   dplyr::mutate(smoothed_pupil = moving_average_pupil(interp, n = 5)) %>%
   ## Selecting relevant variables
-  dplyr::select(c(subject, trial, timestamp, code, speaker, targetphrase, counterbalance, smoothed_pupil)) %>%
-  dplyr::relocate(smoothed_pupil, .after = timestamp)
+  dplyr::select(c(subject, trial, sample_message, timestamp, code, speaker, targetphrase, counterbalance, smoothed_pupil)) %>%
+  dplyr::relocate(smoothed_pupil, .after = timestamp) 
 
+# Baseline Correction
 
+baseline_pupil <- baseline_correction_pupil_msg(smoothed, pupil_colname = "smoothed_pupil", 
+                                                baseline_dur = 500, event = "PHRASE_START", baseline_method = "sub")
