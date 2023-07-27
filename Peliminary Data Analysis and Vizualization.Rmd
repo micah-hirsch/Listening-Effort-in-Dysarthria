@@ -1,0 +1,105 @@
+---
+title: "Preliminary Data Analysis and Visualization"
+author: "Micah E. Hirsch"
+date: "2023-07-27"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Document Purpose
+
+The purpose of this document is to conduct preliminary analyses on pilot data for the author's dissertation project. This preliminary Analysis is based on data collected from 3 participants: LE01, LE02, and LE04. Something went wrong with LE05's transcriptions, so their data is not included in these visualizations.
+
+```{r, include = F, warning = F, message = F}
+
+# Load packages
+
+library(rio)
+library(tidyverse)
+
+# import dataset
+
+cleaned_df <- rio::import("Cleaned Data/cleaned_data.csv")
+
+```
+
+# Visualizations
+
+Below are a few plots showing pupil dilation over time.
+
+## Overall Pupil Dilation Tracking
+
+```{r, warning = F, message = F}
+
+cleaned_df %>%
+  # For this graph, we are only looking at when the listener was accurate
+  dplyr::filter(rep_acc == "accurate") %>%
+  dplyr::group_by(timebins, speaker) %>%
+  dplyr::summarize(pupil_dilation = mean(pupil.binned, na.rm = T),
+                   pupil_se = sd(pupil.binned, na.rm = T)/sqrt(n())) %>%
+  ggplot() +
+  aes(x = timebins,
+      y = pupil_dilation,
+      color = speaker,
+      fill = speaker) +
+  geom_ribbon(aes(ymin = pupil_dilation - pupil_se, ymax = pupil_dilation + pupil_se), alpha = .3) +
+  geom_line() +
+  coord_cartesian(xlim = c(0,3000)) +
+  labs(x = "Time (ms)", y = "Pupil Dilation (arbitrary units)", fill = "Speaker", color = "Speaker") +
+  theme_bw() + 
+  theme(legend.position = "bottom")
+
+```
+
+## Comparing Accurate and Inaccurate Responses
+
+```{r, warning = F, message = F}
+
+cleaned_df %>%
+  dplyr::filter(subject != "LE05") %>% #There is an issue with LE05 at the moment
+  dplyr::group_by(timebins, speaker, rep_acc) %>%
+  dplyr::summarize(pupil_dilation = mean(pupil.binned, na.rm = T),
+                   pupil_se = sd(pupil.binned, na.rm = T)/sqrt(n())) %>%
+  ggplot() +
+  aes(x = timebins,
+      y = pupil_dilation,
+      color = rep_acc,
+      fill = rep_acc) +
+  geom_ribbon(aes(ymin = pupil_dilation - pupil_se, ymax = pupil_dilation + pupil_se), alpha = .3) +
+  geom_line() +
+  coord_cartesian(xlim = c(0,3000)) +
+  labs(x = "Time (ms)", y = "Pupil Dilation (arbitrary units)", fill = "Repetition Accuracy", color = "Repetition Accuracy") +
+  theme_bw() + 
+  facet_wrap("speaker") +
+  theme(legend.position = "bottom")
+
+```
+## By Participant
+
+```{r}
+
+cleaned_df %>%
+  dplyr::filter(rep_acc == "accurate") %>%
+  dplyr::group_by(timebins, speaker, subject) %>%
+  dplyr::summarize(pupil_dilation = mean(pupil.binned, na.rm = T),
+                   pupil_se = sd(pupil.binned, na.rm = T)/sqrt(n())) %>%
+  ggplot() +
+  aes(x = timebins,
+      y = pupil_dilation,
+      fill = speaker,
+      color = speaker) +
+  geom_ribbon(aes(ymin = pupil_dilation - pupil_se, ymax = pupil_dilation + pupil_se), alpha = .3) +
+  geom_line() +
+  coord_cartesian(xlim = c(0,3000)) +
+  labs(x = "Time (ms)", y = "Pupil Dilation (arbitrary units)", fill = "Speaker", color = "Speaker") +
+  theme_bw() + 
+  facet_wrap("subject") +
+  theme(legend.position = "bottom")
+
+```
+
