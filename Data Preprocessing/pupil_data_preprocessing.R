@@ -152,3 +152,19 @@ mad_removal <- baseline_pupil %>%
 
 ## Proportion of rows removed (7/27/23: 0.104%)
 ((nrow(baseline_pupil) - nrow(mad_removal)) / nrow(baseline_pupil)) * 100
+
+# Removing unneeded items from environment
+
+rm(baseline_pupil, interp, pupil_extend, smoothed, trimmed_pupil_data)
+
+# Downsampling
+
+bin.length <- 20
+
+data.binned <- mad_removal %>%
+  mutate(timebins = round(time/bin.length)*bin.length) %>%
+  dplyr::group_by(subject, trial, speaker, timebins, code, targetphrase, counterbalance) %>%
+  dplyr::summarize(pupil.binned = mean(baselinecorrectedp)) %>%
+  dplyr::ungroup()
+
+
