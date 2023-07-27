@@ -81,7 +81,7 @@ cleaned_df %>%
 ```
 ## By Participant
 
-```{r}
+```{r, message = F, warning = F}
 
 cleaned_df %>%
   dplyr::filter(rep_acc == "accurate") %>%
@@ -98,7 +98,7 @@ cleaned_df %>%
   coord_cartesian(xlim = c(0,3000)) +
   labs(x = "Time (ms)", y = "Pupil Dilation (arbitrary units)", fill = "Speaker", color = "Speaker") +
   theme_bw() + 
-  facet_wrap("subject") +
+  facet_wrap("subject", ncol = 2) +
   theme(legend.position = "bottom")
 
 ```
