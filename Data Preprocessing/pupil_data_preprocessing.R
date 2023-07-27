@@ -167,4 +167,10 @@ data.binned <- mad_removal %>%
   dplyr::summarize(pupil.binned = mean(baselinecorrectedp)) %>%
   dplyr::ungroup()
 
+# Exporting Data (7/27/23: Pilot Data)
 
+## set wd
+
+setwd("~/Documents/Listening-Effort-in-Dysarthria/Cleaned Data")
+
+rio::export(data.binned, "cleaned_pupil_data.csv")
