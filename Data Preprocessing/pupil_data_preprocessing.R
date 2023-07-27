@@ -95,7 +95,6 @@ phrase_start <- pupil_data %>%
   dplyr::select(subject, trial, phrase_start_time = timestamp)
 
 ## Merging phrase onset times with pupil df
-
 trimmed_pupil_data <- trimmed_pupil_data %>%
   dplyr::left_join(phrase_start, by = c("subject", "trial"))
 
@@ -128,14 +127,28 @@ interp <- interpolate_pupil(pupil_extend,
                             type = "linear", 
                             hz = 1000)
 
-## 10 Hz moving average filter
+## 10 Hz 5-point moving average filter
 smoothed <- interp %>%
   dplyr::mutate(smoothed_pupil = moving_average_pupil(interp, n = 5)) %>%
   ## Selecting relevant variables
-  dplyr::select(c(subject, trial, sample_message, timestamp, code, speaker, targetphrase, counterbalance, smoothed_pupil)) %>%
-  dplyr::relocate(smoothed_pupil, .after = timestamp) 
+  dplyr::select(c(subject, trial, sample_message, time_c, code, speaker, targetphrase, counterbalance, smoothed_pupil)) %>%
+  dplyr::relocate(smoothed_pupil, .after = time_c) %>%
+  dplyr::rename(time = time_c)
 
 # Baseline Correction
 
-baseline_pupil <- baseline_correction_pupil_msg(smoothed, pupil_colname = "smoothed_pupil", 
-                                                baseline_dur = 500, event = "PHRASE_START", baseline_method = "sub")
+baseline_pupil <- baseline_correction_pupil(smoothed, pupil_colname = "smoothed_pupil",
+                                            baseline_window = c(-500, 0))
+
+# Artifact Rejection
+
+## Looking for rapid changes in pupil dilation using median absolute deviation
+
+mad_removal <- baseline_pupil %>%
+  dplyr::group_by(subject, trial) %>%
+  dplyr::mutate(speed = speed_pupil(baselinecorrectedp, time)) %>%
+  dplyr::mutate(MAD = calc_mad(speed, n=16)) %>%
+  dplyr::filter(speed < MAD)
+
+## Proportion of rows removed (7/27/23: 0.104%)
+((nrow(baseline_pupil) - nrow(mad_removal)) / nrow(baseline_pupil)) * 100
