@@ -93,3 +93,10 @@ cleaned_data <- pupil %>%
 
 rm(data, pupil, targets, transcriptions)
 
+# Export csv (7/27/23: Pilot Data)
+
+## Setting working directory
+
+setwd("~/Documents/Listening-Effort-in-Dysarthria/Cleaned Data")
+
+rio::export(cleaned_data, "cleaned_data.csv")
