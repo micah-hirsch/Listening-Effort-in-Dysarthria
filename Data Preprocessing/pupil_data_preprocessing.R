@@ -2,7 +2,7 @@
 
 # Author: Micah E. Hirsch
 
-# Date: 7/26/2023 
+# Date: 7/27/2023 
 # Current Version - Pilot Data Preprocessing
 
 ## Purpose: To load in raw pupil dilation data from EyeLink and 
@@ -82,21 +82,37 @@ pupil_data2 <- pupil_data2 %>%
 trimmed_pupil_data <- pupil_data2 %>%
   dplyr::filter(timestamp >= start_time & timestamp <= end_time)
 
-## removing unneeded objects from the environment
-
-rm(trial_start, trial_end, file_list, pupil_data2, pupil_data1, pupil_data, interval_summary)
-
 # Filtering out trials/participants with too much data loss.
 ## None removed 
 
 trimmed_pupil_data <- gazer::count_missing_pupil(trimmed_pupil_data, missingthresh = 0.5)
 
-# Removing unneeded variables from df and filtering out practice trials.
+# Prepping the df for pupil processing
+
+## Extracting phrase onset times
+phrase_start <- pupil_data %>%
+  dplyr::filter(sample_message == "PHRASE_START") %>%
+  dplyr::select(subject, trial, phrase_start_time = timestamp)
+
+## Merging phrase onset times with pupil df
 
 trimmed_pupil_data <- trimmed_pupil_data %>%
-  dplyr::select(!c(time:averageMissingTrial)) %>%
+  dplyr::left_join(phrase_start, by = c("subject", "trial"))
+
+trimmed_pupil_data <- trimmed_pupil_data %>%
+  ## Removing practice trials from df
   dplyr::filter(practicetrial != 'Practice') %>%
-  dplyr::select(!practicetrial)
+  dplyr::select(!practicetrial) %>%
+  ## Aligning data to onset of phrase presentation
+  dplyr::mutate(time_c = timestamp - phrase_start_time) %>%
+  ## Removing unneeded variables
+  dplyr::select(!c(timestamp, time:phrase_start_time)) %>%
+  dplyr::relocate(time_c, .after = pupil)
+  
+
+## removing unneeded objects from the environment
+
+rm(trial_start, trial_end, phrase_start, file_list, pupil_data2, pupil_data1, pupil_data, interval_summary)
 
 # Deblinking
 
