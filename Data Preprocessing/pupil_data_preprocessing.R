@@ -2,7 +2,7 @@
 
 # Author: Micah E. Hirsch
 
-# Date: 7/27/2023 
+# Date: 8/28/2023 
 # Current Version - Pilot Data Preprocessing
 
 ## Purpose: To load in raw pupil dilation data from EyeLink and 
@@ -66,6 +66,11 @@ trial_start <- pupil_data %>%
   dplyr::filter(sample_message == "TRIAL_START") %>%
   dplyr::select(subject, trial, start_time = timestamp)
 
+## Extract timestamps for end of phrase for each trial
+phrase_end <- pupil_data %>%
+  dplyr::filter(sample_message == "PHRASE_END") %>%
+  dplyr::select(subject, trial, phrase_end = timestamp)
+
 ## Extract end points (i.e. when the response cue was presented) of each trial
 trial_end <- pupil_data %>%
   dplyr::filter(sample_message == "RESPONSE_CUE") %>%
@@ -73,9 +78,8 @@ trial_end <- pupil_data %>%
 
 ## Merging the dfs together
 pupil_data2 <- pupil_data %>%
-  dplyr::left_join(trial_start, by = c("subject", "trial"))
-
-pupil_data2 <- pupil_data2 %>%
+  dplyr::left_join(trial_start, by = c("subject", "trial")) %>%
+  dplyr::left_join(phrase_end, by = c("subject", "trial")) %>%
   dplyr::left_join(trial_end, by = c("subject", "trial"))
 
 ## Filtering rows based on whether the timestamp value is before or after the start/end times
@@ -104,14 +108,15 @@ trimmed_pupil_data <- trimmed_pupil_data %>%
   dplyr::select(!practicetrial) %>%
   ## Aligning data to onset of phrase presentation
   dplyr::mutate(time_c = timestamp - phrase_start_time) %>%
+  ## Marking the end of a phrase presentation for each trial
+  dplyr::mutate(end_phrase = ifelse(phrase_end == timestamp, 1, 0)) %>%
   ## Removing unneeded variables
   dplyr::select(!c(timestamp, time:phrase_start_time)) %>%
   dplyr::relocate(time_c, .after = pupil)
   
-
 ## removing unneeded objects from the environment
 
-rm(trial_start, trial_end, phrase_start, file_list, pupil_data2, pupil_data1, pupil_data, interval_summary)
+rm(trial_start, trial_end, phrase_start, file_list, pupil_data2, pupil_data1, pupil_data, interval_summary, phrase_end)
 
 # Deblinking
 
@@ -131,7 +136,9 @@ interp <- interpolate_pupil(pupil_extend,
 smoothed <- interp %>%
   dplyr::mutate(smoothed_pupil = moving_average_pupil(interp, n = 5)) %>%
   ## Selecting relevant variables
-  dplyr::select(c(subject, trial, sample_message, time_c, code, speaker, targetphrase, counterbalance, smoothed_pupil)) %>%
+  dplyr::select(c(subject, trial, sample_message, time_c, effort_rating, 
+                  code, speaker, targetphrase, counterbalance, 
+                  end_phrase, smoothed_pupil)) %>%
   dplyr::relocate(smoothed_pupil, .after = time_c) %>%
   dplyr::rename(time = time_c)
 
@@ -150,7 +157,7 @@ mad_removal <- baseline_pupil %>%
   dplyr::mutate(MAD = calc_mad(speed, n=16)) %>%
   dplyr::filter(speed < MAD)
 
-## Proportion of rows removed (7/27/23: 0.104%)
+## Proportion of rows removed (7/27/23: 0.12%)
 ((nrow(baseline_pupil) - nrow(mad_removal)) / nrow(baseline_pupil)) * 100
 
 # Removing unneeded items from environment
@@ -163,10 +170,15 @@ bin.length <- 20
 
 data.binned <- mad_removal %>%
   mutate(timebins = round(time/bin.length)*bin.length) %>%
-  dplyr::group_by(subject, trial, speaker, timebins, code, targetphrase, counterbalance) %>%
+  dplyr::group_by(subject, trial, speaker, timebins, effort_rating,
+                  code, targetphrase, counterbalance, end_phrase) %>%
   dplyr::summarize(pupil.binned = mean(baselinecorrectedp)) %>%
   dplyr::ungroup()
 
-# Exporting Data (7/27/23: Pilot Data)
+# Removing unneeded items from environment
+
+rm(mad_removal, bin.length)
+
+# Exporting Data (8/28/23: Pilot Data)
 
 rio::export(data.binned, "cleaned_pupil_data.csv")
