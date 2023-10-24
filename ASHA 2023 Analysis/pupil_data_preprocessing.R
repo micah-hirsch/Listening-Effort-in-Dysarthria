@@ -209,4 +209,3 @@ data.binned <- mad_removal %>%
                   code, targetphrase, counterbalance, end_phrase) %>%
   dplyr::summarize(pupil.binned = mean(baselinecorrectedp)) %>%
   dplyr::ungroup()
-
