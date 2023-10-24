@@ -44,5 +44,11 @@ transcriptions <- transcriptions %>%
   dplyr::rename(id = ID) %>%
   dplyr::mutate(trial = as.numeric(trial))
 
+# Loading in pupil data 
 
+## Set working directory to location of cleaned pupil data
+
+setwd("~/Documents/Listening-Effort-in-Dysarthria/ASHA 2023 Analysis/Cleaned Data")
+
+pupil <- rio::import("cleaned_pupil_data.csv")
 
