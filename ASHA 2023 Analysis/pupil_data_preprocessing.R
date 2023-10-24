@@ -91,3 +91,94 @@ pupil_data <- do.call(rbind, data_list)
 ## Removing unneeded items from the environment
 
 rm(data, data_list, file, file_list)
+
+# Filtering out rows before the trial start and after the response cue
+
+## Extracting trial start times
+
+trial_start <- pupil_data %>%
+  dplyr::filter(sample_message == "TRIAL_START") %>%
+  dplyr::select(subject, trial, start_time = timestamp)
+
+## Extracting phrase start times
+
+phrase_start <- pupil_data %>%
+  dplyr::filter(sample_message == "PHRASE_START") %>%
+  dplyr::select(subject, trial, phrase_start = timestamp)
+
+## Extracting phrase end times
+
+phrase_end <- pupil_data %>%
+  dplyr::filter(sample_message == "PHRASE_END") %>%
+  dplyr::select(subject, trial, phrase_end = timestamp)
+
+## Extracting trial end times (e.g. time response cue was presented)
+
+trial_end <- pupil_data %>%
+  dplyr::filter(sample_message == "RESPONSE_CUE") %>%
+  dplyr::select(subject, trial, end_time = timestamp)
+
+## Merging the dfs together
+
+pupil_data2 <- pupil_data %>%
+  dplyr::left_join(trial_start, by = c("subject", "trial")) %>%
+  dplyr::left_join(phrase_start, by =c("subject", "trial")) %>%
+  dplyr::left_join(phrase_end, by = c("subject", "trial")) %>%
+  dplyr::left_join(trial_end, by = c("subject", "trial"))
+
+## Filter out unneeded rows and trials
+
+trimmed_pupil_data <- pupil_data2 %>%
+  ## Filtering out rows before trial start and after trial end
+  dplyr::filter(timestamp >= start_time & timestamp <= end_time) %>%
+  ## Removing practice trials from df
+  dplyr::filter(practicetrial != 'Practice') %>%
+  dplyr::select(!practicetrial) %>%
+  ## Aligning data to onset of phrase presentation
+  dplyr::mutate(time_c = timestamp - phrase_start) %>%
+  ## Marking the end of a phrase presentation for each trial
+  dplyr::mutate(end_phrase = ifelse(phrase_end == timestamp, 1, 0)) %>%
+  ## Removing unneeded variables
+  dplyr::select(!c(timestamp, start_time:end_time)) %>%
+  dplyr::relocate(time_c, .after = pupil)
+
+## Remove unneeded items from environment 
+
+rm(phrase_end, phrase_start, pupil_data, pupil_data2, trial_end, trial_start)
+
+## Removing trials/participants with too much data loss
+
+trimmed_pupil_data <- gazer::count_missing_pupil(trimmed_pupil_data, missingthresh = 0.5)
+
+# Fill in missing data from blinks
+
+## Deblinking
+
+pupil_extend <- trimmed_pupil_data %>%
+  dplyr::group_by(subject, trial) %>%
+  dplyr::mutate(extendpupil = extend_blinks(pupil, 
+                                            fillback = 50, 
+                                            fillforward = 160, 
+                                            hz = 1000))
+
+## linear interpolation
+interp <- interpolate_pupil(pupil_extend,
+                            extendblinks = T, 
+                            type = "linear", 
+                            hz = 1000)
+
+## 10 Hz 5-point moving average filter
+smoothed <- interp %>%
+  dplyr::mutate(smoothed_pupil = moving_average_pupil(interp, n = 5)) %>%
+  ## Selecting relevant variables
+  dplyr::select(c(subject, trial, sample_message, time_c, effort_rating, 
+                  code, speaker, targetphrase, counterbalance, 
+                  end_phrase, smoothed_pupil)) %>%
+  dplyr::relocate(smoothed_pupil, .after = time_c) %>%
+  dplyr::rename(time = time_c)
+
+# Baseline correction
+
+baseline_pupil <- baseline_correction_pupil(smoothed, pupil_colname = "smoothed_pupil",
+                                            baseline_window = c(-500, 0))
+
