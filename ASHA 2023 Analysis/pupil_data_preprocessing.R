@@ -198,3 +198,15 @@ mad_removal <- baseline_pupil %>%
 ## Removing unneeded items from the environment
 
 rm(baseline_pupil, interp, pupil_extend, smoothed, trimmed_pupil_data)
+
+# Downsampling
+
+bin.length <- 20
+
+data.binned <- mad_removal %>%
+  mutate(timebins = round(time/bin.length)*bin.length) %>%
+  dplyr::group_by(subject, trial, speaker, timebins, effort_rating,
+                  code, targetphrase, counterbalance, end_phrase) %>%
+  dplyr::summarize(pupil.binned = mean(baselinecorrectedp)) %>%
+  dplyr::ungroup()
+
