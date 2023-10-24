@@ -2,7 +2,7 @@
 
 # Author: Micah E. Hirsch, mhirsch@fsu.edu 
 
-# Date: 10/23/2023
+# Date: 10/24/2023
 
 ## Purpose: To load in raw data from Eyelink and prepare pupil data viz and analysis.
 ## This particular data processing and analysis is being completed for a poster 
@@ -209,3 +209,9 @@ data.binned <- mad_removal %>%
                   code, targetphrase, counterbalance, end_phrase) %>%
   dplyr::summarize(pupil.binned = mean(baselinecorrectedp)) %>%
   dplyr::ungroup()
+
+# Set working directory to export data
+
+setwd("~/Documents/Listening-Effort-in-Dysarthria/Cleaned Data")
+
+rio::export(data.binned, "cleaned_pupil_data.csv")

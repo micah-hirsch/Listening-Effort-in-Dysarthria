@@ -6,6 +6,9 @@
 
 ## Purpose: To load in transcriptions of the listener responses,
 ## determine phrase recognition accuracy, and merge with the pupil data.
+## This particular data processing and analysis is being completed for a
+## poster presentation at the Annual American Speech Language Hearing 
+## Association Convention being held in Boston, MA in November 2023.
 
 # Loading required packages
 
