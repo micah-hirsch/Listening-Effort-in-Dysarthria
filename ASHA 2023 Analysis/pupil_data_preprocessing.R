@@ -181,4 +181,20 @@ smoothed <- interp %>%
 
 baseline_pupil <- baseline_correction_pupil(smoothed, pupil_colname = "smoothed_pupil",
                                             baseline_window = c(-500, 0))
+# Artifact Rejection
 
+## Looking for rapid changes in pupil dilation using median absolute deviation
+
+mad_removal <- baseline_pupil %>%
+  dplyr::group_by(subject, trial) %>%
+  dplyr::mutate(speed = speed_pupil(baselinecorrectedp, time)) %>%
+  dplyr::mutate(MAD = calc_mad(speed, n=16)) %>%
+  dplyr::filter(speed < MAD)
+
+## Proportion of rows removed (as of 10/24/2023: 1.28%)
+
+((nrow(baseline_pupil) - nrow(mad_removal)) / nrow(baseline_pupil)) * 100
+
+## Removing unneeded items from the environment
+
+rm(baseline_pupil, interp, pupil_extend, smoothed, trimmed_pupil_data)
