@@ -136,8 +136,6 @@ trimmed_pupil_data <- pupil_data2 %>%
   dplyr::select(!practicetrial) %>%
   ## Aligning data to onset of phrase presentation
   dplyr::mutate(time_c = timestamp - phrase_start) %>%
-  ## Marking the end of a phrase presentation for each trial
-  dplyr::mutate(end_phrase = ifelse(phrase_end == timestamp, 1, 0)) %>%
   ## Removing unneeded variables
   dplyr::select(!c(timestamp, start_time:end_time)) %>%
   dplyr::relocate(time_c, .after = pupil)
@@ -172,8 +170,7 @@ smoothed <- interp %>%
   dplyr::mutate(smoothed_pupil = moving_average_pupil(interp, n = 5)) %>%
   ## Selecting relevant variables
   dplyr::select(c(subject, trial, sample_message, time_c, effort_rating, 
-                  code, speaker, targetphrase, counterbalance, 
-                  end_phrase, smoothed_pupil)) %>%
+                  code, speaker, targetphrase, counterbalance,smoothed_pupil)) %>%
   dplyr::relocate(smoothed_pupil, .after = time_c) %>%
   dplyr::rename(time = time_c)
 
@@ -206,12 +203,12 @@ bin.length <- 20
 data.binned <- mad_removal %>%
   mutate(timebins = round(time/bin.length)*bin.length) %>%
   dplyr::group_by(subject, trial, speaker, timebins, effort_rating,
-                  code, targetphrase, counterbalance, end_phrase) %>%
+                  code, targetphrase, counterbalance) %>%
   dplyr::summarize(pupil.binned = mean(baselinecorrectedp)) %>%
   dplyr::ungroup()
 
 # Set working directory to export data
 
-setwd("~/Documents/Listening-Effort-in-Dysarthria/Cleaned Data")
+setwd("~/Documents/Listening-Effort-in-Dysarthria/ASHA 2023 Analysis/Cleaned Data")
 
 rio::export(data.binned, "cleaned_pupil_data.csv")
