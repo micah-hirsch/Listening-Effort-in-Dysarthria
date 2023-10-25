@@ -1,0 +1,174 @@
+---
+title: "Preliminary Data Analysis and Visualization"
+author: "Micah E. Hirsch"
+date: "2023-07-27"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Document Purpose
+
+The purpose of this document is to conduct preliminary analyses on pilot data for the author's dissertation project. 
+
+```{r, include = F, warning = F, message = F}
+
+# Load packages
+
+library(rio)
+library(tidyverse)
+library(ggpubr)
+
+# import dataset
+
+cleaned_df <- rio::import("Cleaned Data/cleaned_data.csv")
+
+```
+
+
+# Descriptives
+
+First, we are going to determine on average, how long the phrases were for each trial. This is done so we can highlight our correct region of interest (ROI) for future analyses in the figures showing pupil dilation. Our ROI is from 500 ms after the phrase onset and 1000 ms after the phrase ends. 
+
+As you can see, on average, the ALS speaker's phrases were much longer than the control speaker's phrases. We will need to keep this in mind when creating the visuals.
+
+```{r}
+
+# Extracting the end times into a new df. 
+#The timebins are aligned to the start of the phrase, so knowing the timebins where the phrase ends will tell us how long the phrase presentation was for each listener's trial.
+
+# Saving each unique phrase end time in a df (might need for a future analysis)
+
+end_times <- cleaned_df %>%
+  dplyr::select(c(subject, trial, speaker, timebins, code, end_phrase)) %>%
+  dplyr::filter(end_phrase == 1) %>%
+  dplyr::mutate(phrase_file = paste(speaker, code, sep = "_")) %>%
+  dplyr::select(phrase_file, speaker, code, timebins) %>%
+  dplyr::distinct(phrase_file, .keep_all = T)
+
+# Getting the average end time for each speaker's phrase.
+
+end_times %>%
+  dplyr::group_by(speaker) %>%
+  dplyr::summarize(phrase_length = mean(timebins), sd = sd(timebins))
+  
+
+```
+We can also see the overall average phrase length across the two speakers
+
+```{r}
+
+end_times %>%
+  dplyr::summarize(phrase_length = mean(timebins))
+
+```
+
+# Visualizations
+
+```{r}
+
+normed <- cleaned_df %>%
+  dplyr::filter(timebins >= 0) %>%
+  dplyr::mutate(normed_time = scales::rescale(timebins, scale = c(0, 100)))
+
+```
+
+
+## Pupil Dilation
+
+Below are a few plots showing pupil dilation over time.
+
+### Comparing Accurate and Inaccurate Responses for the ALS speaker
+
+```{r, warning = F, message = F}
+
+ALS <- cleaned_df %>%
+  dplyr::filter(speaker == "ALS") %>%
+  dplyr::group_by(timebins, rep_acc) %>%
+  dplyr::summarize(pupil_dilation = mean(pupil.binned, na.rm = T),
+                   pupil_se = sd(pupil.binned, na.rm = T)/sqrt(n())) %>%
+  ggplot() +
+  aes(x = timebins,
+      y = pupil_dilation,
+      color = rep_acc,
+      fill = rep_acc) +
+  geom_ribbon(aes(ymin = pupil_dilation - pupil_se, ymax = pupil_dilation + pupil_se), alpha = .3) +
+  geom_line() +
+  coord_cartesian(xlim = c(0,5000), ylim = c(-100, 200)) +
+  labs(title = "ALS", x = "Time (ms)", y = "Pupil Dilation (arbitrary units)", fill = "Repetition Accuracy", color = "Repetition Accuracy") +
+  theme_bw() + 
+  theme(legend.position = "bottom", aspect.ratio = 1)
+
+ALS
+
+```
+## By Participant
+
+```{r, message = F, warning = F}
+
+control <- cleaned_df %>%
+  dplyr::filter(speaker == "Control") %>%
+  dplyr::group_by(timebins, rep_acc) %>%
+  dplyr::summarize(pupil_dilation = mean(pupil.binned, na.rm = T),
+                   pupil_se = sd(pupil.binned, na.rm = T)/sqrt(n())) %>%
+  ggplot() +
+  aes(x = timebins,
+      y = pupil_dilation,
+      color = rep_acc,
+      fill = rep_acc) +
+  geom_ribbon(aes(ymin = pupil_dilation - pupil_se, ymax = pupil_dilation + pupil_se), alpha = .3) +
+  geom_line() +
+  coord_cartesian(xlim = c(0,2500), ylim = c(-100, 200)) +
+  labs(title = "Control", x = "Time (ms)", y = "Pupil Dilation (arbitrary units)", fill = "Repetition Accuracy", color = "Repetition Accuracy") +
+  theme_bw() + 
+  theme(legend.position = "bottom", aspect.ratio = 1)
+
+control
+
+```
+
+```{r}
+
+MSC_plot <- ggarrange(ALS, control, ncol = 2, common.legend = T, legend = "bottom")
+
+MSC_plot
+
+ggsave("MSC_plot.png", plot = MSC_plot, width = 10, height = 5, units = "in")
+
+```
+
+
+## Perceived Listening Effort
+
+```{r}
+
+perceived_effort <- cleaned_df %>%
+  dplyr::select(subject, trial, speaker, effort_rating, rep_acc) %>%
+  dplyr::distinct() %>%
+  dplyr::group_by(speaker, rep_acc) %>%
+  dplyr::summarize(perceived_effort = mean(effort_rating), 
+                   se = sd(effort_rating, na.rm = T)/sqrt(n()))
+
+perceived_effort %>%
+  ggplot() +
+  aes(x = rep_acc,
+      y = perceived_effort,
+      color = rep_acc,
+      fill = rep_acc) +
+  geom_bar(stat = "identity", alpha = 0.6) +
+  geom_errorbar(aes(x = rep_acc, ymin = perceived_effort - se, ymax = perceived_effort + se), width = 0.4) +
+  facet_wrap("speaker") +
+  labs(x = "Repetition Accuracy", y = "Perceived Listening Effort Rating") +
+  theme_bw() +
+  theme(legend.position = "none", aspect.ratio = 1)
+
+  
+ggsave("Perceived_effort.png", plot = last_plot())
+
+
+```
+
