@@ -2,7 +2,7 @@
 
 # Author: Micah E. Hirsch, mhirsch@fsu.edu
 
-# Date: 10/24/2023
+# Date: 10/25/2023
 
 ## Purpose: To load in transcriptions of the listener responses,
 ## determine phrase recognition accuracy, and merge with the pupil data.
@@ -44,7 +44,7 @@ transcriptions <- transcriptions %>%
   dplyr::rename(id = ID) %>%
   dplyr::mutate(trial = as.numeric(trial))
 
-# Loading in pupil data 
+# Calculating phrase accuracy 
 
 ## Set working directory to location of cleaned pupil data
 
@@ -52,3 +52,50 @@ setwd("~/Documents/Listening-Effort-in-Dysarthria/ASHA 2023 Analysis/Cleaned Dat
 
 pupil <- rio::import("cleaned_pupil_data.csv")
 
+## Extract phrase targets from pupil df
+
+targets <- pupil %>%
+  dplyr::rename(id = subject,
+                target = targetphrase) %>%
+  dplyr::select(id, trial, target) %>%
+  distinct()
+  
+## Merging transcription and target dfs
+
+phrase_acc <- targets %>%
+  dplyr::left_join(transcriptions, by = c("id", "trial")) %>%
+  ## Count number of words in target phrase
+  dplyr::mutate(target_number = str_count(target, "\\S+")) 
+
+## Counting number of correctly recognized words
+
+phrase_acc <- autoscore::autoscore(
+  phrase_acc,
+  acceptable_df = autoscore::acceptable_spellings,
+  plural_rule = T,
+  plural_add_rule = T,
+  tense_rule = T,
+  tense_add_rule = T,
+  a_the_rule = T,
+  double_letter_rule = T) %>%
+  dplyr::rename(., correct_words = autoscore)
+
+# Creating dichotomous phrase repetition accuracy variable
+
+phrase_acc <- phrase_acc %>%
+  dplyr::mutate(rep_acc = ifelse(target_number == correct_words, "accurate", "inaccurate")) %>%
+  dplyr::rename(subject = id,
+                targetphrase = target)
+
+# Merge phrase accuracy back with the rest of the pupil data
+
+cleaned_data <- pupil %>%
+  dplyr::left_join(phrase_acc, by = c("subject", "trial", "targetphrase"))
+
+# Removing unneeded items from the environment
+
+rm(phrase_acc, pupil, targets, transcriptions)
+
+# Export csv file of cleaned data
+
+rio::export(cleaned_data, "cleaned_data.csv")
