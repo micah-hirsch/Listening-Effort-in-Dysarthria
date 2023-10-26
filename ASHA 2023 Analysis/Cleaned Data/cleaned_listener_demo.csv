@@ -1,7 +1,6 @@
 id,age,gender,clarified_gender,ethnicity,race,native_lang,native_lang_clarified,commdis_hx,commdis_hx_explain,fam_commdis,fam_comdis_2,freq_commdis
 LE01,30,woman,"",Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,no experience,never
 LE02,27,man,"",Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,yes,healthcare worker,monthly
-LE03,33,woman,"",Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,no experience,never
 LE04,37,nonbinary,Agender,Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,no experience,daily
 LE05,24,woman,"",Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,yes,healthcare worker,monthly
 LE06,22,nonbinary,Agender,Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,teacher,daily
@@ -12,10 +11,8 @@ LE10,20,woman,"",Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no
 LE11,32,nonbinary,Gender-fluid,Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,yes,friend,daily
 LE12,25,man,"",Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,no experience,never
 LE13,23,woman,"",Hispanic/Latino(a/e),Biracial or Multiracial,Not American English,Spanish,no,,no,healthcare worker,weekly
-LE14,19,woman,"",Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,no experience,never
 LE15,20,woman,"",Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,teacher,daily
 LE16,21,woman,"",Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,teacher,daily
-LE17,20,woman,"",Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,no experience,never
 LE18,18,woman,"",Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,yes,family member,weekly
 LE19,26,woman,"",Not Hispanic/Latino(a/e),race not listed,Not American English,Turkish,no,,no,teacher,daily
 LE20,36,man,"",Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,no experience,never
