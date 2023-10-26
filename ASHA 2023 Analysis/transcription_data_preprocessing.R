@@ -42,7 +42,13 @@ transcriptions <- transcriptions %>%
                       names_to = "trial",
                       values_to = "response") %>%
   dplyr::rename(id = ID) %>%
-  dplyr::mutate(trial = as.numeric(trial))
+  # formatting trial and response variables
+  dplyr::mutate(trial = as.numeric(trial),
+                response = tolower(response),
+                response = trimws(response, "both")) %>%
+  # Removing first 5 trials since these are practice
+  dplyr::filter(!trial %in% (1:5))
+
 
 # Calculating phrase accuracy 
 
@@ -58,7 +64,10 @@ targets <- pupil %>%
   dplyr::rename(id = subject,
                 target = targetphrase) %>%
   dplyr::select(id, trial, target) %>%
-  distinct()
+  distinct() %>%
+  # Added this code to ensure targets variable is formatted correctly
+  dplyr::mutate(target = tolower(target),
+                target = trimws(target, "both"))
   
 ## Merging transcription and target dfs
 
@@ -80,10 +89,19 @@ phrase_acc <- autoscore::autoscore(
   double_letter_rule = T) %>%
   dplyr::rename(., correct_words = autoscore)
 
+
 # Creating dichotomous phrase repetition accuracy variable
 
+## There are some trials with missing transcription data. The lab RAs coded these 
+## transcriptions with missing data. Therefore, this section of code is going to check to see
+## if the response variable contains "missing data". If it does, then repetition
+## accuracy will be set to NA. Otherwise, repetition accuracy will be determined 
+## as "accurate" or "inaccurate" for the remaining trials.
+
+
 phrase_acc <- phrase_acc %>%
-  dplyr::mutate(rep_acc = ifelse(target_number == correct_words, "accurate", "inaccurate")) %>%
+  dplyr::mutate(rep_acc = ifelse(response == "missing data", NA, 
+                                 ifelse(target_number == correct_words, "accurate", "inaccurate"))) %>%
   dplyr::rename(subject = id,
                 targetphrase = target)
 
