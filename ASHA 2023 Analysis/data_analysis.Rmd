@@ -1,5 +1,5 @@
 ---
-title: "Data Analysis"
+title: "ASHA 2023 Listening Effort Data Analysis"
 author: "Micah E. Hirsch"
 date: "2023-10-26"
 output: html_document
@@ -9,17 +9,35 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Purpose
 
-```{r}
-summary(cars)
+```{r, include = F, warning = F, message = F}
+
+# Load Needed Packages
+library(rio) # install.packages("rio")
+library(tidyverse) # install.packages("tidyverse")
+# Need remotes package to install gazer and saccades
+library(remotes) # install.packages("remotes")
+library(gazer) # remotes::install_github("dmirman/gazer")
+library(saccades) # remotes::install_github("tmalsburg/saccades/saccades")
+library(zoo) # install.packages("zoo")
+library(ggpubr)
+library(gt) # install.packages("gt")
+
 ```
 
 # Descriptive Statistics
 
 ## Participant Demographics
 
+First, we will present the demographics of our listeners To date, we recruited 20 listeners to participate in the study. Three listeners were removed from the analysis. One listener decided to withdraw from the study, so their data was removed from the database. For the other two participants, pupillometry data was either not recorded or lost due to instrumental issues. Therefore, for this analysis, we have 17 participants. The descriptive information for these participants are presented below. 
+
 ```{r}
-plot(pressure)
+
+# Load in dataset for listener demographics
+
+listener_demo <- rio::import("Cleaned Data/cleaned_listener_demo.csv") 
+
 ```
 
 ## Phrase Accuracy
