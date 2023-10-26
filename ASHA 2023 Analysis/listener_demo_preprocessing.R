@@ -2,7 +2,7 @@
 
 # Author: Micah E. Hirsch, mhirsch@fsu.edu
 
-# Date: 10/25/2023
+# Date: 10/26/2023
 
 ## Purpose: To load and clean listener demographic information 
 ## and export a cleaned version of the data. This preprocessing was completed
@@ -19,6 +19,9 @@ library(tidyverse) # install.packages("tidyverse")
 setwd("~/Documents/Listening-Effort-in-Dysarthria/Raw Data")
 
 demo <- rio::import("participant_demo_raw.csv")
+
+## NOTE: LE03 withdrew from the study. Their data was removed from 
+## RedCap prior to uploading the df here.
 
 # Cleaning demographic data
 
@@ -57,6 +60,15 @@ demo1 <- demo %>%
                                          freq_commdis == 4 ~ "monthly",
                                          freq_commdis == 5 ~ "weekly",
                                          TRUE ~ "daily"))
+
+# Removing participants who did not complete pupillometry part of the study
+
+## Technical issues occurred during the recordings for these participants. 
+## So we are removing them from our df.
+
+demo1 <- demo1 %>%
+  dplyr::filter(id != "LE14" & id != "LE17")
+  
 
 # Exporting cleaned demographic df
 
