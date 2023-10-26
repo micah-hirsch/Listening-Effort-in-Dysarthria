@@ -43,6 +43,28 @@ listener_demo <- rio::import("Cleaned Data/cleaned_listener_demo.csv")
 ## Phrase Accuracy
 
 
+
+```{r}
+
+# Load in cleaned data 
+
+data <- rio::import("Cleaned Data/cleaned_data.csv")
+
+# Selecting relevant variables to explore phrase accuracy and perceived listening effort
+data1 <- data %>%
+  dplyr::select(subject, trial, speaker, effort_rating, rep_acc) %>%
+  dplyr::distinct()
+
+# Calculating repetition accuracy descriptive data
+
+rep_acc <- data1 %>%
+  dplyr::group_by(speaker, rep_acc) %>%
+  dplyr::summarize(n = n())
+
+```
+
+
+
 ## Perceived Listening Effort Ratings
 
 
