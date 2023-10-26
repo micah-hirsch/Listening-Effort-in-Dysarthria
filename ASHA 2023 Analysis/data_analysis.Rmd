@@ -67,7 +67,6 @@ rep_acc <- data1 %>%
 ```
 
 
-
 ## Perceived Listening Effort Ratings
 
 
