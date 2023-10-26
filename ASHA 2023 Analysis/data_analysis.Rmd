@@ -53,7 +53,10 @@ data <- rio::import("Cleaned Data/cleaned_data.csv")
 # Selecting relevant variables to explore phrase accuracy and perceived listening effort
 data1 <- data %>%
   dplyr::select(subject, trial, speaker, effort_rating, rep_acc) %>%
-  dplyr::distinct()
+  dplyr::distinct() %>%
+  # removing trials with missing rep accuracy: 3 trials removed
+  dplyr::mutate(rep_acc = ifelse(rep_acc == "", NA, rep_acc)) %>%
+  dplyr::filter(!is.na(rep_acc))
 
 # Calculating repetition accuracy descriptive data
 
