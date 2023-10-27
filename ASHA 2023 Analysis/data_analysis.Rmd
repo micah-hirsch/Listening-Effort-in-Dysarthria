@@ -211,7 +211,58 @@ rm(m0, m1, m2, m3)
 
 ```{r}
 
+data %>%
+  # For this analysis, we are only looking at accurate repetition trials
+  dplyr::filter(rep_acc == "accurate") %>%
+  dplyr::group_by(timebins, speaker) %>%
+  dplyr::summarize(pupil_dilation = mean(pupil.binned, na.rm = T),
+                   pupil_se = sd(pupil.binned, na.rm = T)/sqrt(n())) %>%
+  ggplot() +
+  aes(x = timebins,
+      y = pupil_dilation,
+      color = speaker,
+      fill = speaker) +
+  geom_ribbon(aes(ymin = pupil_dilation - pupil_se, ymax = pupil_dilation + pupil_se), alpha = .3) +
+  geom_line() +
+  coord_cartesian(xlim = c(0,5000), ylim = c(-100, 200)) +
+  labs(x = "Time (ms)", y = "Pupil Dilation (arbitrary units)", fill = "Speaker", color = "Speaker") +
+  theme_bw() + 
+  theme(legend.position = "bottom", aspect.ratio = 1)
 
+```
+
+# Fully Unconditional Model
+
+```{r}
+
+# Specifying the region of interest for analysis (500 ms to 1000 ms after relative offset of the trial)
+
+pupil_roi <- data %>%
+  # For this analysis, we are only analyzing pupil dilation for accurate responses
+  dplyr::filter(rep_acc == "accurate") %>%
+  # filtering out timebins below 500 (i.e., keeping timebins above 500 ms)
+  dplyr::filter(timebins >= 500) %>%
+  dplyr::group_by(subject, trial) %>%
+  dplyr::filter(timebins <= max(timebins) - 2000) %>%
+  ungroup() %>%
+  # For the purpose of modeling, we are centering time at 500 ms (i.e. the beginning ROI time)
+  dplyr::mutate(time_c = timebins - 500)
+
+# Creating polynomial variables for model
+
+pupil_roi <- gazer::code_poly(pupil_roi, predictor = "time_c", 
+                              poly.order = 3, orthogonal = T, draw.poly = F)
+
+# specifying unconditional growth model for pupil data
+
+m0 <- glmmTMB(pupil.binned ~ poly1 + poly2 + poly3 + 
+                (poly1 + poly2 + poly3|subject) + 
+                (poly1 + poly2 +poly3|code), 
+              data = pupil_roi)
+
+summary(m0)
+
+performance::icc(m0)
 
 ```
 
