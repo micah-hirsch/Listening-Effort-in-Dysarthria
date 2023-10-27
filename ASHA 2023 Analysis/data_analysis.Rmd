@@ -40,9 +40,11 @@ listener_demo <- rio::import("Cleaned Data/cleaned_listener_demo.csv")
 
 ```
 
-## Phrase Accuracy
+## Speaker Intelligibility and Phrase Accuracy
 
+### Mean Speaker Intelligibility
 
+Across all trials in the study, the intelligibility level for each of the speaker is reported below.  Across listeners, the mean intelligibility for the ALS speaker was 81.08% with a standard deviation of 3.86. For the control speaker, the mean intelligibility level was 93.62% with a standard deviation of 2.90.
 
 ```{r}
 
@@ -50,19 +52,36 @@ listener_demo <- rio::import("Cleaned Data/cleaned_listener_demo.csv")
 
 data <- rio::import("Cleaned Data/cleaned_data.csv")
 
-# Selecting relevant variables to explore phrase accuracy and perceived listening effort
-data1 <- data %>%
-  dplyr::select(subject, trial, speaker, effort_rating, rep_acc) %>%
+intel_df <- data %>%
+  dplyr::select(subject, trial, speaker, correct_words, target_number, rep_acc) %>%
   dplyr::distinct() %>%
   # removing trials with missing rep accuracy: 3 trials removed
   dplyr::mutate(rep_acc = ifelse(rep_acc == "", NA, rep_acc)) %>%
   dplyr::filter(!is.na(rep_acc))
 
+intel_byListener <- intel_df %>%
+  dplyr::group_by(speaker, subject) %>%
+  dplyr::summarize(Intelligibility = sum(correct_words)/sum(target_number)*100)
+
+intel_byListener %>%
+  dplyr::group_by(speaker) %>%
+  dplyr::summarize("Mean Intelligibility" = mean(Intelligibility), SD = sd(Intelligibility))
+
+
+```
+
+### Phrase Accuracy
+
+```{r}
+
 # Calculating repetition accuracy descriptive data
 
-rep_acc <- data1 %>%
+rep_acc <- intel_df %>%
   dplyr::group_by(speaker, rep_acc) %>%
-  dplyr::summarize(n = n())
+  dplyr::summarize(n = n()) %>%
+  tidyr::pivot_wider(names_from = rep_acc,
+                     values_from = n) %>%
+  dplyr::mutate(percent_accurate = accurate/(accurate + inaccurate))
 
 ```
 
