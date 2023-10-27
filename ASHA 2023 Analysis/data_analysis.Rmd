@@ -48,16 +48,16 @@ Across all trials in the study, the intelligibility level for each of the speake
 
 ```{r}
 
-# Load in cleaned data 
+# Load in cleaned data for pupil and perceived listening effort data
 
-data <- rio::import("Cleaned Data/cleaned_data.csv")
-
-intel_df <- data %>%
-  dplyr::select(subject, trial, speaker, correct_words, target_number, rep_acc) %>%
-  dplyr::distinct() %>%
+data <- rio::import("Cleaned Data/cleaned_data.csv") %>%
   # removing trials with missing rep accuracy: 3 trials removed
   dplyr::mutate(rep_acc = ifelse(rep_acc == "", NA, rep_acc)) %>%
   dplyr::filter(!is.na(rep_acc))
+
+intel_df <- data %>%
+  dplyr::select(subject, trial, speaker, correct_words, target_number, rep_acc) %>%
+  dplyr::distinct()
 
 intel_byListener <- intel_df %>%
   dplyr::group_by(speaker, subject) %>%
@@ -81,12 +81,21 @@ rep_acc <- intel_df %>%
   dplyr::summarize(n = n()) %>%
   tidyr::pivot_wider(names_from = rep_acc,
                      values_from = n) %>%
-  dplyr::mutate(percent_accurate = accurate/(accurate + inaccurate))
+  dplyr::mutate(percent_accurate = accurate/(accurate + inaccurate)*100)
+
+rep_acc
 
 ```
 
 
-## Perceived Listening Effort Ratings
+# Perceived Listening Effort Ratings
 
+## Descriptives
+
+```{r}
+
+perceived_effort_df <- 
+
+```
 
 
