@@ -253,6 +253,10 @@ pupil_roi <- data %>%
 pupil_roi <- gazer::code_poly(pupil_roi, predictor = "time_c", 
                               poly.order = 3, orthogonal = T, draw.poly = F)
 
+# Exporting region of interest df
+
+rio::export(pupil_roi, "Cleaned Data/pupil_analysis_roi.csv")
+
 # specifying unconditional growth model for pupil data
 
 m0 <- glmmTMB(pupil.binned ~ poly1 + poly2 + poly3 + 
