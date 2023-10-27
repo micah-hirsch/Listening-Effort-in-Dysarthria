@@ -57,7 +57,12 @@ Across all trials in the study, the intelligibility level for each of the speake
 data <- rio::import("Cleaned Data/cleaned_data.csv") %>%
   # removing trials with missing rep accuracy: 3 trials removed
   dplyr::mutate(rep_acc = ifelse(rep_acc == "", NA, rep_acc)) %>%
-  dplyr::filter(!is.na(rep_acc))
+  dplyr::filter(!is.na(rep_acc)) %>%
+  # Releveling speaker variable
+  dplyr::mutate(speaker = as.factor(speaker),
+                speaker = fct_relevel(speaker, "Control", "ALS")) %>%
+  # Creating a trial variable that codes trial 6 (i.e. the first experimental trial) as 0.
+  dplyr::mutate(trial_c = trial - 6) 
 
 intel_df <- data %>%
   dplyr::select(subject, trial, speaker, correct_words, target_number, rep_acc) %>%
@@ -101,11 +106,6 @@ rep_acc
 perceived_effort_df <- data %>%
   dplyr::select(subject, trial, speaker, effort_rating, rep_acc, code) %>%
   dplyr::distinct() %>%
-  # Creating a trial variable that codes trial 6 (i.e. the first experimental trial) as 0.
-  dplyr::mutate(trial_c = trial - 6) %>%
-  # Releveling speaker variable
-  dplyr::mutate(speaker = as.factor(speaker),
-                speaker = fct_relevel(speaker, "Control", "ALS")) %>%
   # For this particular analysis, we are just looking at results for accurate repetition
   # However, the final project will look at rep_acc too
   dplyr::filter(rep_acc == "accurate")
