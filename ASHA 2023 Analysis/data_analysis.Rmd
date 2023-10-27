@@ -11,6 +11,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Purpose
 
+The purpose of this document is to run preliminary analyses and visualizations for this project. These results were prepared specifically for a poster presentation at the the 2023 Annual American Speech Language Hearing Association Convention being held in Boston, MA in November 2023.
+
 ```{r, include = F, warning = F, message = F}
 
 # Load Needed Packages
@@ -23,6 +25,8 @@ library(saccades) # remotes::install_github("tmalsburg/saccades/saccades")
 library(zoo) # install.packages("zoo")
 library(ggpubr)
 library(gt) # install.packages("gt")
+library(glmmTMB) # install.packages("glmmTMB")
+library(performance) # install.packages("performance")
 
 ```
 
@@ -94,8 +98,120 @@ rep_acc
 
 ```{r}
 
-perceived_effort_df <- 
+perceived_effort_df <- data %>%
+  dplyr::select(subject, trial, speaker, effort_rating, rep_acc, code) %>%
+  dplyr::distinct() %>%
+  # Creating a trial variable that codes trial 6 (i.e. the first experimental trial) as 0.
+  dplyr::mutate(trial_c = trial - 6) %>%
+  # Releveling speaker variable
+  dplyr::mutate(speaker = as.factor(speaker),
+                speaker = fct_relevel(speaker, "Control", "ALS")) %>%
+  # For this particular analysis, we are just looking at results for accurate repetition
+  # However, the final project will look at rep_acc too
+  dplyr::filter(rep_acc == "accurate")
+
+per_effort_des <- perceived_effort_df %>%
+  dplyr::group_by(speaker) %>%
+  dplyr::summarize(per_effort = mean(effort_rating), 
+                   sd = sd(effort_rating, na.rm = T),
+                   se = sd/sqrt(n()))
+
+per_effort_des
 
 ```
 
+### Visualization
+
+```{r}
+
+per_effort_des %>%
+  ggplot() +
+   aes(x = speaker,
+      y = per_effort,
+      color = speaker,
+      fill = speaker) +
+  geom_bar(stat = "identity", alpha = 0.6) +
+  geom_errorbar(aes(x = speaker, ymin = per_effort - se, ymax = per_effort + se), width = 0.4) +
+  labs(x = "Speaker", y = "Perceived Listening Effort Rating") +
+  theme_bw() +
+  theme(legend.position = "none", aspect.ratio = 1)
+
+```
+
+## Perceived Listening Effort Model
+
+### Fully Unconditional Model
+
+```{r}
+
+m0 <- glmmTMB(effort_rating ~ 1 + (1|subject) + (1|code), data = perceived_effort_df)
+
+summary(m0)
+
+performance::icc(m0)
+
+```
+
+## Model 1
+
+Adding the centered trial random slope 
+
+```{r}
+
+m1 <- glmmTMB(effort_rating ~ 1 + (trial_c|subject) + (trial_c|code), data = perceived_effort_df)
+
+summary(m1)
+
+anova(m0, m1)
+
+```
+## Model 2
+
+Adding trial as a fixed effect
+
+```{r}
+
+m2 <- glmmTMB(effort_rating ~ trial_c + (trial_c|subject) + (trial_c|code), data = perceived_effort_df)
+
+summary(m2)
+
+anova(m1, m2)
+
+```
+
+## Model 3
+
+```{r}
+
+m3 <- glmmTMB(effort_rating ~ trial_c + speaker + (trial_c|subject) + (trial_c|code), data = perceived_effort_df)
+
+summary(m3)
+
+anova(m2, m3)
+
+```
+
+## Final Model
+
+```{r}
+
+per_effort_model_final <- glmmTMB(effort_rating ~ speaker + (trial_c|subject) + (trial_c|code), data = perceived_effort_df)
+
+summary(per_effort_model_final)
+
+# Removing unneeded items from the environment
+
+rm(m0, m1, m2, m3)
+
+```
+
+# Pupil Dilation
+
+## Descriptives and Visualization
+
+```{r}
+
+
+
+```
 
