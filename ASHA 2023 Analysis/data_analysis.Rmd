@@ -62,7 +62,7 @@ data <- rio::import("Cleaned Data/cleaned_data.csv") %>%
   dplyr::mutate(speaker = as.factor(speaker),
                 speaker = fct_relevel(speaker, "Control", "ALS")) %>%
   # Creating a trial variable that codes trial 6 (i.e. the first experimental trial) as 0.
-  dplyr::mutate(trial_c = trial - 6) 
+  dplyr::mutate(trial_c = trial - 6)
 
 intel_df <- data %>%
   dplyr::select(subject, trial, speaker, correct_words, target_number, rep_acc) %>%
@@ -233,6 +233,8 @@ data %>%
 
 # Fully Unconditional Model
 
+First, we ran an unconditional growth model. I first specified a model with the orthogonal polynomials added as fixed effects and subject (i.e. listener) and code (i.e. phrase) as random effects. I also added the orthogonal polynomials as random slopes. I also used the AR(1) covariance structure to specifiy the random effect structure. I was not able to run the model. Therefore, I attempted to respecify the random effect structure by removing the AR(1) specification. This led to a model with singular fit. In response to this, I decided to remove code (i.e.) from the random effect structure in order to simplify it.
+
 ```{r}
 
 # Specifying the region of interest for analysis (500 ms to 1000 ms after relative offset of the trial)
@@ -246,27 +248,97 @@ pupil_roi <- data %>%
   dplyr::filter(timebins <= max(timebins) - 2000) %>%
   ungroup() %>%
   # For the purpose of modeling, we are centering time at 500 ms (i.e. the beginning ROI time)
-  dplyr::mutate(time_c = timebins - 500)
+  dplyr::mutate(time_c = timebins - 500) %>%
+  # Rescaling pupil size 
+  dplyr::group_by(subject, trial) %>%
+  dplyr::mutate(norm_pupil = as.numeric(scale(pupil.binned))) %>%
+  dplyr::ungroup()
 
-# Creating polynomial variables for model
+# Polynomials
 
-pupil_roi <- gazer::code_poly(pupil_roi, predictor = "time_c", 
-                              poly.order = 3, orthogonal = T, draw.poly = F)
+pupil_roi <- gazer::code_poly(pupil_roi, predictor = "timebins", poly.order = 3, orthogonal = T, draw.poly = F)
 
 # Exporting region of interest df
 
 rio::export(pupil_roi, "Cleaned Data/pupil_analysis_roi.csv")
 
+## I kept running into issues using glmmTMB, so I switched to lme4
+
+library(lme4)
+library(lmerTest)
+
 # specifying unconditional growth model for pupil data
 
-m0 <- glmmTMB(pupil.binned ~ poly1 + poly2 + poly3 + 
-                (poly1 + poly2 + poly3|subject) + 
-                (poly1 + poly2 +poly3|code), 
+m0 <- lmer(pupil.binned ~ poly1 + poly2 + poly3 +
+                (poly1 + poly2 + poly3|subject), 
               data = pupil_roi)
 
 summary(m0)
 
 performance::icc(m0)
+
+```
+
+# Model 1
+
+```{r}
+
+m1 <- lmer(pupil.binned ~ poly1 + poly2 + poly3 + speaker +
+                (poly1 + poly2 + poly3|subject), 
+              data = pupil_roi)
+
+summary(m1)
+
+anova(m0, m1)
+
+```
+
+## Model 2
+
+```{r}
+
+# Model 2 initially failed to converge, so adding a control statement for bobyqa optimizer
+
+control_bobyqa <- lmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 1e9))
+
+m2 <- lmer(pupil.binned ~ poly1 + poly2 + poly3 + speaker +
+             poly1*speaker +
+             (poly1 + poly2 + poly3|subject), 
+              data = pupil_roi, control = control_bobyqa)
+
+summary(m2)
+
+anova(m1, m2)
+
+
+```
+## Model 3
+
+```{r}
+
+m3 <- lmer(pupil.binned ~ poly1 + poly2 + poly3 + speaker +
+             poly1*speaker + poly2*speaker +
+             (poly1 + poly2 + poly3|subject), 
+              data = pupil_roi, control = control_bobyqa)
+
+summary(m3)
+
+anova(m2, m3)
+
+
+```
+## Model 4
+
+```{r}
+
+m4 <- lmer(pupil.binned ~ poly1 + poly2 + poly3 + speaker +
+             poly1*speaker + poly2*speaker + poly3*speaker +
+             (poly1 + poly2 + poly3|subject), data = pupil_roi, 
+           control = control_bobyqa)
+
+summary(m4)
+
+anova(m3, m4)
 
 ```
 
