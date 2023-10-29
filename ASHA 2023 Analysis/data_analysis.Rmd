@@ -223,19 +223,30 @@ per_effort_des %>%
 
 As reported in the table above and shown in the plot below, the mean perceived effort ratings for the ALS speaker is about 2.13 points higher than the control speaker. This is reflecting the difference in mean perceived effort ratings between the ALS and control speaker, even when the phrase was intelligible to the listener.
 
-```{r}
+```{r, warning = F, message = F}
 
+# Creating a color palette vector for plots
+my_pal <- c("#CD9FCC", "#7E2E84")
+
+# Plotting the mean perceived effort ratings for the ALS and control speaker
 per_effort_des %>%
   ggplot() +
    aes(x = speaker,
       y = per_effort,
+      group = speaker,
       color = speaker,
       fill = speaker) +
   geom_bar(stat = "identity", alpha = 0.6) +
   geom_errorbar(aes(x = speaker, ymin = per_effort - se, ymax = per_effort + se), width = 0.4) +
-  labs(x = "Speaker", y = "Perceived Listening Effort Rating") +
+  labs(x = "Speaker", y = "Mean Perceived Listening Effort Rating") +
   theme_bw() +
-  theme(legend.position = "none", aspect.ratio = 1)
+  theme(legend.position = "none", aspect.ratio = 1) +
+  scale_color_manual(values = my_pal) +
+  scale_fill_manual(values = my_pal)
+
+# Saving the ggplot
+
+ggsave("Plots/Perceived_effort.png", plot = last_plot(), height = 5, width = 5, units = "in")
 
 ```
 
