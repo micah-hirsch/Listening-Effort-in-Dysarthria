@@ -123,7 +123,7 @@ rm(ethnicity, gender, listener_demo, race)
 
 Across all trials in the study, the intelligibility level for each of the speaker is reported below.  Across listeners, the mean intelligibility for the ALS speaker was 81.08% with a standard deviation of 3.86. For the control speaker, the mean intelligibility level was 93.62% with a standard deviation of 2.90.
 
-```{r}
+```{r, warning = F, message = F}
 
 # Load in cleaned data for pupil and perceived listening effort data
 
@@ -137,35 +137,56 @@ data <- rio::import("Cleaned Data/cleaned_data.csv") %>%
   # Creating a trial variable that codes trial 6 (i.e. the first experimental trial) as 0.
   dplyr::mutate(trial_c = trial - 6)
 
+# Selecting variables needed to calculate mean speaker intelligibility
 intel_df <- data %>%
   dplyr::select(subject, trial, speaker, correct_words, target_number, rep_acc) %>%
   dplyr::distinct()
 
+# Calculating intelligibility for the control and ALS speaker for each listener
 intel_byListener <- intel_df %>%
   dplyr::group_by(speaker, subject) %>%
   dplyr::summarize(Intelligibility = sum(correct_words)/sum(target_number)*100)
 
 intel_byListener %>%
   dplyr::group_by(speaker) %>%
-  dplyr::summarize("Mean Intelligibility" = mean(Intelligibility), SD = sd(Intelligibility))
+  dplyr::summarize("Mean Intelligibility" = mean(Intelligibility), SD = sd(Intelligibility)) %>%
+  gt::gt() %>%
+  gt::fmt_number(columns = c("Mean Intelligibility", SD),
+                 decimals = 2) %>%
+  gt::cols_label(speaker = "Speaker")
 
 
 ```
 
 ### Phrase Accuracy
 
-```{r}
+For this analysis, we are only looking at the trials that listeners were able to accurately recognize (e.g. 100% intelligible to the listener). Therefore, we are looking at the proportion of trials for each speaker that listeners were able to accurately recognize compared to the total number of trials. Although our ALS speaker's intelligibility was fairly high, only about 49% of all the ALS speaker's trials were accurately recognized across listeners.
+
+```{r, warning = F, message = F}
 
 # Calculating repetition accuracy descriptive data
 
-rep_acc <- intel_df %>%
+intel_df %>%
   dplyr::group_by(speaker, rep_acc) %>%
   dplyr::summarize(n = n()) %>%
   tidyr::pivot_wider(names_from = rep_acc,
                      values_from = n) %>%
-  dplyr::mutate(percent_accurate = accurate/(accurate + inaccurate)*100)
+  dplyr::mutate(percent_accurate = accurate/(accurate + inaccurate)*100) %>%
+  dplyr::ungroup() %>%
+  gt::gt(rowname_col = "speaker") %>%
+  gt::fmt_number(columns = percent_accurate,
+                 decimals = 2) %>%
+  gt::cols_label(accurate = "Accurate",
+                 inaccurate = "Inaccurate",
+                 percent_accurate = "Percent Accurate")
 
-rep_acc
+
+```
+```{r, include = F, warning = F, message = F}
+
+# removing unneeded items from the environment
+
+rm(intel_byListener, intel_df)
 
 ```
 
