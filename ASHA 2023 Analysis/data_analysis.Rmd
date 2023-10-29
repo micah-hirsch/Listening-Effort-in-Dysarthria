@@ -1,7 +1,7 @@
 ---
 title: "ASHA 2023 Listening Effort Data Analysis"
 author: "Micah E. Hirsch"
-date: "2023-10-26"
+date: "2023-10-29"
 output: html_document
 ---
 
@@ -13,6 +13,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 The purpose of this document is to run preliminary analyses and visualizations for this project. These results were prepared specifically for a poster presentation at the the 2023 Annual American Speech Language Hearing Association Convention being held in Boston, MA in November 2023.
 
+Any questions or comments regarding this project or analysis may be directed to Micah Hirsch, mhirsch@fsu.edu. 
+
 ```{r, include = F, warning = F, message = F}
 
 # Load Needed Packages
@@ -23,7 +25,7 @@ library(remotes) # install.packages("remotes")
 library(gazer) # remotes::install_github("dmirman/gazer")
 library(saccades) # remotes::install_github("tmalsburg/saccades/saccades")
 library(zoo) # install.packages("zoo")
-library(ggpubr)
+library(ggpubr) # installl.packages("ggpubr")
 library(gt) # install.packages("gt")
 library(glmmTMB) # install.packages("glmmTMB")
 library(performance) # install.packages("performance")
@@ -36,13 +38,84 @@ library(performance) # install.packages("performance")
 
 First, we will present the demographics of our listeners To date, we recruited 20 listeners to participate in the study. Three listeners were removed from the analysis. One listener decided to withdraw from the study, so their data was removed from the database. For the other two participants, pupillometry data was either not recorded or lost due to instrumental issues. Therefore, for this analysis, we have 17 participants. The descriptive information for these participants are presented below. 
 
-```{r}
+```{r, warning = F, message = F}
 
 # Load in dataset for listener demographics
 
 listener_demo <- rio::import("Cleaned Data/cleaned_listener_demo.csv") 
 
+# Extracting listener gender data
+
+gender <- listener_demo %>%
+  dplyr::select(gender) %>%
+  dplyr::group_by(gender) %>%
+  dplyr::summarize(Frequency = n()) %>%
+  dplyr::rename(Category = "gender") %>%
+  dplyr::mutate(Group = "Gender",
+                Category = fct_relevel(Category, c("woman", "man", "nonbinary"))) %>%
+  dplyr::arrange(Category)
+  
+## Extracting listener race data
+
+race <- listener_demo %>%
+  dplyr::select(race) %>%
+  dplyr::group_by(race) %>%
+  dplyr::summarize(Frequency = n()) %>%
+  dplyr::rename(Category = "race") %>%
+  dplyr::mutate(Group = "Race",
+                Category = fct_relevel(Category, c("white/Caucasian", "Biracial or Multiracial", 
+                                                   "race not listed"))) %>%
+  dplyr::arrange(Category)
+
+## Extracting listener ethnicity data
+
+ethnicity <- listener_demo %>%
+  dplyr::select(ethnicity) %>%
+  dplyr::group_by(ethnicity) %>%
+  dplyr::summarize(Frequency = n()) %>%
+  dplyr::rename(Category = "ethnicity") %>%
+  dplyr::mutate(Group = "Ethnicity",
+                Category = fct_relevel(Category, c("Hispanic/Latino(a/e)", 
+                                                   "Not Hispanic/Latino(a/e)"))) %>%
+  dplyr::arrange(Category)
+
+# Creating Demographic Table 1
+
+dplyr::full_join(gender, race) %>%
+  dplyr::full_join(., ethnicity) %>%
+  # Initiating a gt table
+  gt::gt(rowname_col = "Category",
+         groupname_col = "Group") 
+
 ```
+
+As indicated in the table above, our participants were primarily white/Caucasian, women, and not Hispanic or Latino(a/e). All participants reported no history of a speech, language, or hearing disorder. All participants were fluent English speakers. However, two indicated their native language was different than American English. These languages were Spanish (n=1) and Turkish (n=1).
+
+```{r, warning = F, message = F}
+
+listener_demo %>%
+  dplyr::select(c(age)) %>%
+  dplyr::summarize(Mean = mean(age), SD = sd(age),
+                   Min = min(age), Max = max(age)) %>%
+  dplyr::mutate(Category = "Age") %>%
+  dplyr::relocate(Category, .before = Mean) %>%
+  gt::gt() %>%
+  gt::fmt_number(columns = c(Mean, SD),
+                decimals = 2) %>%
+  gt::cols_label(Category = "")
+
+```
+
+The mean age of the listeners is 26.53 years old. Listener age ranged from 18 to 37 years old.
+
+```{r, include = F, warning = F, message = F}
+
+# Removing unneeded items from the environment
+
+rm(ethnicity, gender, listener_demo, race)
+
+```
+
 
 ## Speaker Intelligibility and Phrase Accuracy
 
