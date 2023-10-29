@@ -363,7 +363,7 @@ rm(m0, m1, m2, m3, m4, per_effort_des, perceived_effort_df, per_effort_model_fin
 
 The ALS speaker has a slower speech rate compared to the control speaker. Therefore, we are going to calculate the average trial legnth to see on average, how different the lengths were for ALS trials and control speaker trials. We will need this information to be able to mark the average phrase offset time and average end point for the analysis region of interest for visualization purposes.
 
-```{r}
+```{r, warning = F, message = F}
 
 data %>%
   # Selecting relevant parameters
@@ -391,7 +391,7 @@ Average trial length includes the phrase presentation plus the 3000 ms retention
 
 This is the smoothed pupil dilation tracking for the Control Speaker. The solid line indicates the start of the phrase. The dotted line indicates the average phrase offset. The grey box represents the region of interest for analysis.
 
-```{r}
+```{r, warning = F, message = F}
 
 control <- data %>%
   dplyr::filter(rep_acc == "accurate") %>%
@@ -446,6 +446,8 @@ pupil_plot <- ggarrange(control, als, ncol = 2)
 
 ggsave("Plots/Pupil_dilation.png", plot = pupil_plot, width = 10, height = 5, units = "in")
 
+rm(als, control)
+
 ```
 
 
@@ -459,7 +461,9 @@ Therefore, I decided to respecify the random effect structure by removing the AR
 
 More details about how I respecified the model can be seen in the code block.
 
-```{r}
+The adjusted ICC for the unconditional growth model is .109. The unadjusted ICC for the conditional growth model is .107.
+
+```{r, warning = F, message = F}
 
 # Specifying the region of interest for analysis (500 ms to 1000 ms after relative offset of the trial)
 
@@ -497,9 +501,11 @@ performance::icc(m0)
 
 ```
 
-# Model 1
+### Model 1
 
-```{r}
+In the next model, we are adding a fixed effect for speaker to test whether on average, pupil dilation is greater for the ALS speaker compared to the control speaker. A likelihood ratio test was also conducted to test whether model 1 provides a better fit to the data than the unconditional growth model.
+
+```{r, warning = F, message = F}
 
 m1 <- lmer(pupil.binned ~ poly1 + poly2 + poly3 + speaker +
                 (poly1 + poly2 + poly3|subject), 
@@ -511,9 +517,15 @@ anova(m0, m1)
 
 ```
 
-## Model 2
+As indicated in the model output, when listening to the ALS speaker, on average, listeners had greater pupil dilation compared to when they were listening to the control speaker. The likelihood ratio test also indicates model 1 is a better fit to the data compared to the unconditional model (chi-sq(1) = 353.67, p <0.001).
 
-```{r}
+### Model 2
+
+In model two, the interaction between poly1 and speaker was added to the model as a fixed effect to test whether linear growth was greater for the ALS speaker compared to the control speaker. A likelihood ratio test was also conducted to test if model 2 provides a better fit to the data compared to model 1.
+
+Note: The initial run of this model did not converge, so an optimizer control was added to the model. This optimizer will remain in each subsequent model.
+
+```{r, warning = F, message = F}
 
 # Model 2 initially failed to converge, so adding a control statement for bobyqa optimizer
 
@@ -530,9 +542,14 @@ anova(m1, m2)
 
 
 ```
-## Model 3
 
-```{r}
+Based on the model output, the interaction between poly1 and speaker is significant, indicating that, across listeners, linear growth in pupil dilation while listening to the ALS speaker was significantly greater than when listeners were listening to the control speaker. The likelihood ratio test also indicated that model 2 provided a better fit to the data than model 1 (chi-sq(1) = 649.22, p <0.001).
+
+### Model 3
+
+In model three, the interaction between the quadratic growth term and speaker was added to the model. This tests whether the quadratic shape of pupil dilation is significantly different between the two speakers. A likelihood ratio test was also conducted to test whether model 3 provides a better fit to the data compared to model 2.
+
+```{r, warning = F, message = F}
 
 m3 <- lmer(pupil.binned ~ poly1 + poly2 + poly3 + speaker +
              poly1*speaker + poly2*speaker +
@@ -545,9 +562,13 @@ anova(m2, m3)
 
 
 ```
-## Model 4
+Based on the model output, the interaction between the quadratic growth term and speaker improved the model fit (ch-sq(1) = 147.72, p<0.001). This indicates, on average, the shape of the listeners' pupil dilation is different while listening to the ALS speaker vs the control speaker.
 
-```{r}
+### Model 4
+
+In model for, we added the interaction between the cubic growth term and speaker. As with the other models, a likelihood ratio test was conducted to test whether model 4 provides a better fit to the data compared to model 3.
+
+```{r, message = F, warning = F}
 
 m4 <- lmer(pupil.binned ~ poly1 + poly2 + poly3 + speaker +
              poly1*speaker + poly2*speaker + poly3*speaker +
@@ -557,6 +578,19 @@ m4 <- lmer(pupil.binned ~ poly1 + poly2 + poly3 + speaker +
 summary(m4)
 
 anova(m3, m4)
+
+```
+Based on the model output, model 4 provides a better fit to the data compared to model 3 (chi-sq(1) = 9.25, P = 0.002). What is interesting is that the only fixed effects that are significant in this model are the main effect of the cubic growth term and the interaction between the cubic growth term and speaker, indicating the cubic pupil dilation growth is significantly different between these two speakers.
+
+```{r, include = F, message = F, warning = F}
+
+# Saving model 4 output
+
+sjPlot::tab_model(m1, m2, m3, m4, file = "Final Model Outputs/pupil_dilation_model.html")
+
+# removing unneeded items from the environment
+
+rm(m0, m1, m2, m3, m4, pupil_plot, pupil_roi, data, control_bobyqa, my_pal)
 
 ```
 
