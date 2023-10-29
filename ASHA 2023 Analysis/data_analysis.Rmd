@@ -195,7 +195,7 @@ rm(intel_byListener, intel_df)
 
 ## Descriptives
 
-```{r}
+```{r, warning = F, message = F}
 
 perceived_effort_df <- data %>%
   dplyr::select(subject, trial, speaker, effort_rating, rep_acc, code) %>%
@@ -210,11 +210,18 @@ per_effort_des <- perceived_effort_df %>%
                    sd = sd(effort_rating, na.rm = T),
                    se = sd/sqrt(n()))
 
-per_effort_des
-
+per_effort_des %>%
+  gt::gt() %>%
+  gt::fmt_number(columns = per_effort:se,
+                 decimals = 2) %>%
+  gt::cols_label(speaker = "Speaker",
+                  per_effort = "Perceived Effort",
+                  sd = "SD",
+                  se = "SE")
+  
 ```
 
-### Visualization
+As reported in the table above and shown in the plot below, the mean perceived effort ratings for the ALS speaker is about 2.13 points higher than the control speaker. This is reflecting the difference in mean perceived effort ratings between the ALS and control speaker, even when the phrase was intelligible to the listener.
 
 ```{r}
 
