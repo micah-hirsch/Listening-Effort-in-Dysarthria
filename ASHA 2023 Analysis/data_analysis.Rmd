@@ -333,7 +333,7 @@ anova(m3, m4)
 
 Based on the model output, adding the interaction term did not significantly improve model fit (chi-sq(1) = 0.70). The fixed effect estimate for the interaction term is also not significant. This indicates that effort ratings across the trials for the ALS speaker were not significantly different from each other.
 
-## Final Model
+### Final Model
 
 Based on our model building, we will now specify our final model. Since the trial fixed effect as well as the interaction between trial and speaker were not significant, nor did they improve model fit, they were removed from the final model. All other output remained the same.
 
@@ -348,35 +348,116 @@ sjPlot::tab_model(per_effort_model_final, file = "Final Model Outputs/perceived_
 
 The final model indicates that the perceived effort ratings for the ALS speaker is about 2.35 points higher than they control speaker. This is consistent with the results shown in the descriptive statistics.
 
+```{r, include = F, warning = F, message = F}
+
+# Remove unneeded items from the environment
+
+rm(m0, m1, m2, m3, m4, per_effort_des, perceived_effort_df, per_effort_model_final, model_0, model0)
+
+```
+
+
 # Pupil Dilation
 
-## Descriptives and Visualization
+## Descriptives
+
+The ALS speaker has a slower speech rate compared to the control speaker. Therefore, we are going to calculate the average trial legnth to see on average, how different the lengths were for ALS trials and control speaker trials. We will need this information to be able to mark the average phrase offset time and average end point for the analysis region of interest for visualization purposes.
 
 ```{r}
 
 data %>%
-  # For this analysis, we are only looking at accurate repetition trials
-  dplyr::filter(rep_acc == "accurate") %>%
-  dplyr::group_by(timebins, speaker) %>%
-  dplyr::summarize(pupil_dilation = mean(pupil.binned, na.rm = T),
-                   pupil_se = sd(pupil.binned, na.rm = T)/sqrt(n())) %>%
-  ggplot() +
-  aes(x = timebins,
-      y = pupil_dilation,
-      color = speaker,
-      fill = speaker) +
-  geom_ribbon(aes(ymin = pupil_dilation - pupil_se, ymax = pupil_dilation + pupil_se), alpha = .3) +
-  geom_line() +
-  coord_cartesian(xlim = c(0,5000), ylim = c(-100, 200)) +
-  labs(x = "Time (ms)", y = "Pupil Dilation (arbitrary units)", fill = "Speaker", color = "Speaker") +
-  theme_bw() + 
-  theme(legend.position = "bottom", aspect.ratio = 1)
+  # Selecting relevant parameters
+  dplyr::select(subject, trial, speaker, timebins, code) %>%
+  # Filtering out time before start of phrase
+  dplyr::filter(timebins >= 0) %>%
+  dplyr::group_by(speaker, code) %>%
+  dplyr::summarize(length = max(timebins)) %>%
+  dplyr::group_by(speaker) %>%
+  dplyr::summarize(av_length = mean(length),
+                   av_offset = av_length - 3000,
+                   av_end_roi = av_length - 2000) %>%
+  gt::gt() %>%
+  gt::cols_label(speaker = "Speaker",
+                 av_length = "Average Trial Length (ms)",
+                 av_offset = "Average Phrase Length (ms)",
+                 av_end_roi = "Average Endpoint for ROI (ms)")
 
 ```
 
-# Fully Unconditional Model
+Average trial length includes the phrase presentation plus the 3000 ms retention period. Average phrase legnth is the average length of the recording. Average Endpoint of the Analysis ROI is the 1000 ms after the average phrase endpoint (calculated this for data visualization purposes). On average, the phrase length (phrase presentation), was about 2461 ms longer for the ALS trials than the control speaker trials. 
 
-First, we ran an unconditional growth model. I first specified a model with the orthogonal polynomials added as fixed effects and subject (i.e. listener) and code (i.e. phrase) as random effects. I also added the orthogonal polynomials as random slopes. I also used the AR(1) covariance structure to specifiy the random effect structure. I was not able to run the model. Therefore, I attempted to respecify the random effect structure by removing the AR(1) specification. This led to a model with singular fit. In response to this, I decided to remove code (i.e.) from the random effect structure in order to simplify it.
+
+### Visualization
+
+This is the smoothed pupil dilation tracking for the Control Speaker. The solid line indicates the start of the phrase. The dotted line indicates the average phrase offset. The grey box represents the region of interest for analysis.
+
+```{r}
+
+control <- data %>%
+  dplyr::filter(rep_acc == "accurate") %>%
+  dplyr::filter(speaker == "Control") %>%
+  ggplot() +
+  aes(x = timebins,
+      y = pupil.binned,
+      color = speaker) +
+  geom_smooth() +
+  geom_vline(xintercept = 0, size = 0.35) +
+  geom_vline(xintercept = 1908, linetype = 2) +
+  annotate("rect", xmin = 500, xmax = 2908, ymin = -50, ymax = 150, alpha = 0.2) +
+  coord_cartesian(xlim = c(0,4910), ylim = c(-100, 200)) +
+  labs(title = "Control Speaker", x = "Time (ms)", y = "Pupil Dilation (arbitrary units)") +
+  theme_bw() +
+  scale_color_manual(values = my_pal[1]) +
+  theme(legend.position = "none", aspect.ratio = 1)
+
+control
+
+```
+
+This is the smoothed pupil dilation tracking for the ALS Speaker. The solid line indicates the start of the phrase. The dotted line indicates the average phrase offset. The grey box represents the region of interest for analysis.
+
+```{r}
+
+als <- data %>%
+  dplyr::filter(rep_acc == "accurate") %>%
+  dplyr::filter(speaker == "ALS") %>%
+  ggplot() +
+  aes(x = timebins,
+      y = pupil.binned,
+      color = speaker) +
+  geom_smooth() +
+  geom_vline(xintercept = 0, size = 0.35) +
+  geom_vline(xintercept = 4369, linetype = 2) +
+  annotate("rect", xmin = 500, xmax = 5369, ymin = -50, ymax = 150, alpha = 0.2) +
+  coord_cartesian(xlim = c(0,7369), ylim = c(-100, 200)) +
+  labs(title = "ALS Speaker", x = "Time (ms)", y = "Pupil Dilation (arbitrary units)") +
+  theme_bw() +
+  scale_color_manual(values = my_pal[2]) +
+  theme(legend.position = "none", aspect.ratio = 1)
+
+als
+
+```
+
+
+```{r, include = F, warning = F, message = F}
+
+pupil_plot <- ggarrange(control, als, ncol = 2)
+
+ggsave("Plots/Pupil_dilation.png", plot = pupil_plot, width = 10, height = 5, units = "in")
+
+```
+
+
+## Pupil Dilation Analysis
+
+### Fully Unconditional Model
+
+First, we ran an unconditional growth model. In the intial model, I first specified a model with the orthogonal polynomials added as fixed effects and subject (i.e. listener) and code (i.e. phrase) as random intercepts. I also added the orthogonal polynomials as random slopes. I also used the AR(1) covariance structure to specifiy the random effect structure. However, I was not able to run the model and ran into convergence issues.
+
+Therefore, I decided to respecify the random effect structure by removing the AR(1) specification. This led to a model with singular fit. In response to this, I decided to remove code (i.e.phrase) from the random effect structure in order to simplify it.
+
+More details about how I respecified the model can be seen in the code block.
 
 ```{r}
 
@@ -389,19 +470,13 @@ pupil_roi <- data %>%
   dplyr::filter(timebins >= 500) %>%
   dplyr::group_by(subject, trial) %>%
   dplyr::filter(timebins <= max(timebins) - 2000) %>%
-  ungroup() %>%
-  # For the purpose of modeling, we are centering time at 500 ms (i.e. the beginning ROI time)
-  dplyr::mutate(time_c = timebins - 500) %>%
-  # Rescaling pupil size 
-  dplyr::group_by(subject, trial) %>%
-  dplyr::mutate(norm_pupil = as.numeric(scale(pupil.binned))) %>%
-  dplyr::ungroup()
+  ungroup() 
 
-# Polynomials
+# Adding linear, quadratic, and cubic orthogonal polynomials to the df
 
 pupil_roi <- gazer::code_poly(pupil_roi, predictor = "timebins", poly.order = 3, orthogonal = T, draw.poly = F)
 
-# Exporting region of interest df
+# Exporting region of interest df (this can be used to )
 
 rio::export(pupil_roi, "Cleaned Data/pupil_analysis_roi.csv")
 
