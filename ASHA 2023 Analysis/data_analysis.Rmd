@@ -2,7 +2,11 @@
 title: "ASHA 2023 Listening Effort Data Analysis"
 author: "Micah E. Hirsch"
 date: "2023-10-29"
-output: html_document
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
 ---
 
 ```{r setup, include=FALSE}
