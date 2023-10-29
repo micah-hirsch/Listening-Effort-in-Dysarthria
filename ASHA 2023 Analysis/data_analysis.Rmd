@@ -29,6 +29,7 @@ library(ggpubr) # installl.packages("ggpubr")
 library(gt) # install.packages("gt")
 library(glmmTMB) # install.packages("glmmTMB")
 library(performance) # install.packages("performance")
+library(sjPlot) # install.packages("sjPlot")
 
 ```
 
@@ -198,7 +199,7 @@ rm(intel_byListener, intel_df)
 ```{r, warning = F, message = F}
 
 perceived_effort_df <- data %>%
-  dplyr::select(subject, trial, speaker, effort_rating, rep_acc, code) %>%
+  dplyr::select(subject, trial, speaker, effort_rating, rep_acc, code, trial_c) %>%
   dplyr::distinct() %>%
   # For this particular analysis, we are just looking at results for accurate repetition
   # However, the final project will look at rep_acc too
@@ -254,7 +255,11 @@ ggsave("Plots/Perceived_effort.png", plot = last_plot(), height = 5, width = 5, 
 
 ### Fully Unconditional Model
 
-```{r}
+To analyze the perceived effort ratings, we are going to use linear mixed-effects models. To start, we are going to specify our fully unconditional model. In this model, we included random intercepts for subject (i.e. our listeners) and code (i.e. the different phrases). No fixed effects have been added to the model. We also calculated ICC from this model.
+
+Both the conditional and unconditional ICC is 0.99.
+
+```{r, warning = F, message = F}
 
 m0 <- glmmTMB(effort_rating ~ 1 + (1|subject) + (1|code), data = perceived_effort_df)
 
@@ -264,9 +269,9 @@ performance::icc(m0)
 
 ```
 
-## Model 1
+### Model 1
 
-Adding the centered trial random slope 
+Now we will add trial number (i.e. trial_c) as a random slope for both subject and code. A likelihood ratio test was also ran to test whether model 1 provided a better fit to the data than the unconditional model.
 
 ```{r}
 
@@ -277,9 +282,12 @@ summary(m1)
 anova(m0, m1)
 
 ```
-## Model 2
 
-Adding trial as a fixed effect
+The likelihood ratio test indicated that model 1 provided a better fit to the data than the unconditional model (chi-sq(4) = 227.79, p <0.001). Therefore, we will retain model 1.
+
+### Model 2
+
+To control for trial order, trial_c is added as a fixed effect to model 2. A likelihood ratio test was also conducted to test whether model 2 provides a better fit to the data compared to mdoel 1
 
 ```{r}
 
@@ -291,9 +299,13 @@ anova(m1, m2)
 
 ```
 
-## Model 3
+As indicated from the model, adding trial order did not significantly improve the model fit to the data (chi-sq(1)m p = 0.52). This indicates that trial order is not an important predictor for perceived listening effort ratings and that ratings for the speakers were fairly consistent across trials.
 
-```{r}
+### Model 3
+
+In model 3, we added the speaker fixed effect to test whether the mean difference in perceived listening effort rating is significantly difference for the ALS speaker compared to the control speaker. A likelihood ratio test was also conducted to test whether model 3 provides a better fit to the data compared to model 2.
+
+```{r, warning = F, message = F}
 
 m3 <- glmmTMB(effort_rating ~ trial_c + speaker + (trial_c|subject) + (trial_c|code), data = perceived_effort_df)
 
@@ -303,7 +315,27 @@ anova(m2, m3)
 
 ```
 
+Based on the model output, adding speaker to the model improved the model fit to the data (chi-sq(1), p <0.001). The fixed effect estimate indicates that, while controlling for trial order, the perceived listening effort rating across listeners and phrases is about 2.35 higher for ALS speaker.
+
+### Model 4
+
+To test whether there are any potential differences in perceived effort ratings across trials, we are testing whether adding an interaction between trial_c and speaker improves model fit. Again, a likelihood ratio test was conducted to see if model 4 provides a better fit to the data compared to model 3.
+
+```{r}
+
+m4 <- glmmTMB(effort_rating ~ trial_c + speaker + trial_c*speaker + (trial_c|subject) + (trial_c|code), data = perceived_effort_df)
+
+summary(m4)
+
+anova(m3, m4)
+
+```
+
+Based on the model output, adding the interaction term did not significantly improve model fit (chi-sq(1) = 0.70). The fixed effect estimate for the interaction term is also not significant. This indicates that effort ratings across the trials for the ALS speaker were not significantly different from each other.
+
 ## Final Model
+
+Based on our model building, we will now specify our final model. Since the trial fixed effect as well as the interaction between trial and speaker were not significant, nor did they improve model fit, they were removed from the final model. All other output remained the same.
 
 ```{r}
 
@@ -311,11 +343,10 @@ per_effort_model_final <- glmmTMB(effort_rating ~ speaker + (trial_c|subject) + 
 
 summary(per_effort_model_final)
 
-# Removing unneeded items from the environment
-
-rm(m0, m1, m2, m3)
-
+sjPlot::tab_model(per_effort_model_final, file = "Final Model Outputs/perceived_effort_model.html")
 ```
+
+The final model indicates that the perceived effort ratings for the ALS speaker is about 2.35 points higher than they control speaker. This is consistent with the results shown in the descriptive statistics.
 
 # Pupil Dilation
 
