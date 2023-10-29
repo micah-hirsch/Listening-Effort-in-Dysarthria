@@ -1,0 +1,600 @@
+---
+title: "ASHA 2023 Listening Effort Data Analysis"
+author: "Micah E. Hirsch"
+date: "2023-10-29"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Purpose
+
+The purpose of this document is to run preliminary analyses and visualizations for this project. These results were prepared specifically for a poster presentation at the the 2023 Annual American Speech Language Hearing Association Convention being held in Boston, MA in November 2023.
+
+Any questions or comments regarding this project or analysis may be directed to Micah Hirsch, mhirsch@fsu.edu. 
+
+```{r, include = F, warning = F, message = F}
+
+# Load Needed Packages
+library(rio) # install.packages("rio")
+library(tidyverse) # install.packages("tidyverse")
+# Need remotes package to install gazer and saccades
+library(remotes) # install.packages("remotes")
+library(gazer) # remotes::install_github("dmirman/gazer")
+library(saccades) # remotes::install_github("tmalsburg/saccades/saccades")
+library(zoo) # install.packages("zoo")
+library(ggpubr) # installl.packages("ggpubr")
+library(gt) # install.packages("gt")
+library(glmmTMB) # install.packages("glmmTMB")
+library(performance) # install.packages("performance")
+library(sjPlot) # install.packages("sjPlot")
+
+```
+
+# Descriptive Statistics
+
+## Participant Demographics
+
+First, we will present the demographics of our listeners To date, we recruited 20 listeners to participate in the study. Three listeners were removed from the analysis. One listener decided to withdraw from the study, so their data was removed from the database. For the other two participants, pupillometry data was either not recorded or lost due to instrumental issues. Therefore, for this analysis, we have 17 participants. The descriptive information for these participants are presented below. 
+
+```{r, warning = F, message = F}
+
+# Load in dataset for listener demographics
+
+listener_demo <- rio::import("Cleaned Data/cleaned_listener_demo.csv") 
+
+# Extracting listener gender data
+
+gender <- listener_demo %>%
+  dplyr::select(gender) %>%
+  dplyr::group_by(gender) %>%
+  dplyr::summarize(Frequency = n()) %>%
+  dplyr::rename(Category = "gender") %>%
+  dplyr::mutate(Group = "Gender",
+                Category = fct_relevel(Category, c("woman", "man", "nonbinary"))) %>%
+  dplyr::arrange(Category)
+  
+## Extracting listener race data
+
+race <- listener_demo %>%
+  dplyr::select(race) %>%
+  dplyr::group_by(race) %>%
+  dplyr::summarize(Frequency = n()) %>%
+  dplyr::rename(Category = "race") %>%
+  dplyr::mutate(Group = "Race",
+                Category = fct_relevel(Category, c("white/Caucasian", "Biracial or Multiracial", 
+                                                   "race not listed"))) %>%
+  dplyr::arrange(Category)
+
+## Extracting listener ethnicity data
+
+ethnicity <- listener_demo %>%
+  dplyr::select(ethnicity) %>%
+  dplyr::group_by(ethnicity) %>%
+  dplyr::summarize(Frequency = n()) %>%
+  dplyr::rename(Category = "ethnicity") %>%
+  dplyr::mutate(Group = "Ethnicity",
+                Category = fct_relevel(Category, c("Hispanic/Latino(a/e)", 
+                                                   "Not Hispanic/Latino(a/e)"))) %>%
+  dplyr::arrange(Category)
+
+# Creating Demographic Table 1
+
+dplyr::full_join(gender, race) %>%
+  dplyr::full_join(., ethnicity) %>%
+  # Initiating a gt table
+  gt::gt(rowname_col = "Category",
+         groupname_col = "Group") 
+
+```
+
+As indicated in the table above, our participants were primarily white/Caucasian, women, and not Hispanic or Latino(a/e). All participants reported no history of a speech, language, or hearing disorder. All participants were fluent English speakers. However, two indicated their native language was different than American English. These languages were Spanish (n=1) and Turkish (n=1).
+
+```{r, warning = F, message = F}
+
+listener_demo %>%
+  dplyr::select(c(age)) %>%
+  dplyr::summarize(Mean = mean(age), SD = sd(age),
+                   Min = min(age), Max = max(age)) %>%
+  dplyr::mutate(Category = "Age") %>%
+  dplyr::relocate(Category, .before = Mean) %>%
+  gt::gt() %>%
+  gt::fmt_number(columns = c(Mean, SD),
+                decimals = 2) %>%
+  gt::cols_label(Category = "")
+
+```
+
+The mean age of the listeners is 26.53 years old. Listener age ranged from 18 to 37 years old.
+
+```{r, include = F, warning = F, message = F}
+
+# Removing unneeded items from the environment
+
+rm(ethnicity, gender, listener_demo, race)
+
+```
+
+
+## Speaker Intelligibility and Phrase Accuracy
+
+### Mean Speaker Intelligibility
+
+Across all trials in the study, the intelligibility level for each of the speaker is reported below.  Across listeners, the mean intelligibility for the ALS speaker was 81.08% with a standard deviation of 3.86. For the control speaker, the mean intelligibility level was 93.62% with a standard deviation of 2.90.
+
+```{r, warning = F, message = F}
+
+# Load in cleaned data for pupil and perceived listening effort data
+
+data <- rio::import("Cleaned Data/cleaned_data.csv") %>%
+  # removing trials with missing rep accuracy: 3 trials removed
+  dplyr::mutate(rep_acc = ifelse(rep_acc == "", NA, rep_acc)) %>%
+  dplyr::filter(!is.na(rep_acc)) %>%
+  # Releveling speaker variable
+  dplyr::mutate(speaker = as.factor(speaker),
+                speaker = fct_relevel(speaker, "Control", "ALS")) %>%
+  # Creating a trial variable that codes trial 6 (i.e. the first experimental trial) as 0.
+  dplyr::mutate(trial_c = trial - 6)
+
+# Selecting variables needed to calculate mean speaker intelligibility
+intel_df <- data %>%
+  dplyr::select(subject, trial, speaker, correct_words, target_number, rep_acc) %>%
+  dplyr::distinct()
+
+# Calculating intelligibility for the control and ALS speaker for each listener
+intel_byListener <- intel_df %>%
+  dplyr::group_by(speaker, subject) %>%
+  dplyr::summarize(Intelligibility = sum(correct_words)/sum(target_number)*100)
+
+intel_byListener %>%
+  dplyr::group_by(speaker) %>%
+  dplyr::summarize("Mean Intelligibility" = mean(Intelligibility), SD = sd(Intelligibility)) %>%
+  gt::gt() %>%
+  gt::fmt_number(columns = c("Mean Intelligibility", SD),
+                 decimals = 2) %>%
+  gt::cols_label(speaker = "Speaker")
+
+
+```
+
+### Phrase Accuracy
+
+For this analysis, we are only looking at the trials that listeners were able to accurately recognize (e.g. 100% intelligible to the listener). Therefore, we are looking at the proportion of trials for each speaker that listeners were able to accurately recognize compared to the total number of trials. Although our ALS speaker's intelligibility was fairly high, only about 49% of all the ALS speaker's trials were accurately recognized across listeners.
+
+```{r, warning = F, message = F}
+
+# Calculating repetition accuracy descriptive data
+
+intel_df %>%
+  dplyr::group_by(speaker, rep_acc) %>%
+  dplyr::summarize(n = n()) %>%
+  tidyr::pivot_wider(names_from = rep_acc,
+                     values_from = n) %>%
+  dplyr::mutate(percent_accurate = accurate/(accurate + inaccurate)*100) %>%
+  dplyr::ungroup() %>%
+  gt::gt(rowname_col = "speaker") %>%
+  gt::fmt_number(columns = percent_accurate,
+                 decimals = 2) %>%
+  gt::cols_label(accurate = "Accurate",
+                 inaccurate = "Inaccurate",
+                 percent_accurate = "Percent Accurate")
+
+
+```
+```{r, include = F, warning = F, message = F}
+
+# removing unneeded items from the environment
+
+rm(intel_byListener, intel_df)
+
+```
+
+
+# Perceived Listening Effort Ratings
+
+## Descriptives
+
+```{r, warning = F, message = F}
+
+perceived_effort_df <- data %>%
+  dplyr::select(subject, trial, speaker, effort_rating, rep_acc, code, trial_c) %>%
+  dplyr::distinct() %>%
+  # For this particular analysis, we are just looking at results for accurate repetition
+  # However, the final project will look at rep_acc too
+  dplyr::filter(rep_acc == "accurate")
+
+per_effort_des <- perceived_effort_df %>%
+  dplyr::group_by(speaker) %>%
+  dplyr::summarize(per_effort = mean(effort_rating), 
+                   sd = sd(effort_rating, na.rm = T),
+                   se = sd/sqrt(n()))
+
+per_effort_des %>%
+  gt::gt() %>%
+  gt::fmt_number(columns = per_effort:se,
+                 decimals = 2) %>%
+  gt::cols_label(speaker = "Speaker",
+                  per_effort = "Perceived Effort",
+                  sd = "SD",
+                  se = "SE")
+  
+```
+
+As reported in the table above and shown in the plot below, the mean perceived effort ratings for the ALS speaker is about 2.13 points higher than the control speaker. This is reflecting the difference in mean perceived effort ratings between the ALS and control speaker, even when the phrase was intelligible to the listener.
+
+```{r, warning = F, message = F}
+
+# Creating a color palette vector for plots
+my_pal <- c("#CD9FCC", "#7E2E84")
+
+# Plotting the mean perceived effort ratings for the ALS and control speaker
+per_effort_des %>%
+  ggplot() +
+   aes(x = speaker,
+      y = per_effort,
+      group = speaker,
+      color = speaker,
+      fill = speaker) +
+  geom_bar(stat = "identity", alpha = 0.6) +
+  geom_errorbar(aes(x = speaker, ymin = per_effort - se, ymax = per_effort + se), width = 0.4) +
+  labs(x = "Speaker", y = "Mean Perceived Listening Effort Rating") +
+  theme_bw() +
+  theme(legend.position = "none", aspect.ratio = 1) +
+  scale_color_manual(values = my_pal) +
+  scale_fill_manual(values = my_pal)
+
+# Saving the ggplot
+
+ggsave("Plots/Perceived_effort.png", plot = last_plot(), height = 5, width = 5, units = "in")
+
+```
+
+## Perceived Listening Effort Model
+
+### Fully Unconditional Model
+
+To analyze the perceived effort ratings, we are going to use linear mixed-effects models. To start, we are going to specify our fully unconditional model. In this model, we included random intercepts for subject (i.e. our listeners) and code (i.e. the different phrases). No fixed effects have been added to the model. We also calculated ICC from this model.
+
+Both the conditional and unconditional ICC is 0.99.
+
+```{r, warning = F, message = F}
+
+m0 <- glmmTMB(effort_rating ~ 1 + (1|subject) + (1|code), data = perceived_effort_df)
+
+summary(m0)
+
+performance::icc(m0)
+
+```
+
+### Model 1
+
+Now we will add trial number (i.e. trial_c) as a random slope for both subject and code. A likelihood ratio test was also ran to test whether model 1 provided a better fit to the data than the unconditional model.
+
+```{r}
+
+m1 <- glmmTMB(effort_rating ~ 1 + (trial_c|subject) + (trial_c|code), data = perceived_effort_df)
+
+summary(m1)
+
+anova(m0, m1)
+
+```
+
+The likelihood ratio test indicated that model 1 provided a better fit to the data than the unconditional model (chi-sq(4) = 227.79, p <0.001). Therefore, we will retain model 1.
+
+### Model 2
+
+To control for trial order, trial_c is added as a fixed effect to model 2. A likelihood ratio test was also conducted to test whether model 2 provides a better fit to the data compared to mdoel 1
+
+```{r}
+
+m2 <- glmmTMB(effort_rating ~ trial_c + (trial_c|subject) + (trial_c|code), data = perceived_effort_df)
+
+summary(m2)
+
+anova(m1, m2)
+
+```
+
+As indicated from the model, adding trial order did not significantly improve the model fit to the data (chi-sq(1)m p = 0.52). This indicates that trial order is not an important predictor for perceived listening effort ratings and that ratings for the speakers were fairly consistent across trials.
+
+### Model 3
+
+In model 3, we added the speaker fixed effect to test whether the mean difference in perceived listening effort rating is significantly difference for the ALS speaker compared to the control speaker. A likelihood ratio test was also conducted to test whether model 3 provides a better fit to the data compared to model 2.
+
+```{r, warning = F, message = F}
+
+m3 <- glmmTMB(effort_rating ~ trial_c + speaker + (trial_c|subject) + (trial_c|code), data = perceived_effort_df)
+
+summary(m3)
+
+anova(m2, m3)
+
+```
+
+Based on the model output, adding speaker to the model improved the model fit to the data (chi-sq(1), p <0.001). The fixed effect estimate indicates that, while controlling for trial order, the perceived listening effort rating across listeners and phrases is about 2.35 higher for ALS speaker.
+
+### Model 4
+
+To test whether there are any potential differences in perceived effort ratings across trials, we are testing whether adding an interaction between trial_c and speaker improves model fit. Again, a likelihood ratio test was conducted to see if model 4 provides a better fit to the data compared to model 3.
+
+```{r}
+
+m4 <- glmmTMB(effort_rating ~ trial_c + speaker + trial_c*speaker + (trial_c|subject) + (trial_c|code), data = perceived_effort_df)
+
+summary(m4)
+
+anova(m3, m4)
+
+```
+
+Based on the model output, adding the interaction term did not significantly improve model fit (chi-sq(1) = 0.70). The fixed effect estimate for the interaction term is also not significant. This indicates that effort ratings across the trials for the ALS speaker were not significantly different from each other.
+
+### Final Model
+
+Based on our model building, we will now specify our final model. Since the trial fixed effect as well as the interaction between trial and speaker were not significant, nor did they improve model fit, they were removed from the final model. All other output remained the same.
+
+```{r}
+
+per_effort_model_final <- glmmTMB(effort_rating ~ speaker + (trial_c|subject) + (trial_c|code), data = perceived_effort_df)
+
+summary(per_effort_model_final)
+
+sjPlot::tab_model(per_effort_model_final, file = "Final Model Outputs/perceived_effort_model.html")
+```
+
+The final model indicates that the perceived effort ratings for the ALS speaker is about 2.35 points higher than they control speaker. This is consistent with the results shown in the descriptive statistics.
+
+```{r, include = F, warning = F, message = F}
+
+# Remove unneeded items from the environment
+
+rm(m0, m1, m2, m3, m4, per_effort_des, perceived_effort_df, per_effort_model_final, model_0, model0)
+
+```
+
+
+# Pupil Dilation
+
+## Descriptives
+
+The ALS speaker has a slower speech rate compared to the control speaker. Therefore, we are going to calculate the average trial legnth to see on average, how different the lengths were for ALS trials and control speaker trials. We will need this information to be able to mark the average phrase offset time and average end point for the analysis region of interest for visualization purposes.
+
+```{r, warning = F, message = F}
+
+data %>%
+  # Selecting relevant parameters
+  dplyr::select(subject, trial, speaker, timebins, code) %>%
+  # Filtering out time before start of phrase
+  dplyr::filter(timebins >= 0) %>%
+  dplyr::group_by(speaker, code) %>%
+  dplyr::summarize(length = max(timebins)) %>%
+  dplyr::group_by(speaker) %>%
+  dplyr::summarize(av_length = mean(length),
+                   av_offset = av_length - 3000,
+                   av_end_roi = av_length - 2000) %>%
+  gt::gt() %>%
+  gt::cols_label(speaker = "Speaker",
+                 av_length = "Average Trial Length (ms)",
+                 av_offset = "Average Phrase Length (ms)",
+                 av_end_roi = "Average Endpoint for ROI (ms)")
+
+```
+
+Average trial length includes the phrase presentation plus the 3000 ms retention period. Average phrase legnth is the average length of the recording. Average Endpoint of the Analysis ROI is the 1000 ms after the average phrase endpoint (calculated this for data visualization purposes). On average, the phrase length (phrase presentation), was about 2461 ms longer for the ALS trials than the control speaker trials. 
+
+
+### Visualization
+
+This is the smoothed pupil dilation tracking for the Control Speaker. The solid line indicates the start of the phrase. The dotted line indicates the average phrase offset. The grey box represents the region of interest for analysis.
+
+```{r, warning = F, message = F}
+
+control <- data %>%
+  dplyr::filter(rep_acc == "accurate") %>%
+  dplyr::filter(speaker == "Control") %>%
+  ggplot() +
+  aes(x = timebins,
+      y = pupil.binned,
+      color = speaker) +
+  geom_smooth() +
+  geom_vline(xintercept = 0, size = 0.35) +
+  geom_vline(xintercept = 1908, linetype = 2) +
+  annotate("rect", xmin = 500, xmax = 2908, ymin = -50, ymax = 150, alpha = 0.2) +
+  coord_cartesian(xlim = c(0,4910), ylim = c(-100, 200)) +
+  labs(title = "Control Speaker", x = "Time (ms)", y = "Pupil Dilation (arbitrary units)") +
+  theme_bw() +
+  scale_color_manual(values = my_pal[1]) +
+  theme(legend.position = "none", aspect.ratio = 1)
+
+control
+
+```
+
+This is the smoothed pupil dilation tracking for the ALS Speaker. The solid line indicates the start of the phrase. The dotted line indicates the average phrase offset. The grey box represents the region of interest for analysis.
+
+```{r}
+
+als <- data %>%
+  dplyr::filter(rep_acc == "accurate") %>%
+  dplyr::filter(speaker == "ALS") %>%
+  ggplot() +
+  aes(x = timebins,
+      y = pupil.binned,
+      color = speaker) +
+  geom_smooth() +
+  geom_vline(xintercept = 0, size = 0.35) +
+  geom_vline(xintercept = 4369, linetype = 2) +
+  annotate("rect", xmin = 500, xmax = 5369, ymin = -50, ymax = 150, alpha = 0.2) +
+  coord_cartesian(xlim = c(0,7369), ylim = c(-100, 200)) +
+  labs(title = "ALS Speaker", x = "Time (ms)", y = "Pupil Dilation (arbitrary units)") +
+  theme_bw() +
+  scale_color_manual(values = my_pal[2]) +
+  theme(legend.position = "none", aspect.ratio = 1)
+
+als
+
+```
+
+
+```{r, include = F, warning = F, message = F}
+
+pupil_plot <- ggarrange(control, als, ncol = 2)
+
+ggsave("Plots/Pupil_dilation.png", plot = pupil_plot, width = 10, height = 5, units = "in")
+
+rm(als, control)
+
+```
+
+
+## Pupil Dilation Analysis
+
+### Fully Unconditional Model
+
+First, we ran an unconditional growth model. In the intial model, I first specified a model with the orthogonal polynomials added as fixed effects and subject (i.e. listener) and code (i.e. phrase) as random intercepts. I also added the orthogonal polynomials as random slopes. I also used the AR(1) covariance structure to specifiy the random effect structure. However, I was not able to run the model and ran into convergence issues.
+
+Therefore, I decided to respecify the random effect structure by removing the AR(1) specification. This led to a model with singular fit. In response to this, I decided to remove code (i.e.phrase) from the random effect structure in order to simplify it.
+
+More details about how I respecified the model can be seen in the code block.
+
+The adjusted ICC for the unconditional growth model is .109. The unadjusted ICC for the conditional growth model is .107.
+
+```{r, warning = F, message = F}
+
+# Specifying the region of interest for analysis (500 ms to 1000 ms after relative offset of the trial)
+
+pupil_roi <- data %>%
+  # For this analysis, we are only analyzing pupil dilation for accurate responses
+  dplyr::filter(rep_acc == "accurate") %>%
+  # filtering out timebins below 500 (i.e., keeping timebins above 500 ms)
+  dplyr::filter(timebins >= 500) %>%
+  dplyr::group_by(subject, trial) %>%
+  dplyr::filter(timebins <= max(timebins) - 2000) %>%
+  ungroup() 
+
+# Adding linear, quadratic, and cubic orthogonal polynomials to the df
+
+pupil_roi <- gazer::code_poly(pupil_roi, predictor = "timebins", poly.order = 3, orthogonal = T, draw.poly = F)
+
+# Exporting region of interest df (this can be used to )
+
+rio::export(pupil_roi, "Cleaned Data/pupil_analysis_roi.csv")
+
+## I kept running into issues using glmmTMB, so I switched to lme4
+
+library(lme4)
+library(lmerTest)
+
+# specifying unconditional growth model for pupil data
+
+m0 <- lmer(pupil.binned ~ poly1 + poly2 + poly3 +
+                (poly1 + poly2 + poly3|subject), 
+              data = pupil_roi)
+
+summary(m0)
+
+performance::icc(m0)
+
+```
+
+### Model 1
+
+In the next model, we are adding a fixed effect for speaker to test whether on average, pupil dilation is greater for the ALS speaker compared to the control speaker. A likelihood ratio test was also conducted to test whether model 1 provides a better fit to the data than the unconditional growth model.
+
+```{r, warning = F, message = F}
+
+m1 <- lmer(pupil.binned ~ poly1 + poly2 + poly3 + speaker +
+                (poly1 + poly2 + poly3|subject), 
+              data = pupil_roi)
+
+summary(m1)
+
+anova(m0, m1)
+
+```
+
+As indicated in the model output, when listening to the ALS speaker, on average, listeners had greater pupil dilation compared to when they were listening to the control speaker. The likelihood ratio test also indicates model 1 is a better fit to the data compared to the unconditional model (chi-sq(1) = 353.67, p <0.001).
+
+### Model 2
+
+In model two, the interaction between poly1 and speaker was added to the model as a fixed effect to test whether linear growth was greater for the ALS speaker compared to the control speaker. A likelihood ratio test was also conducted to test if model 2 provides a better fit to the data compared to model 1.
+
+Note: The initial run of this model did not converge, so an optimizer control was added to the model. This optimizer will remain in each subsequent model.
+
+```{r, warning = F, message = F}
+
+# Model 2 initially failed to converge, so adding a control statement for bobyqa optimizer
+
+control_bobyqa <- lmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 1e9))
+
+m2 <- lmer(pupil.binned ~ poly1 + poly2 + poly3 + speaker +
+             poly1*speaker +
+             (poly1 + poly2 + poly3|subject), 
+              data = pupil_roi, control = control_bobyqa)
+
+summary(m2)
+
+anova(m1, m2)
+
+
+```
+
+Based on the model output, the interaction between poly1 and speaker is significant, indicating that, across listeners, linear growth in pupil dilation while listening to the ALS speaker was significantly greater than when listeners were listening to the control speaker. The likelihood ratio test also indicated that model 2 provided a better fit to the data than model 1 (chi-sq(1) = 649.22, p <0.001).
+
+### Model 3
+
+In model three, the interaction between the quadratic growth term and speaker was added to the model. This tests whether the quadratic shape of pupil dilation is significantly different between the two speakers. A likelihood ratio test was also conducted to test whether model 3 provides a better fit to the data compared to model 2.
+
+```{r, warning = F, message = F}
+
+m3 <- lmer(pupil.binned ~ poly1 + poly2 + poly3 + speaker +
+             poly1*speaker + poly2*speaker +
+             (poly1 + poly2 + poly3|subject), 
+              data = pupil_roi, control = control_bobyqa)
+
+summary(m3)
+
+anova(m2, m3)
+
+
+```
+Based on the model output, the interaction between the quadratic growth term and speaker improved the model fit (ch-sq(1) = 147.72, p<0.001). This indicates, on average, the shape of the listeners' pupil dilation is different while listening to the ALS speaker vs the control speaker.
+
+### Model 4
+
+In model for, we added the interaction between the cubic growth term and speaker. As with the other models, a likelihood ratio test was conducted to test whether model 4 provides a better fit to the data compared to model 3.
+
+```{r, message = F, warning = F}
+
+m4 <- lmer(pupil.binned ~ poly1 + poly2 + poly3 + speaker +
+             poly1*speaker + poly2*speaker + poly3*speaker +
+             (poly1 + poly2 + poly3|subject), data = pupil_roi, 
+           control = control_bobyqa)
+
+summary(m4)
+
+anova(m3, m4)
+
+```
+Based on the model output, model 4 provides a better fit to the data compared to model 3 (chi-sq(1) = 9.25, P = 0.002). What is interesting is that the only fixed effects that are significant in this model are the main effect of the cubic growth term and the interaction between the cubic growth term and speaker, indicating the cubic pupil dilation growth is significantly different between these two speakers.
+
+```{r, include = F, message = F, warning = F}
+
+# Saving model 4 output
+
+sjPlot::tab_model(m1, m2, m3, m4, file = "Final Model Outputs/pupil_dilation_model.html")
+
+# removing unneeded items from the environment
+
+rm(m0, m1, m2, m3, m4, pupil_plot, pupil_roi, data, control_bobyqa, my_pal)
+
+```
+

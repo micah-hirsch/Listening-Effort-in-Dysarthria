@@ -2,7 +2,7 @@
 
 # Author: Micah E. Hirsch, mhirsch@fsu.edu 
 
-# Date: 10/24/2023
+# Date: 10/26/2023
 
 ## Purpose: To load in raw data from Eyelink and prepare pupil data viz and analysis.
 ## This particular data processing and analysis is being completed for a poster 
@@ -178,6 +178,7 @@ smoothed <- interp %>%
 
 baseline_pupil <- baseline_correction_pupil(smoothed, pupil_colname = "smoothed_pupil",
                                             baseline_window = c(-500, 0))
+
 # Artifact Rejection
 
 ## Looking for rapid changes in pupil dilation using median absolute deviation
@@ -191,6 +192,14 @@ mad_removal <- baseline_pupil %>%
 ## Proportion of rows removed (as of 10/24/2023: 1.28%)
 
 ((nrow(baseline_pupil) - nrow(mad_removal)) / nrow(baseline_pupil)) * 100
+
+### Checking to see if whole trials were removed from any of the participants (1 trial from LE10)
+
+mad_removal %>%
+  select(subject, trial) %>%
+  distinct() %>%
+  group_by(subject) %>%
+  summarize(n = n())
 
 ## Removing unneeded items from the environment
 
