@@ -598,3 +598,61 @@ rm(m0, m1, m2, m3, m4, pupil_plot, pupil_roi, data, control_bobyqa, my_pal)
 
 ```
 
+
+# Alternative Analysis
+
+Since the trials for the ALS speaker are much longer than the control speaker's trials, we are going to conduct an alternative analysis. First, we are going to resample the ALS speaker's trials so the length of the trials are comparable to the control speaker's trials. Then, we will conduct the mixed-effects models on the resampled data.
+
+```{r}
+
+# Rescaling the ALS speaker's trials to be more consistent with the Control speaker.
+
+## Bin.width
+bin.width <- 1.3
+
+ALS.binned <- data %>%
+  dplyr::filter(speaker == "ALS") %>%
+  mutate(bins = floor(timebins/bin.width)*bin.width) %>%
+  dplyr::group_by(subject, trial_c, speaker, bins, effort_rating,
+                  code, counterbalance) %>%
+  dplyr::summarize(pupil_dilation = mean(pupil.binned)) %>%
+  dplyr::ungroup()
+
+Control <- data %>%
+  dplyr::filter(speaker == "Control")
+
+  
+
+  # Selecting relevant parameters
+  dplyr::select(subject, trial, speaker, timebins, code) %>%
+  dplyr::distinct() %>%
+  # Filtering out time before start of phrase
+  dplyr::filter(timebins >= 0) %>%
+  dplyr::group_by(speaker, code) %>%
+  dplyr::summarize(length = max(timebins)) %>%
+  dplyr::group_by(speaker) %>%
+  dplyr::summarize(av_length = mean(length),
+                   av_offset = av_length - 3000,
+                   av_end_roi = av_length - 2000) %>%
+  gt::gt() %>%
+  gt::cols_label(speaker = "Speaker",
+                 av_length = "Average Trial Length (ms)",
+                 av_offset = "Average Phrase Length (ms)",
+                 av_end_roi = "Average Endpoint for ROI (ms)")
+
+  
+
+```
+
+
+```{r}
+data %>%
+  # For this analysis, we are only analyzing pupil dilation for accurate responses
+  dplyr::filter(rep_acc == "accurate") %>%
+  # filtering out timebins below 500 (i.e., keeping timebins above 500 ms)
+  dplyr::filter(timebins >= 500) %>%
+  dplyr::group_by(subject, trial) %>%
+  dplyr::filter(timebins <= max(timebins) - 2000) %>%
+  ungroup()
+```
+
