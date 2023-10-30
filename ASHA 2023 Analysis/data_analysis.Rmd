@@ -260,18 +260,24 @@ ggsave("Plots/Perceived_effort.png", plot = last_plot(), height = 5, width = 5, 
 ```
 
 
-```{r}
+```{r, warning = F, message = F}
 
-peak_pupil_df %>%
+perceived_effort_df %>%
   ggplot() +
   aes(y = speaker,
-      x = peak_pupil,
+      x = effort_rating,
       color = speaker,
       fill = speaker) +
   geom_density_ridges(scale = 0.7, alpha = 0.5) +
+  labs(x = "Perceived Listening Effort Rating", y = "Speaker") +
   theme_bw() +
+   theme(legend.position = "none", aspect.ratio = 1) +
   scale_fill_manual(values = my_pal) +
   scale_color_manual(values = my_pal)
+
+# Saving the ggplot
+
+ggsave("Plots/Perceived_effort_dis.png", plot = last_plot(), height = 5, width = 5, units = "in")
 
 ```
 
@@ -298,7 +304,7 @@ performance::icc(m0)
 
 Now we will add trial number (i.e. trial_c) as a random slope for both subject and code. A likelihood ratio test was also ran to test whether model 1 provided a better fit to the data than the unconditional model.
 
-```{r}
+```{r, warning = F, message = F}
 
 m1 <- glmmTMB(effort_rating ~ 1 + (trial_c|subject) + (trial_c|code), 
            data = perceived_effort_df)
@@ -315,7 +321,7 @@ The likelihood ratio test indicated that model 1 provided a better fit to the da
 
 To control for trial order, trial_c is added as a fixed effect to model 2. A likelihood ratio test was also conducted to test whether model 2 provides a better fit to the data compared to model 1
 
-```{r}
+```{r, warning = F, message = F}
 
 m2 <- glmmTMB(effort_rating ~ trial_c + (trial_c|subject) + (trial_c|code), 
               data = perceived_effort_df)
@@ -326,7 +332,7 @@ anova(m1, m2)
 
 ```
 
-As indicated from the model, adding trial order did not significantly improve the model fit to the data (chi-sq(1)m p = 0.52). This indicates that trial order is not an important predictor for perceived listening effort ratings and that ratings for the speakers were fairly consistent across trials.
+As indicated from the model, adding trial order did not significantly improve the model fit to the data (chi-sq(1) = 0.412, p = 0.52). This indicates that trial order is not an important predictor for perceived listening effort ratings and that ratings for the speakers were fairly consistent across trials.
 
 ### Model 3
 
@@ -349,7 +355,7 @@ Based on the model output, adding speaker to the model improved the model fit to
 
 To test whether there are any potential differences in perceived effort ratings across trials, we are testing whether adding an interaction between trial_c and speaker improves model fit. Again, a likelihood ratio test was conducted to see if model 4 provides a better fit to the data compared to model 3.
 
-```{r}
+```{r, warning = F, message = F}
 
 m4 <- glmmTMB(effort_rating ~ trial_c + speaker + trial_c*speaker + (trial_c|subject) + (trial_c|code), 
            data = perceived_effort_df)
@@ -360,7 +366,7 @@ anova(m3, m4)
 
 ```
 
-Based on the model output, adding the interaction term did not significantly improve model fit (chi-sq(1) = 0.70). The fixed effect estimate for the interaction term is also not significant. This indicates that effort ratings across the trials for the ALS speaker were not significantly different from each other.
+Based on the model output, adding the interaction term did not significantly improve model fit (chi-sq(1) = 0.14, p= 0.70). The fixed effect estimate for the interaction term is also not significant. This indicates that effort ratings across the trials for the ALS speaker were not significantly different from each other.
 
 ### Final Model
 
@@ -368,9 +374,8 @@ Based on our model building, we will now specify our final model. Since the tria
 
 ```{r}
 
-per_effort_model_final <- glmmTMB(effort_rating ~ speaker + (trial_c|subject) + (trial_c|code), data = perceived_effort_df)
-
-summary(per_effort_model_final)
+per_effort_model_final <- glmmTMB(effort_rating ~ speaker + (trial_c|subject) + (trial_c|code), 
+                               data = perceived_effort_df)
 
 sjPlot::tab_model(per_effort_model_final, file = "Final Model Outputs/perceived_effort_model.html")
 ```
@@ -381,7 +386,7 @@ The final model indicates that the perceived effort ratings for the ALS speaker 
 
 # Remove unneeded items from the environment
 
-rm(m0, m1, m2, m3, m4, per_effort_des, perceived_effort_df, per_effort_model_final, model_0, model0)
+rm(m0, m1, m2, m3, m4, per_effort_des, perceived_effort_df, per_effort_model_final)
 
 ```
 
@@ -610,6 +615,13 @@ anova(m3, m4)
 ```
 Based on the model output, model 4 provides a better fit to the data compared to model 3 (chi-sq(1) = 9.25, P = 0.002). What is interesting is that the only fixed effects that are significant in this model are the main effect of the cubic growth term and the interaction between the cubic growth term and speaker, indicating the cubic pupil dilation growth is significantly different between these two speakers.
 
+```{r, message = F, warning = F}
+
+sjPlot::tab_model(m4, file = "Final Model Outputs/final_pupil_dilation_model.html")
+
+```
+
+
 ```{r, include = F, message = F, warning = F}
 
 # Saving model 4 output
@@ -618,7 +630,7 @@ sjPlot::tab_model(m1, m2, m3, m4, file = "Final Model Outputs/pupil_dilation_mod
 
 # removing unneeded items from the environment
 
-rm(m0, m1, m2, m3, m4, pupil_plot, pupil_roi, data, control_bobyqa, my_pal)
+rm(m0, m1, m2, m3, m4, pupil_plot, control_bobyqa)
 
 ```
 
@@ -629,7 +641,7 @@ Since the trials for the ALS speaker are much longer than the control speaker's 
 
 ## Peak Pupil Dilation Descriptives
 
-```{r}
+```{r, warning = F, message = F}
 
 peak_pupil_df <- pupil_roi %>%
   dplyr::group_by(subject, trial_c, speaker, code) %>%
@@ -656,7 +668,7 @@ peak_pupil_des %>%
 
 ### Peak Pupil Dilation Distribution Plot
 
-```{r}
+```{r, warning = F, message = F}
 
 peak_pupil_df %>%
   ggplot() +
@@ -676,7 +688,7 @@ ggsave("Plots/peak_pupil_dis.png", plot = last_plot(), height = 5, width = 5, un
 ```
 ### Peak Pupil Dilation Bar Plot
 
-```{r}
+```{r, warning = F, message = F}
 
 peak_pupil_des %>%
   ggplot() +
@@ -700,7 +712,11 @@ ggsave("Plots/peak_pupil_bar.png", plot = last_plot(), height = 5, width = 5, un
 
 ### Fully Unconditional Model
 
-```{r}
+We first fit a fully unconditional model to the data to calculate ICC. The adjusted and unadjusted ICC is 0.364.
+
+```{r, warning = F, message = F}
+
+# Note: I ran into issues using glmmTMB, so used lme4 instead
 
 m0 <- lmer(peak_pupil ~ 1 + (1|subject) + (1|code), data = peak_pupil_df)
 
@@ -712,12 +728,14 @@ performance::icc(m0)
 
 ### Model 1
 
-```{r}
+We added trial as random slopes for both the subject and code random effects. The model initially failed to converge, so an optimizer was added to the model. Then a singular fit warning was displayed, so the random slope of trial_c was removed from the code random effect.
 
-# Ran into convergence issues, so added the nlminb optimizer to the model.
-# Model had simgular fit issues, so removed the (trial_c|code) random effect.
+```{r, warning = F, message = F}
 
-m1 <- lmer(peak_pupil ~ 1 + (trial_c|subject), 
+# Model failed to converge, so added an optimizer
+# Singular fit so removed random slope for code.
+
+m1 <- lmer(peak_pupil ~ 1 + (trial_c|subject) + (1|code), 
            data = peak_pupil_df, control = lmerControl(
                            optimizer ='optimx', optCtrl=list(method='nlminb')))
 
@@ -727,11 +745,15 @@ anova(m0, m1)
 
 ```
 
+Model 1 provided a better fit to the data (chi-sq(2) = 43.44, p < 0.001).
+
 ### Model 2
 
-```{r}
+Next, in order to control for trial order, trial was added to the model as a fixed effect.
 
-m2 <- lmer(peak_pupil ~ trial_c + (trial_c|subject), 
+```{r, warning = F, message = F}
+
+m2 <- lmer(peak_pupil ~ trial_c + (trial_c|subject) + (1|code), 
            data = peak_pupil_df, control = lmerControl(
                            optimizer ='optimx', optCtrl=list(method='nlminb')))
 
@@ -741,12 +763,16 @@ anova(m1, m2)
 
 ```
 
+Adding trial to the model as a fixed effect significantly improved model fit (chi-sq(1) = p<0.001). Based on the fixed effect estimate for trial order, peak pupil dilation decreased approximately -1.23 units on average with each trial.
+
 ### Model 3
 
-```{r}
+Next, we added the fixed effect of speaker to the model to test whether peak pupil dilation was, on average, higher for when listening to the ALS speaker compared to the control speaker.
 
-m3 <- lmer(peak_pupil ~ trial_c + speaker + (trial_c|subject) , 
-              data = peak_pupil_df, control = lmerControl(
+```{r, warning = F, message = F}
+
+m3 <- lmer(peak_pupil ~ trial_c + speaker + (trial_c|subject) + (1|code), 
+           data = peak_pupil_df, control = lmerControl(
                            optimizer ='optimx', optCtrl=list(method='nlminb')))
 
 summary(m3)
@@ -755,11 +781,17 @@ anova(m2, m3)
 
 ```
 
+Adding speaker to the model improved the model fit to the data (ch-sq(1), p <0.001). Controlling for trial order, listeners' peak pupil dilation, on average, was about 85.22 units higher compared to when they were listening to the control speaker. This indicates listeners were exerting more effort while listening to the ALS speaker compared to the control speaker.
+
 ### Model 4
 
-```{r}
+Finally, the interaction between trial and speaker was added to the model to test whether peak pupil dilation for the ALS speaker change at a different rate across trials.
 
-m4 <- lmer(peak_pupil ~ trial_c + speaker + trial_c*speaker + (trial_c|subject) , 
+```{r, warning = F, message = F}
+
+# Ran into convergence problem, so removed the trial_c random slope for code
+
+m4 <- lmer(peak_pupil ~ trial_c + speaker + speaker*trial_c + (trial_c|subject) + (1|code), 
               data = peak_pupil_df, control = lmerControl(
                            optimizer ='optimx', optCtrl=list(method='nlminb')))
 
@@ -770,15 +802,28 @@ anova(m3, m4)
 
 ```
 
+Based on the model output, adding the speaker*trial interaction did not significantly improve model fit to the data (chi-sq(1) = 0.06, p = .80). This indicates that when listening to the speaker with ALS, the listeners' peak pupil dilation declined at a similar rate as when they were listening to the control speaker.
+
 #### Final Model
 
-```{r}
+Based on the model comparisons, model 3 provided the best fit to the data. Therefore, the final model output for peak pupil dilation is provided below.
+
+```{r, warning = F, message = F}
 
 final_model <- lmer(peak_pupil ~ trial_c + speaker + (trial_c|subject) , 
               data = peak_pupil_df, control = lmerControl(
                            optimizer ='optimx', optCtrl=list(method='nlminb')))
 
 sjPlot::tab_model(final_model, file = "Final Model Outputs/peak_pupil_model.html")
+
+```
+
+
+```{r, include = F, warning = F, message = F}
+
+# Removing unneeded items from the environment
+
+rm(data, m0, m1, m2, m3, m4, peak_pupil_des, peak_pupil_df, pupil_roi, my_pal)
 
 ```
 
