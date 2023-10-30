@@ -37,6 +37,7 @@ library(sjPlot) # install.packages("sjPlot")
 library(ggridges) # install.packages("ggridges")
 library(lme4) # install.packages("lme4")
 library(lmerTest) # install.packages("lmerTest")
+library(optimx) # install.packages("optimx")
 
 ```
 
@@ -715,8 +716,6 @@ performance::icc(m0)
 
 # Ran into convergence issues, so added the nlminb optimizer to the model.
 # Model had simgular fit issues, so removed the (trial_c|code) random effect.
-
-library(optimx)
 
 m1 <- lmer(peak_pupil ~ 1 + (trial_c|subject), 
            data = peak_pupil_df, control = lmerControl(
