@@ -438,7 +438,7 @@ control <- data %>%
   geom_vline(xintercept = 0, size = 0.35) +
   geom_vline(xintercept = 1908, linetype = 2) +
   annotate("rect", xmin = 500, xmax = 2908, ymin = -50, ymax = 150, alpha = 0.2) +
-  coord_cartesian(xlim = c(0,4910), ylim = c(-100, 200)) +
+  coord_cartesian(xlim = c(0,4908), ylim = c(-100, 200)) +
   labs(title = "Control Speaker", x = "Time (ms)", y = "Pupil Dilation (arbitrary units)") +
   theme_bw() +
   scale_color_manual(values = my_pal[1]) +
@@ -472,6 +472,54 @@ als <- data %>%
 als
 
 ```
+
+```{r, include = F, eval = F}
+
+bin.length = 26
+
+data1 <- data %>%
+  filter(speaker == "ALS") %>%
+  group_by(code) %>%
+  mutate(bins = round(timebins/bin.length)*bin.length) %>%
+  group_by(subject, trial, bins, speaker, code) %>%
+  dplyr::summarize(pupil = mean(pupil.binned)) %>%
+  ungroup()
+
+control <- data %>%
+  filter(speaker == "Control") %>% 
+  select(subject, trial, timebins, speaker, code, pupil.binned) %>%
+  rename(pupil = pupil.binned,
+         bins = timebins)
+  
+
+normed_pupil <- rbind(data1, control)
+
+normed_pupil %>%
+  count(speaker, code) %>%
+  group_by(speaker) %>%
+  summarize(row_m = mean(n), sd = sd(n))
+
+normed_pupil %>%
+  # Selecting relevant parameters
+  dplyr::select(subject, trial, speaker, bins, code) %>%
+  # Filtering out time before start of phrase
+  dplyr::filter(bins >= 0) %>%
+  dplyr::group_by(speaker, code) %>%
+  dplyr::summarize(length = max(bins)) %>%
+  dplyr::group_by(speaker) %>%
+  dplyr::summarize(av_length = mean(length),
+                   av_offset = av_length - 3000,
+                   av_end_roi = av_length - 2000) %>%
+  gt::gt() %>%
+  gt::cols_label(speaker = "Speaker",
+                 av_length = "Average Trial Length (ms)",
+                 av_offset = "Average Phrase Length (ms)",
+                 av_end_roi = "Average Endpoint for ROI (ms)")
+
+
+```
+
+
 
 
 ```{r, include = F, warning = F, message = F}
