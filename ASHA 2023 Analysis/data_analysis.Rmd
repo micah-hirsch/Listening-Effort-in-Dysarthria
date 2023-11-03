@@ -393,6 +393,13 @@ rm(m0, m1, m2, m3, m4, per_effort_des, perceived_effort_df, per_effort_model_fin
 
 # Pupil Dilation
 
+
+
+
+
+
+
+
 ## Descriptives
 
 The ALS speaker has a slower speech rate compared to the control speaker. Therefore, we are going to calculate the average trial legnth to see on average, how different the lengths were for ALS trials and control speaker trials. We will need this information to be able to mark the average phrase offset time and average end point for the analysis region of interest for visualization purposes.
@@ -473,9 +480,11 @@ als
 
 ```
 
-```{r, include = F, eval = F}
+```{r, echo = F, eval = F}
 
-bin.length = 26
+# This code block is a Work in Progress. Since the phrase legnths between the ALS speaker and the Control speaker are very different, this block is attempting to downsample the ALS trials to be a similar length of the control trials. The current code is able to downsample to a point where the number of rows for ALS trials and control trials are similar (in the new normed_pupil df). However, the timestamp labels were not updated yet. This analysis may be moved to an alternative script to further flesh this out.
+
+bin.length = 26.27
 
 data1 <- data %>%
   filter(speaker == "ALS") %>%
@@ -490,32 +499,16 @@ control <- data %>%
   select(subject, trial, timebins, speaker, code, pupil.binned) %>%
   rename(pupil = pupil.binned,
          bins = timebins)
-  
-
-normed_pupil <- rbind(data1, control)
 
 normed_pupil %>%
   count(speaker, code) %>%
   group_by(speaker) %>%
   summarize(row_m = mean(n), sd = sd(n))
 
-normed_pupil %>%
-  # Selecting relevant parameters
-  dplyr::select(subject, trial, speaker, bins, code) %>%
-  # Filtering out time before start of phrase
-  dplyr::filter(bins >= 0) %>%
-  dplyr::group_by(speaker, code) %>%
-  dplyr::summarize(length = max(bins)) %>%
-  dplyr::group_by(speaker) %>%
-  dplyr::summarize(av_length = mean(length),
-                   av_offset = av_length - 3000,
-                   av_end_roi = av_length - 2000) %>%
-  gt::gt() %>%
-  gt::cols_label(speaker = "Speaker",
-                 av_length = "Average Trial Length (ms)",
-                 av_offset = "Average Phrase Length (ms)",
-                 av_end_roi = "Average Endpoint for ROI (ms)")
-
+data %>%
+  count(speaker, code) %>%
+  group_by(speaker) %>%
+  summarize(row_m = mean(n), sd = sd(n))
 
 ```
 
