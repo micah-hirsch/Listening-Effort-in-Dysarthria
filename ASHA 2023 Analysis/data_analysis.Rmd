@@ -482,7 +482,9 @@ als
 
 ```{r, echo = F, eval = F}
 
-# This code block is a Work in Progress. Since the phrase legnths between the ALS speaker and the Control speaker are very different, this block is attempting to downsample the ALS trials to be a similar length of the control trials. The current code is able to downsample to a point where the number of rows for ALS trials and control trials are similar (in the new normed_pupil df). However, the timestamp labels were not updated yet. This analysis may be moved to an alternative script to further flesh this out.
+# This code block is a Work in Progress. Since the phrase legnth between the ALS speaker and the Control speaker are very different, this block is attempting to downsample the ALS trials to be a similar length of the control trials. The current code is able to downsample to a point where the number of rows for ALS trials and control trials are similar (in the new normed_pupil df). However, the timestamp labels were not updated yet. This analysis may be moved to an alternative script to further flesh this out.
+
+# This code block is not included in the ASHA 2023 output file.
 
 bin.length = 26.27
 
