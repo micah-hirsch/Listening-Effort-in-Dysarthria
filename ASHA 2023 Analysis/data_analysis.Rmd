@@ -403,6 +403,13 @@ rm(m0, m1, m2, m3, m4, per_effort_des, perceived_effort_df, per_effort_model_fin
 
 # Pupil Dilation
 
+
+
+
+
+
+
+
 ## Descriptives
 
 The ALS speaker has a slower speech rate compared to the control speaker. Therefore, we are going to calculate the average phrase length to see on average, how different the phrase lengths were for ALS trials and control speaker trials. To calculate this, the first 3000 ms were filtered out of the df to remove the trial time before the phrase onset. Then, the average trial length was calculated (phrase presentation + 3000 ms retention period). The average phrase offset was calculated by subtracting 2000 ms from the average trial length, since our analysis region of interests stops 1000 ms after the phrase offset.
@@ -452,7 +459,7 @@ control <- data %>%
   geom_vline(xintercept = 0, size = 0.35) +
   geom_vline(xintercept = 1908, linetype = 2) +
   annotate("rect", xmin = 500, xmax = 2908, ymin = -50, ymax = 150, alpha = 0.2) +
-  coord_cartesian(xlim = c(0,4910), ylim = c(-100, 200)) +
+  coord_cartesian(xlim = c(0,4908), ylim = c(-100, 200)) +
   labs(title = "Control Speaker", x = "Time (ms)", y = "Pupil Dilation (arbitrary units)") +
   theme_bw() +
   scale_color_manual(values = my_pal[1]) +
@@ -517,6 +524,7 @@ als
 
 ```
 
+
 #### Average Pupil Response to the ALS Speaker
 
 We can also look at this tracking grouped by the listeners in our study. From this figure, we can see there are variable responses to the the  speaker with ALS across listeners. Some of listener trackings for this speaker are following an odd pattern. Future analyses will investigate these individual listener and trial trackings to check for any potential tracking errors.
@@ -544,6 +552,8 @@ als_byListener <- data %>%
 als_byListener
 
 ```
+
+
 
 
 ```{r, include = F, warning = F, message = F}
