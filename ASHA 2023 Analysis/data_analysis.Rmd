@@ -19,6 +19,8 @@ The purpose of this document is to run preliminary analyses and visualizations f
 
 Any questions or comments regarding this project or analysis may be directed to Micah Hirsch, mhirsch@fsu.edu. 
 
+This analysis was conducted using R version 4.3.1
+
 ```{r, include = F, warning = F, message = F}
 
 # Load Needed Packages
@@ -130,7 +132,7 @@ rm(ethnicity, gender, listener_demo, race)
 
 ### Mean Speaker Intelligibility
 
-Across all trials in the study, the intelligibility level for each of the speaker is reported below.  Across listeners, the mean intelligibility for the ALS speaker was 81.08% with a standard deviation of 3.86. For the control speaker, the mean intelligibility level was 93.62% with a standard deviation of 2.90.
+Across all trials in the study, the intelligibility level for each of the speaker is reported below.  Across listeners, the mean intelligibility for the ALS speaker was 81.08% with a standard deviation of 3.86. For the control speaker, the mean intelligibility level was 93.62% with a standard deviation of 2.90. Based on their intelligibility level, the speaker with ALS is determined to have a moderate severity of dysarthria (Stipancic et al., 2021).
 
 ```{r, warning = F, message = F}
 
@@ -189,8 +191,9 @@ intel_df %>%
                  inaccurate = "Inaccurate",
                  percent_accurate = "Percent Accurate")
 
-
 ```
+
+
 ```{r, include = F, warning = F, message = F}
 
 # removing unneeded items from the environment
@@ -288,13 +291,14 @@ ggsave("Plots/Perceived_effort_dis.png", plot = last_plot(), height = 5, width =
 
 To analyze the perceived effort ratings, we are going to use linear mixed-effects models. To start, we are going to specify our fully unconditional model. In this model, we included random intercepts for subject (i.e. our listeners) and code (i.e. the different phrases). No fixed effects have been added to the model. We also calculated ICC from this model.
 
-Both the conditional and unconditional ICC is 0.099.
+Both the conditional and unconditional ICC is .099 (rounded to .1 in model output).
 
 ```{r, warning = F, message = F}
 
 m0 <- glmmTMB(effort_rating ~ 1 + (1|subject) + (1|code), data = perceived_effort_df)
 
-summary(m0)
+sjPlot::tab_model(m0, pred.labels = "Intercept",
+                  dv.labels = "Perceived Listening Effort")
 
 performance::icc(m0)
 
@@ -309,7 +313,8 @@ Now we will add trial number (i.e. trial_c) as a random slope for both subject a
 m1 <- glmmTMB(effort_rating ~ 1 + (trial_c|subject) + (trial_c|code), 
            data = perceived_effort_df)
 
-summary(m1)
+sjPlot::tab_model(m1, pred.labels = "Intercept",
+                  dv.labels = "Perceived Listening Effort")
 
 anova(m0, m1)
 
@@ -319,20 +324,21 @@ The likelihood ratio test indicated that model 1 provided a better fit to the da
 
 ### Model 2
 
-To control for trial order, trial_c is added as a fixed effect to model 2. A likelihood ratio test was also conducted to test whether model 2 provides a better fit to the data compared to model 1
+To control for trial order, the trial order variable was added as a fixed effect to model 2. A likelihood ratio test was also conducted to test whether model 2 provides a better fit to the data compared to model 1
 
 ```{r, warning = F, message = F}
 
 m2 <- glmmTMB(effort_rating ~ trial_c + (trial_c|subject) + (trial_c|code), 
               data = perceived_effort_df)
 
-summary(m2)
+sjPlot::tab_model(m2, pred.labels = c("Intercept", "Trial Order"),
+                  dv.labels = "Perceived Listening Effort")
 
 anova(m1, m2)
 
 ```
 
-As indicated from the model, adding trial order did not significantly improve the model fit to the data (chi-sq(1) = 0.412, p = 0.52). This indicates that trial order is not an important predictor for perceived listening effort ratings and that ratings for the speakers were fairly consistent across trials.
+As indicated from the model, adding trial order did not significantly improve the model fit to the data (chi-sq(1) = .412, p = .52). This indicates that trial order is not an important predictor for perceived listening effort ratings and that ratings for the speakers were fairly consistent across trials.
 
 ### Model 3
 
@@ -343,30 +349,32 @@ In model 3, we added the speaker fixed effect to test whether the mean differenc
 m3 <- glmmTMB(effort_rating ~ trial_c + speaker + (trial_c|subject) + (trial_c|code), 
            data = perceived_effort_df)
 
-summary(m3)
+sjPlot::tab_model(m3, pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]"),
+                  dv.labels = "Perceived Listening Effort")
 
 anova(m2, m3)
 
 ```
 
-Based on the model output, adding speaker to the model improved the model fit to the data (chi-sq(1) = 469.74, p <0.001). The fixed effect estimate indicates that, while controlling for trial order, the perceived listening effort rating across listeners and phrases is about 2.35 higher for ALS speaker.
+Based on the model output, adding speaker to the model improved the model fit to the data (chi-sq(1) = 469.74, p <.001). The fixed effect estimate indicates that, while controlling for trial order, the perceived listening effort rating across listeners and phrases is about 2.35 higher for the ALS speaker.
 
 ### Model 4
 
-To test whether there are any potential differences in perceived effort ratings across trials, we are testing whether adding an interaction between trial_c and speaker improves model fit. Again, a likelihood ratio test was conducted to see if model 4 provides a better fit to the data compared to model 3.
+To test whether there are any potential differences in perceived effort ratings across trials, we are testing whether adding an interaction between trial order and speaker improves model fit. Again, a likelihood ratio test was conducted to see if model 4 provides a better fit to the data compared to model 3.
 
 ```{r, warning = F, message = F}
 
 m4 <- glmmTMB(effort_rating ~ trial_c + speaker + trial_c*speaker + (trial_c|subject) + (trial_c|code), 
            data = perceived_effort_df)
 
-summary(m4)
+sjPlot::tab_model(m4, pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Trial Order * Speaker [ALS]"),
+                  dv.labels = "Perceived Listening Effort")
 
 anova(m3, m4)
 
 ```
 
-Based on the model output, adding the interaction term did not significantly improve model fit (chi-sq(1) = 0.14, p= 0.70). The fixed effect estimate for the interaction term is also not significant. This indicates that effort ratings across the trials for the ALS speaker were not significantly different from each other.
+Based on the model output, adding the interaction term did not significantly improve model fit (chi-sq(1) = .14, p= .70). The fixed effect estimate for the interaction term is also not significant. This indicates that effort ratings across the trials for both the ALS speaker and the control speaker were not significantly different from each other. In other words, the ratings for both the ALS speaker and control speaker stayed consistent across the experimental trials.
 
 ### Final Model
 
@@ -377,10 +385,12 @@ Based on our model building, we will now specify our final model. Since the tria
 per_effort_model_final <- glmmTMB(effort_rating ~ speaker + (trial_c|subject) + (trial_c|code), 
                                data = perceived_effort_df)
 
-sjPlot::tab_model(per_effort_model_final, file = "Final Model Outputs/perceived_effort_model.html")
+sjPlot::tab_model(per_effort_model_final, pred.labels = c("Intercept", "Speaker [ALS]"),
+                  dv.labels = "Perceived Listening Effort",
+                  file = "Final Model Outputs/perceived_effort_model.html")
 ```
 
-The final model indicates that the perceived effort ratings for the ALS speaker is about 2.35 points higher than they control speaker. This is consistent with the results shown in the descriptive statistics.
+The final model indicates that the perceived effort ratings for the ALS speaker is about 2.35 points higher than the control speaker. This is consistent with the results shown in the descriptive statistics.
 
 ```{r, include = F, warning = F, message = F}
 
@@ -402,33 +412,37 @@ rm(m0, m1, m2, m3, m4, per_effort_des, perceived_effort_df, per_effort_model_fin
 
 ## Descriptives
 
-The ALS speaker has a slower speech rate compared to the control speaker. Therefore, we are going to calculate the average trial legnth to see on average, how different the lengths were for ALS trials and control speaker trials. We will need this information to be able to mark the average phrase offset time and average end point for the analysis region of interest for visualization purposes.
+The ALS speaker has a slower speech rate compared to the control speaker. Therefore, we are going to calculate the average phrase length to see on average, how different the phrase lengths were for ALS trials and control speaker trials. To calculate this, the first 3000 ms were filtered out of the df to remove the trial time before the phrase onset. Then, the average trial length was calculated (phrase presentation + 3000 ms retention period). The average phrase offset was calculated by subtracting 2000 ms from the average trial length, since our analysis region of interests stops 1000 ms after the phrase offset.
+
+We will need this information to be able to mark the average phrase offset time and average end point for the analysis region of interest for visualization purposes.
 
 ```{r, warning = F, message = F}
 
 data %>%
   # Selecting relevant parameters
   dplyr::select(subject, trial, speaker, timebins, code) %>%
-  # Filtering out time before start of phrase
+  # Filtering out times before phase onset
   dplyr::filter(timebins >= 0) %>%
   dplyr::group_by(speaker, code) %>%
-  dplyr::summarize(length = max(timebins)) %>%
+  dplyr::summarize(length = max(timebins) - min(timebins)) %>%
   dplyr::group_by(speaker) %>%
   dplyr::summarize(av_length = mean(length),
-                   av_offset = av_length - 3000,
+                   av_phrase = av_length - 3000,
                    av_end_roi = av_length - 2000) %>%
   gt::gt() %>%
   gt::cols_label(speaker = "Speaker",
                  av_length = "Average Trial Length (ms)",
-                 av_offset = "Average Phrase Length (ms)",
+                 av_phrase = "Average Phrase Length (ms)",
                  av_end_roi = "Average Endpoint for ROI (ms)")
 
 ```
 
-Average trial length includes the phrase presentation plus the 3000 ms retention period. Average phrase legnth is the average length of the recording. Average Endpoint of the Analysis ROI is the 1000 ms after the average phrase endpoint (calculated this for data visualization purposes). On average, the phrase length (phrase presentation), was about 2461 ms longer for the ALS trials than the control speaker trials. 
+On average, the phrase length (phrase presentation), was about 2461 ms longer for the ALS trials than the control speaker trials. 
 
 
 ### Visualization
+
+#### Average Pupil Response to the Control Speaker
 
 This is the smoothed pupil dilation tracking for the Control Speaker. The solid line indicates the start of the phrase. The dotted line indicates the average phrase offset. The grey box represents the region of interest for analysis.
 
@@ -455,9 +469,39 @@ control
 
 ```
 
+#### Individual Listener Pupil Response to the Control Speaker
+
+We can also look at this tracking grouped by the listeners in our study. From this figure, we can see there are variable responses to the the control speaker across listeners.
+
+```{r, warning = F, message = F}
+
+control_byListener <- data %>%
+  dplyr::filter(rep_acc == "accurate") %>%
+  dplyr::filter(speaker == "Control") %>%
+  ggplot() +
+  aes(x = timebins,
+      y = pupil.binned,
+      group = subject,
+      color = speaker) +
+  geom_smooth() +
+  geom_vline(xintercept = 0, size = 0.35) +
+  geom_vline(xintercept = 1908, linetype = 2) +
+  annotate("rect", xmin = 500, xmax = 2908, ymin = -50, ymax = 150, alpha = 0.2) +
+  coord_cartesian(xlim = c(0,4910), ylim = c(-100, 200)) +
+  labs(title = "Pupil Response to Control Speaker (Grouped by Listener)", x = "Time (ms)", y = "Pupil Dilation (arbitrary units)") +
+  theme_bw() +
+  scale_color_manual(values = my_pal[1]) +
+  theme(legend.position = "none", aspect.ratio = 1)
+
+control_byListener
+
+```
+
+#### Individual Listener Pupil Response to the ALS Speaker
+
 This is the smoothed pupil dilation tracking for the ALS Speaker. The solid line indicates the start of the phrase. The dotted line indicates the average phrase offset. The grey box represents the region of interest for analysis.
 
-```{r}
+```{r, warning = F, message = F}
 
 als <- data %>%
   dplyr::filter(rep_acc == "accurate") %>%
@@ -480,37 +524,32 @@ als
 
 ```
 
-```{r, echo = F, eval = F}
 
-# This code block is a Work in Progress. Since the phrase legnth between the ALS speaker and the Control speaker are very different, this block is attempting to downsample the ALS trials to be a similar length of the control trials. The current code is able to downsample to a point where the number of rows for ALS trials and control trials are similar (in the new normed_pupil df). However, the timestamp labels were not updated yet. This analysis may be moved to an alternative script to further flesh this out.
+#### Average Pupil Response to the ALS Speaker
 
-# This code block is not included in the ASHA 2023 output file.
+We can also look at this tracking grouped by the listeners in our study. From this figure, we can see there are variable responses to the the  speaker with ALS across listeners. Some of listener trackings for this speaker are following an odd pattern. Future analyses will investigate these individual listener and trial trackings to check for any potential tracking errors.
 
-bin.length = 26.27
+```{r, warning = F, message = F}
 
-data1 <- data %>%
-  filter(speaker == "ALS") %>%
-  group_by(code) %>%
-  mutate(bins = round(timebins/bin.length)*bin.length) %>%
-  group_by(subject, trial, bins, speaker, code) %>%
-  dplyr::summarize(pupil = mean(pupil.binned)) %>%
-  ungroup()
+als_byListener <- data %>%
+  dplyr::filter(rep_acc == "accurate") %>%
+  dplyr::filter(speaker == "ALS") %>%
+  ggplot() +
+  aes(x = timebins,
+      y = pupil.binned,
+      group = subject,
+      color = speaker) +
+  geom_smooth() +
+  geom_vline(xintercept = 0, size = 0.35) +
+  geom_vline(xintercept = 4369, linetype = 2) +
+  annotate("rect", xmin = 500, xmax = 5369, ymin = -50, ymax = 150, alpha = 0.2) +
+  coord_cartesian(xlim = c(0,7369), ylim = c(-100, 200)) +
+  labs(title = "ALS Speaker", x = "Time (ms)", y = "Pupil Dilation (arbitrary units)") +
+  theme_bw() +
+  scale_color_manual(values = my_pal[2]) +
+  theme(legend.position = "none", aspect.ratio = 1)
 
-control <- data %>%
-  filter(speaker == "Control") %>% 
-  select(subject, trial, timebins, speaker, code, pupil.binned) %>%
-  rename(pupil = pupil.binned,
-         bins = timebins)
-
-normed_pupil %>%
-  count(speaker, code) %>%
-  group_by(speaker) %>%
-  summarize(row_m = mean(n), sd = sd(n))
-
-data %>%
-  count(speaker, code) %>%
-  group_by(speaker) %>%
-  summarize(row_m = mean(n), sd = sd(n))
+als_byListener
 
 ```
 
@@ -523,22 +562,22 @@ pupil_plot <- ggarrange(control, als, ncol = 2)
 
 ggsave("Plots/Pupil_dilation.png", plot = pupil_plot, width = 10, height = 5, units = "in")
 
-rm(als, control)
+rm(als, control, als_byListener, control_byListener)
 
 ```
 
 
 ## Pupil Dilation Analysis
 
-### Fully Unconditional Model
+### Unconditional Growth Model
 
-First, we ran an unconditional growth model. In the intial model, I first specified a model with the orthogonal polynomials added as fixed effects and subject (i.e. listener) and code (i.e. phrase) as random intercepts. I also added the orthogonal polynomials as random slopes. I also used the AR(1) covariance structure to specifiy the random effect structure. However, I was not able to run the model and ran into convergence issues.
+First, we ran an unconditional growth model. In the intial model, I first specified a model with the orthogonal polynomials added as fixed effects and subject (i.e. listener) and code (i.e. phrase) as random intercepts. I also added the orthogonal polynomials as random slopes (poly1, poly2, and poly3). I also attempted to use the AR(1) covariance structure to specifiy the random effect structure. However, I was not able to run the model and ran into convergence issues.
 
 Therefore, I decided to respecify the random effect structure by removing the AR(1) specification. This led to a model with singular fit. In response to this, I decided to remove code (i.e.phrase) from the random effect structure in order to simplify it.
 
-More details about how I respecified the model can be seen in the code block.
+For more details on how the unconditional growth model was specified, please click on "show" to see the code.
 
-The adjusted ICC for the unconditional growth model is .109. The unadjusted ICC for the conditional growth model is .107.
+The adjusted ICC for the unconditional growth model is .109 (rounded to .11 in model output). The unadjusted ICC for the conditional growth model is .107.
 
 ```{r, warning = F, message = F}
 
@@ -561,10 +600,7 @@ pupil_roi <- gazer::code_poly(pupil_roi, predictor = "timebins", poly.order = 3,
 
 rio::export(pupil_roi, "Cleaned Data/pupil_analysis_roi.csv")
 
-## I kept running into issues using glmmTMB, so I switched to lme4
-
-library(lme4)
-library(lmerTest)
+# I kept running into issues using glmmTMB. Therefore, I switched to using lme4 for these analyses
 
 # specifying unconditional growth model for pupil data
 
@@ -572,7 +608,8 @@ m0 <- lmer(pupil.binned ~ poly1 + poly2 + poly3 +
                 (poly1 + poly2 + poly3|subject), 
               data = pupil_roi)
 
-summary(m0)
+sjPlot::tab_model(m0, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term"),
+                  dv.labels = "Pupil Dilation")
 
 performance::icc(m0)
 
@@ -588,7 +625,8 @@ m1 <- lmer(pupil.binned ~ poly1 + poly2 + poly3 + speaker +
                 (poly1 + poly2 + poly3|subject), 
               data = pupil_roi)
 
-summary(m1)
+sjPlot::tab_model(m1, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]"),
+                  dv.labels = "Pupil Dilation")
 
 anova(m0, m1)
 
@@ -598,7 +636,7 @@ As indicated in the model output, when listening to the ALS speaker, on average,
 
 ### Model 2
 
-In model two, the interaction between poly1 and speaker was added to the model as a fixed effect to test whether linear growth was greater for the ALS speaker compared to the control speaker. A likelihood ratio test was also conducted to test if model 2 provides a better fit to the data compared to model 1.
+In model two, the interaction between the linear growth term and speaker was added to the model as a fixed effect. A likelihood ratio test was also conducted to test if model 2 provides a better fit to the data compared to model 1.
 
 Note: The initial run of this model did not converge, so an optimizer control was added to the model. This optimizer will remain in each subsequent model.
 
@@ -613,13 +651,15 @@ m2 <- lmer(pupil.binned ~ poly1 + poly2 + poly3 + speaker +
              (poly1 + poly2 + poly3|subject), 
               data = pupil_roi, control = control_bobyqa)
 
-summary(m2)
+sjPlot::tab_model(m2, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]", 
+                                      "Linear Term * Speaker [ALS]"),
+                  dv.labels = "Pupil Dilation")
 
 anova(m1, m2)
 
 ```
 
-Based on the model output, the interaction between poly1 and speaker is significant, indicating that, across listeners, linear growth in pupil dilation while listening to the ALS speaker was significantly greater than when listeners were listening to the control speaker. The likelihood ratio test also indicated that model 2 provided a better fit to the data than model 1 (chi-sq(1) = 649.22, p <0.001).
+Based on the model output, the interaction between the linear growth term and speaker is significant, indicating that, across listeners, pupil dilation grew at a faster rate for the ALS speaker compared to the control speaker. The likelihood ratio test also indicated that model 2 provided a better fit to the data than model 1 (chi-sq(1) = 649.22, p <.001).
 
 ### Model 3
 
@@ -632,13 +672,17 @@ m3 <- lmer(pupil.binned ~ poly1 + poly2 + poly3 + speaker +
              (poly1 + poly2 + poly3|subject), 
               data = pupil_roi, control = control_bobyqa)
 
-summary(m3)
+sjPlot::tab_model(m3, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]", 
+                                      "Linear Term * Speaker [ALS]", "Quadratic Term * Speaker [ALS]"),
+                  dv.labels = "Pupil Dilation")
 
 anova(m2, m3)
 
 
 ```
-Based on the model output, the interaction between the quadratic growth term and speaker improved the model fit (ch-sq(1) = 147.72, p<0.001). This indicates, on average, the shape of the listeners' pupil dilation is different while listening to the ALS speaker vs the control speaker.
+
+
+Based on the model output, the interaction between the quadratic growth term and speaker improved the model fit (ch-sq(1) = 147.72, p<.001). This indicates, on average, the shape of the listeners' pupil dilation is significantly different while listening to the ALS speaker vs the control speaker.
 
 ### Model 4
 
@@ -651,25 +695,25 @@ m4 <- lmer(pupil.binned ~ poly1 + poly2 + poly3 + speaker +
              (poly1 + poly2 + poly3|subject), data = pupil_roi, 
            control = control_bobyqa)
 
-summary(m4)
+sjPlot::tab_model(m4, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]", 
+                                      "Linear Term * Speaker [ALS]", "Quadratic Term * Speaker [ALS]", "Cubic Term * Speaker [ALS]"),
+                  dv.labels = "Pupil Dilation")
 
 anova(m3, m4)
 
 ```
-Based on the model output, model 4 provides a better fit to the data compared to model 3 (chi-sq(1) = 9.25, P = 0.002). What is interesting is that the only fixed effects that are significant in this model are the main effect of the cubic growth term and the interaction between the cubic growth term and speaker, indicating the cubic pupil dilation growth is significantly different between these two speakers.
 
-```{r, message = F, warning = F}
-
-sjPlot::tab_model(m4, file = "Final Model Outputs/final_pupil_dilation_model.html")
-
-```
+Based on the model output, model 4 provides a better fit to the data compared to model 3 (chi-sq(1) = 9.25, P = .002). Interestingly, the only fixed effects that are significant in this model are the main effect of the cubic growth term and the interaction between the cubic growth term and speaker. However, the model output still indicates that there are significant differences in the shape of pupil dilation for the ALS speaker compared to the control speaker.
 
 
 ```{r, include = F, message = F, warning = F}
 
 # Saving model 4 output
 
-sjPlot::tab_model(m1, m2, m3, m4, file = "Final Model Outputs/pupil_dilation_model.html")
+sjPlot::tab_model(m1, m2, m3, m4, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]", 
+                                      "Linear Term * Speaker [ALS]", "Quadratic Term * Speaker [ALS]", "Cubic Term * Speaker [ALS]"),
+                  dv.labels = c("Model 1", "Model 2", "Model 3", "Model 4"),
+                  file = "Final Model Outputs/pupil_dilation_model.html")
 
 # removing unneeded items from the environment
 
@@ -683,6 +727,8 @@ rm(m0, m1, m2, m3, m4, pupil_plot, control_bobyqa)
 Since the trials for the ALS speaker are much longer than the control speaker's trials, we are going to conduct an exploratory analysis for the pupil dilation measure. For each of the listener's trial, we are going to extract the peak pupil dilation during the analysis region and model it as a function of speaker.
 
 ## Peak Pupil Dilation Descriptives
+
+The mean peak pupil dilation, standard deviation, and standard error was calculated for each speaker and are reported below. In general, the mean peak pupil dilation for the ALS speaker is about 69 units higher than for the control speaker.
 
 ```{r, warning = F, message = F}
 
@@ -709,7 +755,11 @@ peak_pupil_des %>%
 
 ```
 
-### Peak Pupil Dilation Distribution Plot
+### Visualization
+
+Below are two figures to visualize the distribution of peak pupil dilation across listeners and trials for the ALS and Control Speakers.
+
+#### Peak Pupil Dilation Distribution Plot
 
 ```{r, warning = F, message = F}
 
@@ -729,7 +779,9 @@ peak_pupil_df %>%
 ggsave("Plots/peak_pupil_dis.png", plot = last_plot(), height = 5, width = 5, units = "in")
 
 ```
-### Peak Pupil Dilation Bar Plot
+
+
+#### Peak Pupil Dilation Bar Plot
 
 ```{r, warning = F, message = F}
 
@@ -763,7 +815,8 @@ We first fit a fully unconditional model to the data to calculate ICC. The adjus
 
 m0 <- lmer(peak_pupil ~ 1 + (1|subject) + (1|code), data = peak_pupil_df)
 
-summary(m0)
+sjPlot::tab_model(m0, pred.labels = "Intercept",
+                  dv.labels = "Peak Pupil Dilation")
 
 performance::icc(m0)
 
@@ -782,13 +835,14 @@ m1 <- lmer(peak_pupil ~ 1 + (trial_c|subject) + (1|code),
            data = peak_pupil_df, control = lmerControl(
                            optimizer ='optimx', optCtrl=list(method='nlminb')))
 
-summary(m1)
+sjPlot::tab_model(m1, pred.labels = "Intercept",
+                  dv.labels = "Peak Pupil Dilation")
 
 anova(m0, m1)
 
 ```
 
-Model 1 provided a better fit to the data (chi-sq(2) = 43.44, p < 0.001).
+Model 1 provided a better fit to the data (chi-sq(2) = 43.44, p < .001).
 
 ### Model 2
 
@@ -800,13 +854,14 @@ m2 <- lmer(peak_pupil ~ trial_c + (trial_c|subject) + (1|code),
            data = peak_pupil_df, control = lmerControl(
                            optimizer ='optimx', optCtrl=list(method='nlminb')))
 
-summary(m2)
+sjPlot::tab_model(m2, pred.labels = c("Intercept", "Trial Order"),
+                  dv.labels = "Peak Pupil Dilation")
 
 anova(m1, m2)
 
 ```
 
-Adding trial to the model as a fixed effect significantly improved model fit (chi-sq(1) = p<0.001). Based on the fixed effect estimate for trial order, peak pupil dilation decreased approximately -1.23 units on average with each trial.
+Adding trial to the model as a fixed effect significantly improved model fit (chi-sq(1) = 12.73, p<.001). Based on the fixed effect estimate for trial order, peak pupil dilation decreased approximately -1.23 units on average with each trial.
 
 ### Model 3
 
@@ -818,13 +873,14 @@ m3 <- lmer(peak_pupil ~ trial_c + speaker + (trial_c|subject) + (1|code),
            data = peak_pupil_df, control = lmerControl(
                            optimizer ='optimx', optCtrl=list(method='nlminb')))
 
-summary(m3)
+sjPlot::tab_model(m3, pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]"),
+                  dv.labels = "Peak Pupil Dilation")
 
 anova(m2, m3)
 
 ```
 
-Adding speaker to the model improved the model fit to the data (ch-sq(1), p <0.001). Controlling for trial order, listeners' peak pupil dilation, on average, was about 85.22 units higher compared to when they were listening to the control speaker. This indicates listeners were exerting more effort while listening to the ALS speaker compared to the control speaker.
+Adding speaker to the model improved the model fit to the data (ch-sq(1) = 102.96, p <.001). Controlling for trial order, listeners' peak pupil dilation, on average, was about 85.22 units higher compared to when they were listening to the control speaker. This indicates listeners were exerting more effort while listening to the ALS speaker compared to the control speaker.
 
 ### Model 4
 
@@ -838,7 +894,8 @@ m4 <- lmer(peak_pupil ~ trial_c + speaker + speaker*trial_c + (trial_c|subject) 
               data = peak_pupil_df, control = lmerControl(
                            optimizer ='optimx', optCtrl=list(method='nlminb')))
 
-summary(m4)
+sjPlot::tab_model(m4, pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Trial Order * Speaker [ALS]"),
+                  dv.labels = "Peak Pupil Dilation")
 
 anova(m3, m4)
 
@@ -853,11 +910,13 @@ Based on the model comparisons, model 3 provided the best fit to the data. There
 
 ```{r, warning = F, message = F}
 
-final_model <- lmer(peak_pupil ~ trial_c + speaker + (trial_c|subject) , 
+final_model <- lmer(peak_pupil ~ trial_c + speaker + (trial_c|subject) + (1|code), 
               data = peak_pupil_df, control = lmerControl(
                            optimizer ='optimx', optCtrl=list(method='nlminb')))
 
-sjPlot::tab_model(final_model, file = "Final Model Outputs/peak_pupil_model.html")
+sjPlot::tab_model(final_model, pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]"),
+                  dv.labels = "Peak Pupil Dilation",
+                  file = "Final Model Outputs/peak_pupil_model.html")
 
 ```
 
@@ -866,7 +925,7 @@ sjPlot::tab_model(final_model, file = "Final Model Outputs/peak_pupil_model.html
 
 # Removing unneeded items from the environment
 
-rm(data, m0, m1, m2, m3, m4, peak_pupil_des, peak_pupil_df, pupil_roi, my_pal)
+rm(data, m0, m1, m2, m3, m4, final_model, peak_pupil_des, peak_pupil_df, pupil_roi, my_pal)
 
 ```
 
