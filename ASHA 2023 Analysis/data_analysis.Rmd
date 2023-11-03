@@ -393,6 +393,13 @@ rm(m0, m1, m2, m3, m4, per_effort_des, perceived_effort_df, per_effort_model_fin
 
 # Pupil Dilation
 
+
+
+
+
+
+
+
 ## Descriptives
 
 The ALS speaker has a slower speech rate compared to the control speaker. Therefore, we are going to calculate the average trial legnth to see on average, how different the lengths were for ALS trials and control speaker trials. We will need this information to be able to mark the average phrase offset time and average end point for the analysis region of interest for visualization purposes.
@@ -438,7 +445,7 @@ control <- data %>%
   geom_vline(xintercept = 0, size = 0.35) +
   geom_vline(xintercept = 1908, linetype = 2) +
   annotate("rect", xmin = 500, xmax = 2908, ymin = -50, ymax = 150, alpha = 0.2) +
-  coord_cartesian(xlim = c(0,4910), ylim = c(-100, 200)) +
+  coord_cartesian(xlim = c(0,4908), ylim = c(-100, 200)) +
   labs(title = "Control Speaker", x = "Time (ms)", y = "Pupil Dilation (arbitrary units)") +
   theme_bw() +
   scale_color_manual(values = my_pal[1]) +
@@ -472,6 +479,42 @@ als <- data %>%
 als
 
 ```
+
+```{r, echo = F, eval = F}
+
+# This code block is a Work in Progress. Since the phrase legnth between the ALS speaker and the Control speaker are very different, this block is attempting to downsample the ALS trials to be a similar length of the control trials. The current code is able to downsample to a point where the number of rows for ALS trials and control trials are similar (in the new normed_pupil df). However, the timestamp labels were not updated yet. This analysis may be moved to an alternative script to further flesh this out.
+
+# This code block is not included in the ASHA 2023 output file.
+
+bin.length = 26.27
+
+data1 <- data %>%
+  filter(speaker == "ALS") %>%
+  group_by(code) %>%
+  mutate(bins = round(timebins/bin.length)*bin.length) %>%
+  group_by(subject, trial, bins, speaker, code) %>%
+  dplyr::summarize(pupil = mean(pupil.binned)) %>%
+  ungroup()
+
+control <- data %>%
+  filter(speaker == "Control") %>% 
+  select(subject, trial, timebins, speaker, code, pupil.binned) %>%
+  rename(pupil = pupil.binned,
+         bins = timebins)
+
+normed_pupil %>%
+  count(speaker, code) %>%
+  group_by(speaker) %>%
+  summarize(row_m = mean(n), sd = sd(n))
+
+data %>%
+  count(speaker, code) %>%
+  group_by(speaker) %>%
+  summarize(row_m = mean(n), sd = sd(n))
+
+```
+
+
 
 
 ```{r, include = F, warning = F, message = F}
