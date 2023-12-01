@@ -403,13 +403,6 @@ rm(m0, m1, m2, m3, m4, per_effort_des, perceived_effort_df, per_effort_model_fin
 
 # Pupil Dilation
 
-
-
-
-
-
-
-
 ## Descriptives
 
 The ALS speaker has a slower speech rate compared to the control speaker. Therefore, we are going to calculate the average phrase length to see on average, how different the phrase lengths were for ALS trials and control speaker trials. To calculate this, the first 3000 ms were filtered out of the df to remove the trial time before the phrase onset. Then, the average trial length was calculated (phrase presentation + 3000 ms retention period). The average phrase offset was calculated by subtracting 2000 ms from the average trial length, since our analysis region of interests stops 1000 ms after the phrase offset.
@@ -803,6 +796,7 @@ peak_pupil_des %>%
 ggsave("Plots/peak_pupil_bar.png", plot = last_plot(), height = 5, width = 5, units = "in")
 
 ```
+
 ## Analysis
 
 ### Fully Unconditional Model

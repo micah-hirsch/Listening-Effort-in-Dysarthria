@@ -1,0 +1,94 @@
+---
+title: "Standardized Pupil Analysis"
+author: "Micah E. Hirsch"
+date: "2023-12-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Purpose
+
+The preliminary pupillometry results (found in the data_analysis.Rmd file) indicicated that the shape of the pupil dilation tracking is different while listening to the speaker with ALS verses listening to the control speaker. However, it is not clear whether this finidng is influenced by the difference in the length of the audio files for the control speaker and the ALS speaker. Due to the speaker's slowed speech rate, the ALS speaker's audio files were longer than the control speaker's files. 
+
+Therefore, in order to control for the effect of the difference in speech rate, we will normalize the trial-level data for the ALS speaker so that the trial lengths are similar to the control speaker's trials.
+
+This reanalysis is conducted using R version 4.3.1
+
+```{r, include = F, warning = F, message = F}
+
+# Load Needed Packages
+library(rio) # install.packages("rio")
+library(tidyverse) # install.packages("tidyverse")
+# Need remotes package to install gazer and saccades
+library(remotes) # install.packages("remotes")
+library(gazer) # remotes::install_github("dmirman/gazer")
+library(saccades) # remotes::install_github("tmalsburg/saccades/saccades")
+library(zoo) # install.packages("zoo")
+library(ggpubr) # installl.packages("ggpubr")
+library(gt) # install.packages("gt")
+library(glmmTMB) # install.packages("glmmTMB")
+library(performance) # install.packages("performance")
+library(sjPlot) # install.packages("sjPlot")
+library(ggridges) # install.packages("ggridges")
+library(lme4) # install.packages("lme4")
+library(lmerTest) # install.packages("lmerTest")
+library(optimx) # install.packages("optimx")
+
+```
+
+# Pupil Dilation Normalization
+
+Work in Progress
+
+```{r}
+
+# Import pupil dilation data
+data <- rio::import("Cleaned Data/cleaned_data.csv") %>%
+  # removing trials with missing rep accuracy: 3 trials removed
+  dplyr::mutate(rep_acc = ifelse(rep_acc == "", NA, rep_acc)) %>%
+  dplyr::filter(!is.na(rep_acc)) %>%
+  # Releveling speaker variable
+  dplyr::mutate(speaker = as.factor(speaker),
+                speaker = fct_relevel(speaker, "Control", "ALS")) %>%
+  # Creating a trial variable that codes trial 6 (i.e. the first experimental trial) as 0.
+  dplyr::mutate(trial_c = trial - 6)
+
+# Pupil Normalization
+
+bin.length = 2.29
+
+ALS_trials <- data %>%
+  dplyr::filter(speaker == "ALS") %>%
+  dplyr::mutate(time_n = round(timebins/bin.length)*bin.length) %>%
+  dplyr::group_by(subject, trial_c, speaker, time_n, code) %>%
+  dplyr::summarize(normed_pupil = mean(pupil.binned)) %>%
+  dplyr::ungroup()
+
+```
+
+
+
+```{r}
+
+data %>%
+  # Selecting relevant parameters
+  dplyr::select(subject, trial, speaker, timebins, code) %>%
+  # Filtering out times before phase onset
+  dplyr::filter(timebins >= 0) %>%
+  dplyr::group_by(speaker, code) %>%
+  dplyr::summarize(length = max(timebins) - min(timebins)) %>%
+  dplyr::group_by(speaker) %>%
+  dplyr::summarize(av_length = mean(length),
+                   av_phrase = av_length - 3000,
+                   av_end_roi = av_length - 2000) %>%
+  gt::gt() %>%
+  gt::cols_label(speaker = "Speaker",
+                 av_length = "Average Trial Length (ms)",
+                 av_phrase = "Average Phrase Length (ms)",
+                 av_end_roi = "Average Endpoint for ROI (ms)")
+
+```
+
