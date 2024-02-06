@@ -91,3 +91,45 @@ pupil_data <- do.call(rbind, data_list)
 ## Removing unneeded items from the environment
 rm(data, data_list, file, file_list)
 
+# Filtering out rows before the trial start and after the response cue
+
+## Extracting trial start times
+trial_start <- pupil_data |>
+  dplyr::filter(sample_message == "TRIAL_START") |>
+  dplyr::select(subject, trial, start_time = timestamp)
+
+## Extracting phrase start times
+phrase_start <- pupil_data |>
+  dplyr::filter(sample_message == "PHRASE_START") |>
+  dplyr::select(subject, trial, phrase_start = timestamp)
+
+## Extracting phrase end times
+phrase_end <- pupil_data |>
+  dplyr::filter(sample_message == "PHRASE_END") |>
+  dplyr::select(subject, trial, phrase_end = timestamp)
+
+## Extracting trial end times (e.g. time response cue was presented)
+trial_end <- pupil_data |>
+  dplyr::filter(sample_message == "RESPONSE_CUE") |>
+  dplyr::select(subject, trial, end_time = timestamp)
+
+## Merging the dfs together
+pupil_data2 <- pupil_data |>
+  dplyr::left_join(trial_start, by = c("subject", "trial")) |>
+  dplyr::left_join(phrase_start, by =c("subject", "trial")) |>
+  dplyr::left_join(phrase_end, by = c("subject", "trial")) |>
+  dplyr::left_join(trial_end, by = c("subject", "trial"))
+
+
+## Filter out unneeded rows and trials
+trimmed_pupil_data <- pupil_data2 %>%
+  ## Filtering out rows before trial start and after trial end
+  dplyr::filter(timestamp >= start_time & timestamp <= end_time) %>%
+  ## Removing practice trials from df
+  dplyr::filter(practicetrial != 'Practice') %>%
+  dplyr::select(!practicetrial) %>%
+  ## Aligning data to onset of phrase presentation
+  dplyr::mutate(time_c = timestamp - phrase_start) %>%
+  ## Removing unneeded variables
+  dplyr::select(!c(timestamp, start_time:end_time)) %>%
+  dplyr::relocate(time_c, .after = pupil)
