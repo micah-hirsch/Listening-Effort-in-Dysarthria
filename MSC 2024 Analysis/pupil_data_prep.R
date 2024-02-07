@@ -241,10 +241,11 @@ normed_data <- rbind(ALS_trials, control_trials)
 
 # This is not working as intended yet
 normed_data <- normed_data |>
-  dplyr::mutate(time_norm = time_n * 1.31)
+  dplyr::mutate(time_norm = case_when(speaker == "ALS" ~ time_n/1.5,
+                                      TRUE ~ time_n))
 
 normed_data |>
-  dplyr::filter(time_norm >= 0) %>%
+  dplyr::filter(time_norm>= 0) %>%
   dplyr::group_by(speaker, code) %>%
   dplyr::summarize(length = max(time_norm) - min(time_norm)) %>%
   dplyr::group_by(speaker) %>%
