@@ -204,11 +204,11 @@ rm(baseline_pupil, interp, pupil_extend, smoothed, trimmed_pupil_data, trial_che
 
 bin.length <- 20
 
-data.binned <- mad_removal %>%
-  mutate(timebins = round(time/bin.length)*bin.length) %>%
+data.binned <- mad_removal |>
+  mutate(timebins = round(time/bin.length)*bin.length) |>
   dplyr::group_by(subject, trial, speaker, timebins, effort_rating,
-                  code, targetphrase, counterbalance) %>%
-  dplyr::summarize(pupil.binned = mean(baselinecorrectedp)) %>%
+                  code, targetphrase, counterbalance) |>
+  dplyr::summarize(pupil.binned = mean(baselinecorrectedp)) |>
   dplyr::ungroup()
 
 # Export Cleaned Data
@@ -219,4 +219,35 @@ setwd("~/Documents/Listening-Effort-in-Dysarthria/MSC 2024 Analysis/Cleaned Data
 ## Export
 rio::export(data.binned, "cleaned_pupil_data.csv")
 
+# Downsampling ALS speaker trials
+## Based on findings from the 2023 ASHA Convention data analysis,the trials from the ALS speaker are much longer than the control talker.
+## Therefore we are creating a separate df that downsamples the ALS speaker's trials.
 
+bin.length <- 26.23
+
+ALS_trials <- data.binned |>
+  dplyr::filter(speaker == "ALS") |>
+  dplyr::mutate(time_n = round(timebins/bin.length)*bin.length) |>
+  dplyr::group_by(subject, trial, speaker, time_n, effort_rating, code, targetphrase, counterbalance) |>
+  dplyr::summarize(normed_pupil = mean(pupil.binned)) |>
+  dplyr::ungroup()
+
+control_trials <- data.binned |>
+  dplyr::filter(speaker == "Control") |>
+  dplyr::rename(time_n = timebins,
+                normed_pupil = pupil.binned)
+
+normed_data <- rbind(ALS_trials, control_trials)
+
+# This is not working as intended yet
+normed_data <- normed_data |>
+  dplyr::mutate(time_norm = time_n * 1.31)
+
+normed_data |>
+  dplyr::filter(time_norm >= 0) %>%
+  dplyr::group_by(speaker, code) %>%
+  dplyr::summarize(length = max(time_norm) - min(time_norm)) %>%
+  dplyr::group_by(speaker) %>%
+  dplyr::summarize(av_length = mean(length),
+                   av_phrase = av_length - 3000,
+                   av_end_roi = av_length - 2000)
