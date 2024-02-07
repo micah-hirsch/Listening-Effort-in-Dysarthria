@@ -252,3 +252,7 @@ normed_data |>
   dplyr::summarize(av_length = mean(length),
                    av_phrase = av_length - 3000,
                    av_end_roi = av_length - 2000)
+
+# Export Normalized dataset
+
+rio::export(normed_data, "cleaned_pupil_data_normalized.csv")
