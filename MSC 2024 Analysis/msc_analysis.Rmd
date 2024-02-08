@@ -1,0 +1,48 @@
+---
+title: "Listening Effort MSC Analysis"
+author: "Micah E. Hirsch"
+date: "2024-02-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Purpose
+
+
+
+```{r, echo = F, warning = F, message = F}
+
+# Load Needed Packages
+library(rio) # install.packages("rio")
+library(tidyverse) # install.packages("tidyverse")
+# Need remotes package to install gazer and saccades
+library(remotes) # install.packages("remotes")
+library(gazer) # remotes::install_github("dmirman/gazer")
+library(saccades) # remotes::install_github("tmalsburg/saccades/saccades")
+library(zoo) # install.packages("zoo")
+library(ggpubr) # installl.packages("ggpubr")
+library(gt) # install.packages("gt")
+library(glmmTMB) # install.packages("glmmTMB")
+library(performance) # install.packages("performance")
+library(sjPlot) # install.packages("sjPlot")
+library(ggridges) # install.packages("ggridges")
+library(lme4) # install.packages("lme4")
+library(lmerTest) # install.packages("lmerTest")
+library(optimx) # install.packages("optimx")
+
+```
+
+
+
+
+
+```{r}
+
+plot(pressure)
+
+```
+
+
