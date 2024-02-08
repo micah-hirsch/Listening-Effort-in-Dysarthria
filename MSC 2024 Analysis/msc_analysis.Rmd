@@ -25,6 +25,7 @@ library(saccades) # remotes::install_github("tmalsburg/saccades/saccades")
 library(zoo) # install.packages("zoo")
 library(ggpubr) # installl.packages("ggpubr")
 library(gt) # install.packages("gt")
+library(gtsummary) # install.packages("gtsummary")
 library(glmmTMB) # install.packages("glmmTMB")
 library(performance) # install.packages("performance")
 library(sjPlot) # install.packages("sjPlot")
@@ -36,12 +37,40 @@ library(optimx) # install.packages("optimx")
 ```
 
 
-
+# Listener Demographics
 
 
 ```{r}
 
-plot(pressure)
+listener_demo <- rio::import("Cleaned Data/cleaned_listener_demo.csv") |>
+  dplyr::mutate(gender = factor(gender, levels = c("Man", "Woman", "Nonbinary", "Questioning", "Prefer not to answer")),
+                ethnicity = factor(ethnicity, levels = c("Hispanic/Latino(a/e)", "Not Hispanic/Latino(a/e)", "Prefer not to answer")),
+                race = factor(race, levels = c("white/Caucasian", "Black/African American", "Asian/Asian American",
+                                               "Native Hawaiian or Other Pacific Islander", "Native American or Alaska Native",
+                                               "Biracial or Multiracial", "Prefer not to answer", "Race not listed")),
+                native_lang = factor(native_lang, c("American English", "Not American English")))
+  
+demo_table <- listener_demo |>
+  dplyr::select(age, gender, ethnicity, race, native_lang) |>
+  tbl_summary(type = list(age ~ "continuous",
+                          gender ~ "categorical",
+                          ethnicity ~ "categorical",
+                          race ~ "categorical",
+                          native_lang ~ "categorical"),
+              statistic = list(all_continuous() ~ "{mean} ({sd}, {min}-{max})",
+                               all_categorical() ~ "{n} ({p}%)"),
+              digits = list(everything() ~ c(2)),
+              label = list(age ~ "Age",
+                           gender ~ "Gender",
+                           ethnicity ~ "Ethnicity",
+                           race ~ "Race",
+                           native_lang ~ "Native Language")) |>
+  as_gt()
+
+demo_table
+
+demo_table |>
+  gt::gtsave("Tables/demo_tabe.html")
 
 ```
 
