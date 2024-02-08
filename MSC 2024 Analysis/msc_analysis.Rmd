@@ -74,4 +74,9 @@ demo_table |>
 
 ```
 
+```{r}
+
+rm(demo_table, listener_demo)
+
+```
 
