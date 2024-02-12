@@ -404,3 +404,300 @@ ggsave("Plots/Pupil_dilation.png", plot = last_plot(), width = 10, height = 5, u
 
 ```
 
+## Pupil Dilation Models
+
+### Unconditional Growth Curve Model
+
+```{r}
+
+# Getting region of interest for analysis
+data_roi <- data |>
+  # filtering out timebins below 500 (i.e., keeping timebins above 500 ms)
+  dplyr::filter(time_norm >= 500) |>
+  dplyr::group_by(subject, trial) |>
+  # filtering out timebins 1000 ms after phrase offset
+  dplyr::filter(time_norm<= max(time_norm) - 2000) |>
+  ungroup()
+
+# Adding linear, quadratic, and cubic orthogonal polynomials to the df
+data_roi <- gazer::code_poly(data_roi, predictor = "time_norm", poly.order = 3, orthogonal = T, draw.poly = F)
+
+# Unconditional Growth Model
+m0 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 +
+                (poly1 + poly2 + poly3|subject) + (poly1 + poly2 + poly3|code), 
+              data = data_roi)
+
+sjPlot::tab_model(m0, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term"),
+                  dv.labels = "Pupil Dilation")
+
+performance::icc(m0)
+
+```
+### Model 1
+
+```{r}
+
+# Running into convergence issues, so removed the random effects for phrase (i.e. code)
+m1 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker +
+                (poly1 + poly2 + poly3|subject), 
+              data = data_roi)
+
+sjPlot::tab_model(m1, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]"),
+                  dv.labels = "Pupil Dilation")
+
+anova(m0, m1)
+
+```
+
+### Model 2
+
+```{r}
+
+m2 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
+                (poly1 + poly2 + poly3|subject), 
+              data = data_roi)
+
+sjPlot::tab_model(m2, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]",
+                                      "Phrase Repetition Accuracy [Inaccurate]"),
+                  dv.labels = "Pupil Dilation")
+
+anova(m1, m2)
+
+```
+### Model 3
+
+```{r}
+
+m3 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
+                speaker*poly1 +
+                (poly1 + poly2 + poly3|subject), 
+              data = data_roi)
+
+sjPlot::tab_model(m3, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]",
+                                      "Phrase Repetition Accuracy [Inaccurate]", "Speaker [ALS] * Linear Term"),
+                  dv.labels = "Pupil Dilation")
+
+anova(m2, m3)
+
+```
+
+### Model 4
+
+```{r}
+
+m4 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
+                speaker*poly1 + speaker*poly2 +
+                (poly1 + poly2 + poly3|subject), 
+              data = data_roi)
+
+sjPlot::tab_model(m4, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]",
+                                      "Phrase Repetition Accuracy [Inaccurate]", "Speaker [ALS] * Linear Term",
+                                      "Speaker [ALS] * Quadratic Term"),
+                  dv.labels = "Pupil Dilation")
+
+anova(m3, m4)
+
+```
+### Model 5
+
+```{r}
+
+m5 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
+                speaker*poly1 + speaker*poly2 + speaker*poly3 +
+                (poly1 + poly2 + poly3|subject), 
+              data = data_roi)
+
+sjPlot::tab_model(m5, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]",
+                                      "Phrase Repetition Accuracy [Inaccurate]", "Speaker [ALS] * Linear Term",
+                                      "Speaker [ALS] * Quadratic Term", "Speaker [ALS] * Cubic Term"),
+                  dv.labels = "Pupil Dilation")
+
+anova(m4, m5)
+
+
+```
+### Model 6
+
+```{r}
+
+m6 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
+                speaker*poly1 + speaker*poly2 + speaker*poly3 + speaker*rep_acc +
+                (poly1 + poly2 + poly3|subject), 
+              data = data_roi)
+
+sjPlot::tab_model(m6, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]",
+                                      "Phrase Repetition Accuracy [Inaccurate]", "Speaker [ALS] * Linear Term",
+                                      "Speaker [ALS] * Quadratic Term", "Speaker [ALS] * Cubic Term", 
+                                      "Speaker [ALS] * Phrase Repetition Accuracy [Inaccurate]"),
+                  dv.labels = "Pupil Dilation")
+
+anova(m5, m6)
+
+```
+### Model 7
+
+```{r}
+
+m7 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
+                speaker*poly1 + speaker*poly2 + speaker*poly3 + speaker*rep_acc +
+                rep_acc*poly1 +
+                (poly1 + poly2 + poly3|subject), 
+              data = data_roi)
+
+sjPlot::tab_model(m7, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]",
+                                      "Phrase Repetition Accuracy [Inaccurate]", "Speaker [ALS] * Linear Term",
+                                      "Speaker [ALS] * Quadratic Term", "Speaker [ALS] * Cubic Term", 
+                                      "Speaker [ALS] * Phrase Repetition Accuracy [Inaccurate]", 
+                                      "Phrase Repetition Accuracy [Inaccurate] * Linear Term"),
+                  dv.labels = "Pupil Dilation")
+
+anova(m6, m7)
+
+```
+
+### Model 8
+
+```{r}
+
+m8 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
+                speaker*poly1 + speaker*poly2 + speaker*poly3 + speaker*rep_acc +
+                rep_acc*poly1 + rep_acc*poly2 +
+                (poly1 + poly2|subject), 
+              data = data_roi)
+
+sjPlot::tab_model(m8, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]",
+                                      "Phrase Repetition Accuracy [Inaccurate]", "Speaker [ALS] * Linear Term",
+                                      "Speaker [ALS] * Quadratic Term", "Speaker [ALS] * Cubic Term", 
+                                      "Speaker [ALS] * Phrase Repetition Accuracy [Inaccurate]", 
+                                      "Phrase Repetition Accuracy [Inaccurate] * Linear Term", 
+                                      "Phrase Repetition Accuracy [Inaccurate] * Quadratic Term"),
+                  dv.labels = "Pupil Dilation")
+
+anova(m7, m8)
+
+```
+
+### Model 9
+
+```{r}
+
+m9 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
+                speaker*poly1 + speaker*poly2 + speaker*poly3 + speaker*rep_acc +
+                rep_acc*poly1 + rep_acc*poly2 + rep_acc*poly3 +
+                (poly1 + poly2|subject), 
+              data = data_roi)
+
+sjPlot::tab_model(m9, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]",
+                                      "Phrase Repetition Accuracy [Inaccurate]", "Speaker [ALS] * Linear Term",
+                                      "Speaker [ALS] * Quadratic Term", "Speaker [ALS] * Cubic Term", 
+                                      "Speaker [ALS] * Phrase Repetition Accuracy [Inaccurate]", 
+                                      "Phrase Repetition Accuracy [Inaccurate] * Linear Term", 
+                                      "Phrase Repetition Accuracy [Inaccurate] * Quadratic Term",
+                                      "Phrase Repetition Accuracy [Inaccurate] * Cubic Term"),
+                  dv.labels = "Pupil Dilation")
+
+anova(m8, m9)
+
+```
+### Model 10
+
+```{r}
+
+m10 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
+                speaker*poly1 + speaker*poly2 + speaker*poly3 + speaker*rep_acc +
+                rep_acc*poly1 + rep_acc*poly2 + rep_acc*poly3 +
+                speaker*rep_acc*poly1 +
+                (poly1 + poly2|subject), 
+              data = data_roi)
+
+sjPlot::tab_model(m10, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]",
+                                      "Phrase Repetition Accuracy [Inaccurate]", "Speaker [ALS] * Linear Term",
+                                      "Speaker [ALS] * Quadratic Term", "Speaker [ALS] * Cubic Term", 
+                                      "Speaker [ALS] * Phrase Repetition Accuracy [Inaccurate]", 
+                                      "Phrase Repetition Accuracy [Inaccurate] * Linear Term", 
+                                      "Phrase Repetition Accuracy [Inaccurate] * Quadratic Term",
+                                      "Phrase Repetition Accuracy [Inaccurate] * Cubic Term",
+                                      "Speaker * Phrase Repetition Accuracy * Linear Term"),
+                  dv.labels = "Pupil Dilation")
+
+anova(m9, m10)
+
+```
+### Model 11
+
+```{r}
+
+m11 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
+                speaker*poly1 + speaker*poly2 + speaker*poly3 + speaker*rep_acc +
+                rep_acc*poly1 + rep_acc*poly2 + rep_acc*poly3 +
+                speaker*rep_acc*poly1 + speaker*rep_acc*poly2 +
+                (poly1 + poly2|subject), 
+              data = data_roi)
+
+sjPlot::tab_model(m11, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]",
+                                      "Phrase Repetition Accuracy [Inaccurate]", "Speaker [ALS] * Linear Term",
+                                      "Speaker [ALS] * Quadratic Term", "Speaker [ALS] * Cubic Term", 
+                                      "Speaker [ALS] * Phrase Repetition Accuracy [Inaccurate]", 
+                                      "Phrase Repetition Accuracy [Inaccurate] * Linear Term", 
+                                      "Phrase Repetition Accuracy [Inaccurate] * Quadratic Term",
+                                      "Phrase Repetition Accuracy [Inaccurate] * Cubic Term",
+                                      "Speaker * Phrase Repetition Accuracy * Linear Term",
+                                      "Speaker * Phrase Repetition Accuracy * Quadratic Term"),
+                  dv.labels = "Pupil Dilation")
+
+anova(m10, m11)
+
+
+```
+### Model 12
+
+```{r}
+
+m12 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
+                speaker*poly1 + speaker*poly2 + speaker*poly3 + speaker*rep_acc +
+                rep_acc*poly1 + rep_acc*poly2 + rep_acc*poly3 +
+                speaker*rep_acc*poly1 + speaker*rep_acc*poly2 + speaker*rep_acc*poly3 +
+                (poly1 + poly2|subject), 
+              data = data_roi)
+
+sjPlot::tab_model(m12, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]",
+                                      "Phrase Repetition Accuracy [Inaccurate]", "Speaker [ALS] * Linear Term",
+                                      "Speaker [ALS] * Quadratic Term", "Speaker [ALS] * Cubic Term", 
+                                      "Speaker [ALS] * Phrase Repetition Accuracy [Inaccurate]", 
+                                      "Phrase Repetition Accuracy [Inaccurate] * Linear Term", 
+                                      "Phrase Repetition Accuracy [Inaccurate] * Quadratic Term",
+                                      "Phrase Repetition Accuracy [Inaccurate] * Cubic Term",
+                                      "Speaker * Phrase Repetition Accuracy * Linear Term",
+                                      "Speaker * Phrase Repetition Accuracy * Quadratic Term",
+                                      "Speaker * Phrase Repetition Accuracy * Cubic Term"),
+                  dv.labels = "Pupil Dilation")
+
+anova(m11, m12)
+
+```
+
+### Final Model
+
+```{r}
+
+final_model <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
+                speaker*poly1 + speaker*poly2 + speaker*poly3 + speaker*rep_acc +
+                rep_acc*poly1 + rep_acc*poly2 + rep_acc*poly3 +
+                speaker*rep_acc*poly1 + speaker*rep_acc*poly2 +
+                (poly1 + poly2|subject), 
+              data = data_roi)
+
+sjPlot::tab_model(final_model, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]",
+                                      "Phrase Repetition Accuracy [Inaccurate]", "Speaker [ALS] * Linear Term",
+                                      "Speaker [ALS] * Quadratic Term", "Speaker [ALS] * Cubic Term", 
+                                      "Speaker [ALS] * Phrase Repetition Accuracy [Inaccurate]", 
+                                      "Phrase Repetition Accuracy [Inaccurate] * Linear Term", 
+                                      "Phrase Repetition Accuracy [Inaccurate] * Quadratic Term",
+                                      "Phrase Repetition Accuracy [Inaccurate] * Cubic Term",
+                                      "Speaker * Phrase Repetition Accuracy * Linear Term",
+                                      "Speaker * Phrase Repetition Accuracy * Quadratic Term"),
+                  dv.labels = "Pupil Dilation", 
+                  file = "Tables/pupil_dilation_model.html")
+
+```
+
