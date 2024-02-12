@@ -40,7 +40,7 @@ library(optimx) # install.packages("optimx")
 # Listener Demographics
 
 
-```{r}
+```{r, warning = F, message = F}
 
 listener_demo <- rio::import("Cleaned Data/cleaned_listener_demo.csv") |>
   dplyr::mutate(gender = factor(gender, levels = c("Man", "Woman", "Nonbinary", "Questioning", "Prefer not to answer")),
@@ -74,7 +74,7 @@ demo_table |>
 
 ```
 
-```{r}
+```{r, echo = F, warning = F, message = F}
 
 rm(demo_table, listener_demo)
 
@@ -84,7 +84,7 @@ rm(demo_table, listener_demo)
 
 ## Mean Speaker Intelligibility
 
-```{r}
+```{r, warning = F, message = F}
 
 data <- rio::import("Cleaned Data/cleaned_data_normed.csv") |>
   # removing trials with missing rep accuracy
@@ -113,6 +113,294 @@ speaker_acc
 
 speaker_acc |>
   gt::gtsave("Tables/speaker_intel.html")
+
+```
+
+```{r, echo = F, warning = F, message = F}
+
+rm(speaker_acc)
+
+```
+
+
+# Perceived Listening Effort
+
+## Descriptives
+
+```{r}
+
+perceived_effort_df <- data |>
+  dplyr::select(subject, trial, speaker, effort_rating, rep_acc, code, trial_c) |>
+  dplyr::distinct() |>
+  # recoding missing effort ratings (negative effort ratings indicate missing data)
+  dplyr::mutate(effort_rating = ifelse(effort_rating < 0, NA, effort_rating))
+
+perceived_effort_df |>
+  dplyr::select(speaker, effort_rating, rep_acc) |>
+  tbl_strata(
+    strata = rep_acc,
+    ~.x |>
+      tbl_summary(
+        by = speaker,
+        type = list(effort_rating ~ "continuous"),
+        statistic = list(all_continuous() ~ c("{mean} ({sd})")),
+        missing = "no",
+        digits = all_continuous() ~ 2,
+        label = list(effort_rating ~ "Perceived Listening Effort")
+      ))
+
+```
+
+## Visualization
+
+```{r}
+
+# Creating Custom Color Palette for Figures
+library(NatParksPalettes) # install.packages("NatParksPalettes")
+my_pal <- natparks.pals("Glacier", type = "discrete")
+
+# Getting Sum stats for perceived effort
+
+per_effort_des <- perceived_effort_df |>
+  dplyr::group_by(speaker, rep_acc) |>
+  dplyr::summarize(per_effort = mean(effort_rating, na.rm = T), 
+                   sd = sd(effort_rating, na.rm = T),
+                   se = sd/sqrt(n()))
+
+# Plotting the mean perceived effort ratings for the ALS and control speaker
+per_effort_des |>
+  ggplot() +
+   aes(x = rep_acc,
+       y = per_effort,
+       group = speaker,
+       color = speaker,
+       fill = speaker) +
+  geom_bar(stat = "identity", alpha = 0.6, position = position_dodge()) +
+  geom_errorbar(aes(ymin = per_effort - se, ymax = per_effort + se), width = 0.4, position = position_dodge(.9)) +
+  labs(x = "Accuracy", y = "Perceived Listening Effort Rating") +
+  theme_bw() +
+  theme(aspect.ratio = 1) +
+  scale_color_manual(values = c(my_pal[1], my_pal[3])) +
+  scale_fill_manual(values = c(my_pal[1], my_pal[3]))
+
+
+# Saving the ggplot
+
+ggsave("Plots/Perceived_effort.png", plot = last_plot(), height = 5, width = 5, units = "in")
+
+```
+
+## Perceived Listening Effort Models
+
+### Fully Unconditional Model
+
+```{r}
+
+m0 <- glmmTMB(effort_rating ~ 1 + (1|subject) + (1|code), data = perceived_effort_df)
+
+sjPlot::tab_model(m0, pred.labels = "Intercept",
+                  dv.labels = "Perceived Listening Effort")
+
+performance::icc(m0)
+
+```
+### Model 1
+
+```{r}
+
+m1 <- glmmTMB(effort_rating ~ 1 + (trial_c|subject) + (trial_c|code), 
+           data = perceived_effort_df)
+
+sjPlot::tab_model(m1, pred.labels = "Intercept",
+                  dv.labels = "Perceived Listening Effort")
+
+anova(m0, m1)
+
+```
+
+### Model 2
+
+```{r}
+
+m2 <- glmmTMB(effort_rating ~ trial_c + (trial_c|subject) + (trial_c|code), 
+              data = perceived_effort_df)
+
+sjPlot::tab_model(m2, pred.labels = c("Intercept", "Trial Order"),
+                  dv.labels = "Perceived Listening Effort")
+
+anova(m1, m2)
+
+```
+### Model 3
+
+```{r}
+
+m3 <- glmmTMB(effort_rating ~ trial_c + speaker + (trial_c|subject) + (trial_c|code), 
+           data = perceived_effort_df)
+
+sjPlot::tab_model(m3, pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]"),
+                  dv.labels = "Perceived Listening Effort")
+
+anova(m2, m3)
+
+```
+### Model 4
+
+```{r}
+
+m4 <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + (trial_c|subject) + (trial_c|code), 
+           data = perceived_effort_df)
+
+sjPlot::tab_model(m4, pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Phrase Repetition Accuracy [Inaccurate]"),
+                  dv.labels = "Perceived Listening Effort")
+
+anova(m3, m4)
+
+
+```
+### Model 5
+
+```{r}
+
+m5 <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + speaker*rep_acc + (trial_c|subject) + (trial_c|code), 
+           data = perceived_effort_df)
+
+sjPlot::tab_model(m5, pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Phrase Repetition Accuracy [Inaccurate]",
+                                      "Speaker [ALS] * Phrase Repetition Accuracy [Inaccurate]"),
+                  dv.labels = "Perceived Listening Effort")
+
+anova(m4, m5)
+
+```
+### Model 6
+
+```{r}
+
+m6 <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + speaker*rep_acc + speaker*trial_c + (trial_c|subject) + (trial_c|code), 
+           data = perceived_effort_df)
+
+sjPlot::tab_model(m6, pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Phrase Repetition Accuracy [Inaccurate]",
+                                      "Speaker [ALS] * Phrase Repetition Accuracy [Inaccurate]", "Speaker [ALS] * Trial Order"),
+                  dv.labels = "Perceived Listening Effort")
+
+anova(m5, m6)
+
+```
+
+### Model 7
+
+```{r}
+
+m7 <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + 
+                speaker*rep_acc + speaker*trial_c + rep_acc*trial_c + (trial_c|subject) + (trial_c|code), 
+           data = perceived_effort_df)
+
+sjPlot::tab_model(m7, pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Phrase Repetition Accuracy [Inaccurate]",
+                                      "Speaker [ALS] * Phrase Repetition Accuracy [Inaccurate]", "Speaker [ALS] * Trial Order",
+                                      "Phrase Repetition Accuracy [Inaccurate] * Trial Order"),
+                  dv.labels = "Perceived Listening Effort")
+
+anova(m6, m7)
+
+
+```
+
+### Model 8
+
+```{r}
+
+m8 <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + 
+                speaker*rep_acc + speaker*trial_c + rep_acc*trial_c + speaker*rep_acc*trial_c + (trial_c|subject) + (trial_c|code), 
+           data = perceived_effort_df)
+
+sjPlot::tab_model(m8, pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Phrase Repetition Accuracy [Inaccurate]",
+                                      "Speaker [ALS] * Phrase Repetition Accuracy [Inaccurate]", "Speaker [ALS] * Trial Order",
+                                      "Phrase Repetition Accuracy [Inaccurate] * Trial Order", 
+                                      "Phrase Repetition Accuracy * Speaker * Trial Order"),
+                  dv.labels = "Perceived Listening Effort",
+                  file = "Tables/perceived_effort_model.html")
+
+anova(m7, m8)
+
+```
+
+```{r, echo = F, message = F, warning = F}
+
+rm(m0, m1, m2, m3, m4, m5, m6, m7, m8, per_effort_des)
+
+```
+
+# Pupil Dilation
+
+## Preliminary Visualizations
+
+Needing to spot any participants with odd trackings. Based on the visualizations below, LE13 and LE23 appear to have odd trackings, so they will be dropped from the current analyses.
+
+```{r, warning = F, message = F}
+
+data |>
+  ggplot() +
+  aes(x = time_norm,
+      y = normed_pupil) +
+  geom_smooth() +
+  coord_cartesian(xlim = c(0,4908), ylim = c(-100, 200)) +
+  facet_wrap("subject")
+
+```
+
+
+## Descriptives
+
+### Getting Time Landmarks
+
+```{r, message = F, warning = F}
+
+data <- data |>
+  dplyr::filter(subject != "LE13" & subject != "LE23")
+
+data |>
+  # Selecting relevant parameters
+  dplyr::select(subject, trial, speaker, time_norm, code) |>
+  # Filtering out times before phase onset
+  dplyr::filter(time_norm >= 0) |>
+  dplyr::group_by(speaker, code) |>
+  dplyr::summarize(length = max(time_norm) - min(time_norm)) |>
+  dplyr::ungroup() |>
+  dplyr::summarize(av_length = mean(length),
+                   av_phrase = av_length - 3000,
+                   av_end_roi = av_length - 2000) %>%
+  gt::gt() |>
+  gt::cols_label(av_length = "Average Trial Length (ms)",
+                 av_phrase = "Average Phrase Length (ms)",
+                 av_end_roi = "Average Endpoint for ROI (ms)")
+
+```
+
+## Visualizations
+
+```{r, warning = F, message = F}
+
+data |>
+  ggplot() +
+  aes(x = time_norm,
+      y = normed_pupil,
+      group = speaker,
+      color = speaker) +
+  geom_smooth() +
+  geom_vline(xintercept = 0, size = 0.35) +
+  geom_vline(xintercept = 1910, linetype = 2) +
+  annotate("rect", xmin = 500, xmax = 2910, ymin = -50, ymax = 200, alpha = 0.2) +
+  coord_cartesian(xlim = c(0,4910), ylim = c(-100, 200)) +
+  labs(x = "Normalized Time (ms)", y = "Pupil Dilation (arbitrary units)",
+       caption = "Grey Box: Analysis Region of Interest \nSolid Line: Phrase Onset \nDotted Line: Phrase Offset") +
+  facet_wrap("rep_acc") + 
+  theme_bw() +
+  scale_color_manual(values = c(my_pal[1], my_pal[3])) +
+  theme(aspect.ratio = 1,
+        plot.caption = element_text(hjust = 0))
+
+
+ggsave("Plots/Pupil_dilation.png", plot = last_plot(), width = 10, height = 5, units = "in")
 
 ```
 
