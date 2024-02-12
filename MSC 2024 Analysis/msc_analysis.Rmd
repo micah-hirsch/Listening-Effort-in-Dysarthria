@@ -80,3 +80,39 @@ rm(demo_table, listener_demo)
 
 ```
 
+# Speaker Intelligibility and Phrase Accuracy
+
+## Mean Speaker Intelligibility
+
+```{r}
+
+data <- rio::import("Cleaned Data/cleaned_data_normed.csv") |>
+  # removing trials with missing rep accuracy
+  dplyr::mutate(rep_acc = ifelse(rep_acc == "", NA, rep_acc)) |>
+  dplyr::filter(!is.na(rep_acc)) |>
+  dplyr::mutate(speaker = factor(speaker, levels = c("Control", "ALS")),
+                trial_c = trial - 6,
+                rep_acc = factor(rep_acc, levels = c("accurate", "inaccurate")))
+
+speaker_acc <- data |>
+  dplyr::select(subject, trial, speaker, correct_words, target_number, rep_acc) |>
+  dplyr::distinct() |>
+  dplyr::mutate(intel = (correct_words/target_number)*100) |>
+  dplyr::select(-c(subject, trial, correct_words, target_number)) |>
+  tbl_summary(by = speaker,
+              type = list(intel ~ "continuous",
+                          rep_acc ~ "categorical"),
+              statistic = list(all_continuous() ~ "{mean} ({sd})",
+                               all_categorical() ~ "{n} ({p}%)"),
+              digits = list(everything() ~ c(2)),
+              label = list(intel ~ "Intelligibility",
+                           rep_acc ~ "Repetition Accuracy")) |>
+  as_gt()
+
+speaker_acc
+
+speaker_acc |>
+  gt::gtsave("Tables/speaker_intel.html")
+
+```
+
