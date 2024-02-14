@@ -1,7 +1,9 @@
 ---
 title: "Listening Effort MSC Analysis"
 author: "Micah E. Hirsch"
+
 date: "2024-02-14"
+
 output: 
   html_document:
     toc: true
@@ -14,6 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Purpose
+
 
 The purpose of this document is to conduct data analyses for the Listening Effort during Dysarthric Speech Perception study. These results will be presented at the 2024 Motor Speech Conference in February held in San Diego, CA.
 
@@ -45,7 +48,9 @@ library(optimx) # install.packages("optimx")
 
 # Listener Demographics
 
+
 The demographic information for our listeners are presented below. To date, we recruited 27 participants. However, 3 participants were removed from the analysis. One of these listeners decided to withdraw from the study, so their data was removed from the database. For the other two participants, pupillometry data was either not recorded or loss due to instrumentation error. Therefore, we have 24 total participants for this analysis.
+
 
 ```{r, warning = F, message = F}
 
@@ -88,6 +93,7 @@ rm(demo_table, listener_demo)
 ```
 
 # Speaker Intelligibility and Phrase Accuracy
+
 
 During the experiment, participants listened to short phrases spoken by two speakers, one speaker with ALS and another speaker with no neurological impairment (control). The mean intelligibility for the speakers was calculated based on the listener responses. The proportion of accurate phrase repetitions (one of our predictors of interest) is also presented below for the speakers. Overall, the ALS speaker's dysarthria severity is determined to be moderate.
 
@@ -206,6 +212,7 @@ To examine perceived listening effort, we are using linear mixed effects (LME) m
 ### Fully Unconditional Model
 
 To start, we are fitting a fully unconditional model to obtain the intraclass correlation coefficient (ICC). The model only contains random intercepts for listener and phrase (code). The conditional and unconditional ICC is .149.
+
 
 ```{r, warning = F, message = F}
 
@@ -342,6 +349,7 @@ For model 8, a three-way interaction between speaker, phrase repetition accuracy
 
 Therefore, we will retain model 8 as our final model of perceived listening effort. The results indicate that on average, controlling for trial order and repetition accuracy, the ALS speaker was rated as more effortful to listen to than the control speaker. The significant interaction between speaker and phrase repetition accuracy indicates that the difference between PLE ratings when listeners accurately recognized the ALS speaker's phrase compared to when they didn't. The significant three way interaction suggests that on average, PLE ratings for the ALS speaker when the listener did not accurately recognize the phrase decreased slightly across trials.
 
+
 ```{r, warning = F, message = F}
 
 m8 <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + 
@@ -370,6 +378,7 @@ rm(m0, m1, m2, m3, m4, m5, m6, m7, m8, per_effort_des)
 ## Preliminary Visualizations
 
 Before starting the pupil dilation analyses, we need to spot any participants with odd pupil dilation tracking patterns and remove them from the analysis. Based on the visualizations below, LE13 and LE23 appear to have odd trackings, so they will be dropped from the current analyses.
+
 
 ```{r, warning = F, message = F}
 
@@ -449,6 +458,7 @@ For the pupil dilation models, we are using a growth curve analysis to analyze t
 
 First, an unconditional growth curve model was ran to get the ICC for the model. This initial model contains just the linear, quadratic, and cubic growth terms as fixed effects and random intercepts for listener and phrase. The growth terms were also added as random slopes. The adjusted ICC is .19 and unadjusted ICC is .186.
 
+
 ```{r, warning = F, message = F}
 
 # Getting region of interest for analysis
@@ -479,6 +489,7 @@ performance::icc(m0)
 
 In model 1, we added speaker as a fixed effect to the model. At first, I ran into model convergence issues with having both listener and phrase random effects. Therefore, I decided to remove the phrase random intercepts and slopes from the model. Model comparisons were conducted using likelihood ratio tests. The LRT results indicate that speaker significantly improved model fit. 
 
+
 ```{r, warning = F, message = F}
 
 # Running into convergence issues, so removed the random effects for phrase (i.e. code)
@@ -497,6 +508,7 @@ anova(m0, m1)
 
 Phrase repetition accuracy was added to the model as a fixed effect and significantly improved model fit.
 
+
 ```{r, warning = F, message = F}
 
 m2 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
@@ -514,6 +526,7 @@ anova(m1, m2)
 ### Model 3
 
 For model three, the interaction between speaker and the linear growth term was added to the model. This interaction significantly improved model fit.
+
 
 ```{r, warning = F, message = F}
 
@@ -534,6 +547,7 @@ anova(m2, m3)
 
 For model 4, the interaction between speaker and the quadratic growth term was added to the model. This interaction significantly improved the model fit.
 
+
 ```{r, warning = F, message = F}
 
 m4 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
@@ -552,6 +566,7 @@ anova(m3, m4)
 ### Model 5
 
 For model 5, the interaction between speaker and the cubic growth term was added. This interaction significantly improved model fit.
+
 
 ```{r, warning = F, message = F}
 
@@ -573,6 +588,7 @@ anova(m4, m5)
 
 The interaction between speaker and phrase repetition accuracy was added to model 6. This interaction significantly improved model fit.
 
+
 ```{r, warning = F, message = F}
 
 m6 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
@@ -592,6 +608,7 @@ anova(m5, m6)
 ### Model 7
 
 For model 7, the interaction between phrase repetition accuracy and the linear growth term was added to the model. This interaction significantly improved model fit.
+
 
 ```{r, warning = F, message = F}
 
@@ -640,6 +657,7 @@ anova(m7, m8)
 
 For model 9, the interaction between phrase repetition accuracy and the cubic growth term was added. This interaction term did improve the model fit.
 
+
 ```{r, warning = F, message = F}
 
 m9 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
@@ -663,6 +681,7 @@ anova(m8, m9)
 ### Model 10
 
 For model 10, the three-way interaction between speaker, phrase repetition accuracy, and the linear growth term was added to the model. This interaction did not significantly improve model fit.
+
 
 ```{r, warning = F, message = F}
 
@@ -689,6 +708,7 @@ anova(m9, m10)
 ### Model 11
 
 For model 11, the three-way interaction between speaker, repetition accuracy, and the quadratic growth term was added to the model. This interaction significantly improved model fit.
+
 
 ```{r, warning = F, message = F}
 
@@ -719,6 +739,7 @@ anova(m10, m11)
 
 For model 12, the final three-way interaction between speaker, repetition accuracy, and the cubic growth term was added to the model. This interaction did not significantly improve model fit.
 
+
 ```{r, warning = F, message = F}
 
 m12 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
@@ -747,6 +768,7 @@ anova(m11, m12)
 ### Final Model
 
 Based on this model building approach, the model that provided the best fit to the data was model 11. Therefore, the final model is presented below.
+
 
 ```{r, warning = F, message = F}
 

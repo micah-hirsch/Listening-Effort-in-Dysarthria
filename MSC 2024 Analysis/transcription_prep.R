@@ -96,6 +96,7 @@ phrase_acc <- autoscore::autoscore(
 phrase_acc <- phrase_acc |>
   dplyr::rename(correct_words = autoscore)
 
+
 # Creating dichotomous phrase repetition accuracy variable
 
 ## There are some trials with missing transcription data. The lab RAs coded these 
