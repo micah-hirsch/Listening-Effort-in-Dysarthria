@@ -1,7 +1,9 @@
 ---
 title: "Listening Effort MSC Analysis"
 author: "Micah E. Hirsch"
-date: "2024-02-08"
+
+date: "2024-02-14"
+
 output: 
   html_document:
     toc: true
@@ -14,6 +16,9 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Purpose
+
+
+The purpose of this document is to conduct data analyses for the Listening Effort during Dysarthric Speech Perception study. These results will be presented at the 2024 Motor Speech Conference in February held in San Diego, CA.
 
 This analysis was conducted using R version 4.3.1
 
@@ -42,6 +47,9 @@ library(optimx) # install.packages("optimx")
 
 
 # Listener Demographics
+
+
+The demographic information for our listeners are presented below. To date, we recruited 27 participants. However, 3 participants were removed from the analysis. One of these listeners decided to withdraw from the study, so their data was removed from the database. For the other two participants, pupillometry data was either not recorded or loss due to instrumentation error. Therefore, we have 24 total participants for this analysis.
 
 
 ```{r, warning = F, message = F}
@@ -86,7 +94,8 @@ rm(demo_table, listener_demo)
 
 # Speaker Intelligibility and Phrase Accuracy
 
-## Mean Speaker Intelligibility
+
+During the experiment, participants listened to short phrases spoken by two speakers, one speaker with ALS and another speaker with no neurological impairment (control). The mean intelligibility for the speakers was calculated based on the listener responses. The proportion of accurate phrase repetitions (one of our predictors of interest) is also presented below for the speakers. Overall, the ALS speaker's dysarthria severity is determined to be moderate.
 
 ```{r, warning = F, message = F}
 
@@ -128,6 +137,8 @@ rm(speaker_acc)
 
 
 # Perceived Listening Effort
+
+Descriptive statistics and figures showing perceived listening effort ratings are shown below. These ratings were collected after each trial. Listeners rated PLE on a 7-point Likert scale where higher numbers indicate more perceived effort.
 
 ## Descriptives
 
@@ -196,7 +207,12 @@ ggsave("Plots/Perceived_effort.png", plot = last_plot(), height = 5, width = 5, 
 
 ## Perceived Listening Effort Models
 
+To examine perceived listening effort, we are using linear mixed effects (LME) models.
+
 ### Fully Unconditional Model
+
+To start, we are fitting a fully unconditional model to obtain the intraclass correlation coefficient (ICC). The model only contains random intercepts for listener and phrase (code). The conditional and unconditional ICC is .149.
+
 
 ```{r, warning = F, message = F}
 
@@ -208,7 +224,10 @@ sjPlot::tab_model(m0, pred.labels = "Intercept",
 performance::icc(m0)
 
 ```
+
 ### Model 1
+
+In model 1, we added trial order as a random slope for both listener and phrase random intercepts. A likelihood ratio test was also conducted to test whether model 1 provides a better fit to the data. The LRT indicates model 1 provides a better fit to the data.
 
 ```{r, warning = F, message = F}
 
@@ -224,6 +243,8 @@ anova(m0, m1)
 
 ### Model 2
 
+In model 2, we added trial order as a fixed effect to the model to test whether PLE ratings changed across trials in our study. Trial order did not significantly improve the model.
+
 ```{r, warning = F, message = F}
 
 m2 <- glmmTMB(effort_rating ~ trial_c + (trial_c|subject) + (trial_c|code), 
@@ -237,6 +258,8 @@ anova(m1, m2)
 ```
 ### Model 3
 
+Speaker was added as a fixed effect to model 3. The results indicate that including speaker as a fixed effect improved the model fit to the data. The estimate indicates that on average, listeners rated PLE the ALS speaker higher than the control speaker.
+
 ```{r, warning = F, message = F}
 
 m3 <- glmmTMB(effort_rating ~ trial_c + speaker + (trial_c|subject) + (trial_c|code), 
@@ -248,7 +271,10 @@ sjPlot::tab_model(m3, pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]
 anova(m2, m3)
 
 ```
+
 ### Model 4
+
+In model 4, phrase repetition accuracy was added as a fixed effect. This addition significantly improved the model fit.
 
 ```{r, warning = F, message = F}
 
@@ -262,7 +288,10 @@ anova(m3, m4)
 
 
 ```
+
 ### Model 5
+
+An interaction term between speaker and phrase repetition accuracy was added to the model. This interaction did not significantly improve model fit.
 
 ```{r, warning = F, message = F}
 
@@ -276,7 +305,10 @@ sjPlot::tab_model(m5, pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]
 anova(m4, m5)
 
 ```
+
 ### Model 6
+
+The interaction between speaker and trial order was added to the model 6. This interaction did not significantly improve model fit.
 
 ```{r, warning = F, message = F}
 
@@ -292,6 +324,8 @@ anova(m5, m6)
 ```
 
 ### Model 7
+
+In model 7, the interaction between phrase repetition accuracy and trial order was added as a fixed effect. This interaction did not significantly improve model fit.
 
 ```{r, warning = F, message = F}
 
@@ -310,6 +344,11 @@ anova(m6, m7)
 ```
 
 ### Model 8
+
+For model 8, a three-way interaction between speaker, phrase repetition accuracy, and trial order was added to the model. This 3-way interaction significantly improved model fit. 
+
+Therefore, we will retain model 8 as our final model of perceived listening effort. The results indicate that on average, controlling for trial order and repetition accuracy, the ALS speaker was rated as more effortful to listen to than the control speaker. The significant interaction between speaker and phrase repetition accuracy indicates that the difference between PLE ratings when listeners accurately recognized the ALS speaker's phrase compared to when they didn't. The significant three way interaction suggests that on average, PLE ratings for the ALS speaker when the listener did not accurately recognize the phrase decreased slightly across trials.
+
 
 ```{r, warning = F, message = F}
 
@@ -338,7 +377,8 @@ rm(m0, m1, m2, m3, m4, m5, m6, m7, m8, per_effort_des)
 
 ## Preliminary Visualizations
 
-Needing to spot any participants with odd trackings. Based on the visualizations below, LE13 and LE23 appear to have odd trackings, so they will be dropped from the current analyses.
+Before starting the pupil dilation analyses, we need to spot any participants with odd pupil dilation tracking patterns and remove them from the analysis. Based on the visualizations below, LE13 and LE23 appear to have odd trackings, so they will be dropped from the current analyses.
+
 
 ```{r, warning = F, message = F}
 
@@ -354,6 +394,8 @@ data |>
 
 
 ## Descriptives
+
+Trials from the ALS speaker were longer than trials from the control speaker. Therefore, in the data processing steps, the ALS speaker's trials were downsampled to a time scale similar to the control speakers (see the pupil_data_prep script for more info). For visualization purposes, we are extracting the major time landmarks below after phrase onset (i.e. not including the 3000 ms baseline period).
 
 ### Getting Time Landmarks
 
@@ -410,7 +452,12 @@ ggsave("Plots/Pupil_dilation.png", plot = last_plot(), width = 10, height = 5, u
 
 ## Pupil Dilation Models
 
+For the pupil dilation models, we are using a growth curve analysis to analyze the pupil dilation tracking.
+
 ### Unconditional Growth Curve Model
+
+First, an unconditional growth curve model was ran to get the ICC for the model. This initial model contains just the linear, quadratic, and cubic growth terms as fixed effects and random intercepts for listener and phrase. The growth terms were also added as random slopes. The adjusted ICC is .19 and unadjusted ICC is .186.
+
 
 ```{r, warning = F, message = F}
 
@@ -437,7 +484,11 @@ sjPlot::tab_model(m0, pred.labels = c("Intercept", "Linear Term", "Quadratic Ter
 performance::icc(m0)
 
 ```
+
 ### Model 1
+
+In model 1, we added speaker as a fixed effect to the model. At first, I ran into model convergence issues with having both listener and phrase random effects. Therefore, I decided to remove the phrase random intercepts and slopes from the model. Model comparisons were conducted using likelihood ratio tests. The LRT results indicate that speaker significantly improved model fit. 
+
 
 ```{r, warning = F, message = F}
 
@@ -455,6 +506,9 @@ anova(m0, m1)
 
 ### Model 2
 
+Phrase repetition accuracy was added to the model as a fixed effect and significantly improved model fit.
+
+
 ```{r, warning = F, message = F}
 
 m2 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
@@ -468,7 +522,11 @@ sjPlot::tab_model(m2, pred.labels = c("Intercept", "Linear Term", "Quadratic Ter
 anova(m1, m2)
 
 ```
+
 ### Model 3
+
+For model three, the interaction between speaker and the linear growth term was added to the model. This interaction significantly improved model fit.
+
 
 ```{r, warning = F, message = F}
 
@@ -487,6 +545,9 @@ anova(m2, m3)
 
 ### Model 4
 
+For model 4, the interaction between speaker and the quadratic growth term was added to the model. This interaction significantly improved the model fit.
+
+
 ```{r, warning = F, message = F}
 
 m4 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
@@ -503,6 +564,9 @@ anova(m3, m4)
 
 ```
 ### Model 5
+
+For model 5, the interaction between speaker and the cubic growth term was added. This interaction significantly improved model fit.
+
 
 ```{r, warning = F, message = F}
 
@@ -522,6 +586,9 @@ anova(m4, m5)
 ```
 ### Model 6
 
+The interaction between speaker and phrase repetition accuracy was added to model 6. This interaction significantly improved model fit.
+
+
 ```{r, warning = F, message = F}
 
 m6 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
@@ -539,6 +606,9 @@ anova(m5, m6)
 
 ```
 ### Model 7
+
+For model 7, the interaction between phrase repetition accuracy and the linear growth term was added to the model. This interaction significantly improved model fit.
+
 
 ```{r, warning = F, message = F}
 
@@ -560,6 +630,8 @@ anova(m6, m7)
 ```
 
 ### Model 8
+
+In model 8, the interaction between phrase repetition accuracy and the quadratic growth term was added. At the first attempt at running this model, there were model convergence issues. I initially tried to run the model with increased iterations, and then changing the optimizer used. However, these changes did not resolve convergence issues. Therefore, the random effect structure was simplified by removing the cubic random slope. The addition of the interaction signficiantly improved model fit.
 
 ```{r, warning = F, message = F}
 
@@ -583,6 +655,9 @@ anova(m7, m8)
 
 ### Model 9
 
+For model 9, the interaction between phrase repetition accuracy and the cubic growth term was added. This interaction term did improve the model fit.
+
+
 ```{r, warning = F, message = F}
 
 m9 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
@@ -604,6 +679,9 @@ anova(m8, m9)
 
 ```
 ### Model 10
+
+For model 10, the three-way interaction between speaker, phrase repetition accuracy, and the linear growth term was added to the model. This interaction did not significantly improve model fit.
+
 
 ```{r, warning = F, message = F}
 
@@ -628,6 +706,9 @@ anova(m9, m10)
 
 ```
 ### Model 11
+
+For model 11, the three-way interaction between speaker, repetition accuracy, and the quadratic growth term was added to the model. This interaction significantly improved model fit.
+
 
 ```{r, warning = F, message = F}
 
@@ -656,6 +737,9 @@ anova(m10, m11)
 
 ### Model 12
 
+For model 12, the final three-way interaction between speaker, repetition accuracy, and the cubic growth term was added to the model. This interaction did not significantly improve model fit.
+
+
 ```{r, warning = F, message = F}
 
 m12 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
@@ -682,6 +766,9 @@ anova(m11, m12)
 ```
 
 ### Final Model
+
+Based on this model building approach, the model that provided the best fit to the data was model 11. Therefore, the final model is presented below.
+
 
 ```{r, warning = F, message = F}
 
