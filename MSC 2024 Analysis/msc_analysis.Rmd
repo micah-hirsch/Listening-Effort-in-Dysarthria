@@ -1,0 +1,715 @@
+---
+title: "Listening Effort MSC Analysis"
+author: "Micah E. Hirsch"
+date: "2024-02-08"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Purpose
+
+This analysis was conducted using R version 4.3.1
+
+```{r, echo = F, warning = F, message = F}
+
+# Load Needed Packages
+library(rio) # install.packages("rio")
+library(tidyverse) # install.packages("tidyverse")
+# Need remotes package to install gazer and saccades
+library(remotes) # install.packages("remotes")
+library(gazer) # remotes::install_github("dmirman/gazer")
+library(saccades) # remotes::install_github("tmalsburg/saccades/saccades")
+library(zoo) # install.packages("zoo")
+library(ggpubr) # installl.packages("ggpubr")
+library(gt) # install.packages("gt")
+library(gtsummary) # install.packages("gtsummary")
+library(glmmTMB) # install.packages("glmmTMB")
+library(performance) # install.packages("performance")
+library(sjPlot) # install.packages("sjPlot")
+library(ggridges) # install.packages("ggridges")
+library(lme4) # install.packages("lme4")
+library(lmerTest) # install.packages("lmerTest")
+library(optimx) # install.packages("optimx")
+
+```
+
+
+# Listener Demographics
+
+
+```{r, warning = F, message = F}
+
+listener_demo <- rio::import("Cleaned Data/cleaned_listener_demo.csv") |>
+  dplyr::mutate(gender = factor(gender, levels = c("Man", "Woman", "Nonbinary", "Questioning", "Prefer not to answer")),
+                ethnicity = factor(ethnicity, levels = c("Hispanic/Latino(a/e)", "Not Hispanic/Latino(a/e)", "Prefer not to answer")),
+                race = factor(race, levels = c("white/Caucasian", "Black/African American", "Asian/Asian American",
+                                               "Native Hawaiian or Other Pacific Islander", "Native American or Alaska Native",
+                                               "Biracial or Multiracial", "Prefer not to answer", "Race not listed")),
+                native_lang = factor(native_lang, c("American English", "Not American English")))
+  
+demo_table <- listener_demo |>
+  dplyr::select(age, gender, ethnicity, race, native_lang) |>
+  tbl_summary(type = list(age ~ "continuous",
+                          gender ~ "categorical",
+                          ethnicity ~ "categorical",
+                          race ~ "categorical",
+                          native_lang ~ "categorical"),
+              statistic = list(all_continuous() ~ "{mean} ({sd}, {min}-{max})",
+                               all_categorical() ~ "{n} ({p}%)"),
+              digits = list(everything() ~ c(2)),
+              label = list(age ~ "Age",
+                           gender ~ "Gender",
+                           ethnicity ~ "Ethnicity",
+                           race ~ "Race",
+                           native_lang ~ "Native Language")) |>
+  as_gt()
+
+demo_table
+
+demo_table |>
+  gt::gtsave("Tables/demo_tabe.html")
+
+```
+
+```{r, echo = F, warning = F, message = F}
+
+rm(demo_table, listener_demo)
+
+```
+
+# Speaker Intelligibility and Phrase Accuracy
+
+## Mean Speaker Intelligibility
+
+```{r, warning = F, message = F}
+
+data <- rio::import("Cleaned Data/cleaned_data_normed.csv") |>
+  # removing trials with missing rep accuracy
+  dplyr::mutate(rep_acc = ifelse(rep_acc == "", NA, rep_acc)) |>
+  dplyr::filter(!is.na(rep_acc)) |>
+  dplyr::mutate(speaker = factor(speaker, levels = c("Control", "ALS")),
+                trial_c = trial - 6,
+                rep_acc = factor(rep_acc, levels = c("accurate", "inaccurate")))
+
+speaker_acc <- data |>
+  dplyr::select(subject, trial, speaker, correct_words, target_number, rep_acc) |>
+  dplyr::distinct() |>
+  dplyr::mutate(intel = (correct_words/target_number)*100) |>
+  dplyr::select(-c(subject, trial, correct_words, target_number)) |>
+  tbl_summary(by = speaker,
+              type = list(intel ~ "continuous",
+                          rep_acc ~ "categorical"),
+              statistic = list(all_continuous() ~ "{mean} ({sd})",
+                               all_categorical() ~ "{n} ({p}%)"),
+              digits = list(everything() ~ c(2)),
+              label = list(intel ~ "Intelligibility",
+                           rep_acc ~ "Repetition Accuracy")) |>
+  as_gt()
+
+speaker_acc
+
+speaker_acc |>
+  gt::gtsave("Tables/speaker_intel.html")
+
+```
+
+```{r, echo = F, warning = F, message = F}
+
+rm(speaker_acc)
+
+```
+
+
+# Perceived Listening Effort
+
+## Descriptives
+
+```{r, warning = F, message = F}
+
+perceived_effort_df <- data |>
+  dplyr::select(subject, trial, speaker, effort_rating, rep_acc, code, trial_c) |>
+  dplyr::distinct() |>
+  # recoding missing effort ratings (negative effort ratings indicate missing data)
+  dplyr::mutate(effort_rating = ifelse(effort_rating < 0, NA, effort_rating))
+
+perceived_effort_df |>
+  dplyr::select(speaker, effort_rating, rep_acc) |>
+  tbl_strata(
+    strata = rep_acc,
+    ~.x |>
+      tbl_summary(
+        by = speaker,
+        type = list(effort_rating ~ "continuous"),
+        statistic = list(all_continuous() ~ c("{mean} ({sd})")),
+        missing = "no",
+        digits = all_continuous() ~ 2,
+        label = list(effort_rating ~ "Perceived Listening Effort")
+      ))
+
+```
+
+## Visualization
+
+```{r, warning = F, message = F}
+
+# Creating Custom Color Palette for Figures
+library(NatParksPalettes) # install.packages("NatParksPalettes")
+my_pal <- natparks.pals("Glacier", type = "discrete")
+
+# Getting Sum stats for perceived effort
+
+per_effort_des <- perceived_effort_df |>
+  dplyr::group_by(speaker, rep_acc) |>
+  dplyr::summarize(per_effort = mean(effort_rating, na.rm = T), 
+                   sd = sd(effort_rating, na.rm = T),
+                   se = sd/sqrt(n()))
+
+# Plotting the mean perceived effort ratings for the ALS and control speaker
+per_effort_des |>
+  ggplot() +
+   aes(x = rep_acc,
+       y = per_effort,
+       group = speaker,
+       color = speaker,
+       fill = speaker) +
+  geom_bar(stat = "identity", alpha = 0.6, position = position_dodge()) +
+  geom_errorbar(aes(ymin = per_effort - se, ymax = per_effort + se), width = 0.4, position = position_dodge(.9)) +
+  labs(x = "Accuracy", y = "Perceived Listening Effort Rating") +
+  theme_bw() +
+  theme(aspect.ratio = 1) +
+  scale_color_manual(values = c(my_pal[1], my_pal[3])) +
+  scale_fill_manual(values = c(my_pal[1], my_pal[3]))
+
+
+# Saving the ggplot
+
+ggsave("Plots/Perceived_effort.png", plot = last_plot(), height = 5, width = 5, units = "in")
+
+```
+
+## Perceived Listening Effort Models
+
+### Fully Unconditional Model
+
+```{r, warning = F, message = F}
+
+m0 <- glmmTMB(effort_rating ~ 1 + (1|subject) + (1|code), data = perceived_effort_df)
+
+sjPlot::tab_model(m0, pred.labels = "Intercept",
+                  dv.labels = "Perceived Listening Effort")
+
+performance::icc(m0)
+
+```
+### Model 1
+
+```{r, warning = F, message = F}
+
+m1 <- glmmTMB(effort_rating ~ 1 + (trial_c|subject) + (trial_c|code), 
+           data = perceived_effort_df)
+
+sjPlot::tab_model(m1, pred.labels = "Intercept",
+                  dv.labels = "Perceived Listening Effort")
+
+anova(m0, m1)
+
+```
+
+### Model 2
+
+```{r, warning = F, message = F}
+
+m2 <- glmmTMB(effort_rating ~ trial_c + (trial_c|subject) + (trial_c|code), 
+              data = perceived_effort_df)
+
+sjPlot::tab_model(m2, pred.labels = c("Intercept", "Trial Order"),
+                  dv.labels = "Perceived Listening Effort")
+
+anova(m1, m2)
+
+```
+### Model 3
+
+```{r, warning = F, message = F}
+
+m3 <- glmmTMB(effort_rating ~ trial_c + speaker + (trial_c|subject) + (trial_c|code), 
+           data = perceived_effort_df)
+
+sjPlot::tab_model(m3, pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]"),
+                  dv.labels = "Perceived Listening Effort")
+
+anova(m2, m3)
+
+```
+### Model 4
+
+```{r, warning = F, message = F}
+
+m4 <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + (trial_c|subject) + (trial_c|code), 
+           data = perceived_effort_df)
+
+sjPlot::tab_model(m4, pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Phrase Repetition Accuracy [Inaccurate]"),
+                  dv.labels = "Perceived Listening Effort")
+
+anova(m3, m4)
+
+
+```
+### Model 5
+
+```{r, warning = F, message = F}
+
+m5 <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + speaker*rep_acc + (trial_c|subject) + (trial_c|code), 
+           data = perceived_effort_df)
+
+sjPlot::tab_model(m5, pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Phrase Repetition Accuracy [Inaccurate]",
+                                      "Speaker [ALS] * Phrase Repetition Accuracy [Inaccurate]"),
+                  dv.labels = "Perceived Listening Effort")
+
+anova(m4, m5)
+
+```
+### Model 6
+
+```{r, warning = F, message = F}
+
+m6 <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + speaker*rep_acc + speaker*trial_c + (trial_c|subject) + (trial_c|code), 
+           data = perceived_effort_df)
+
+sjPlot::tab_model(m6, pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Phrase Repetition Accuracy [Inaccurate]",
+                                      "Speaker [ALS] * Phrase Repetition Accuracy [Inaccurate]", "Speaker [ALS] * Trial Order"),
+                  dv.labels = "Perceived Listening Effort")
+
+anova(m5, m6)
+
+```
+
+### Model 7
+
+```{r, warning = F, message = F}
+
+m7 <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + 
+                speaker*rep_acc + speaker*trial_c + rep_acc*trial_c + (trial_c|subject) + (trial_c|code), 
+           data = perceived_effort_df)
+
+sjPlot::tab_model(m7, pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Phrase Repetition Accuracy [Inaccurate]",
+                                      "Speaker [ALS] * Phrase Repetition Accuracy [Inaccurate]", "Speaker [ALS] * Trial Order",
+                                      "Phrase Repetition Accuracy [Inaccurate] * Trial Order"),
+                  dv.labels = "Perceived Listening Effort")
+
+anova(m6, m7)
+
+
+```
+
+### Model 8
+
+```{r, warning = F, message = F}
+
+m8 <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + 
+                speaker*rep_acc + speaker*trial_c + rep_acc*trial_c + speaker*rep_acc*trial_c + (trial_c|subject) + (trial_c|code), 
+           data = perceived_effort_df)
+
+sjPlot::tab_model(m8, pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Phrase Repetition Accuracy [Inaccurate]",
+                                      "Speaker [ALS] * Phrase Repetition Accuracy [Inaccurate]", "Speaker [ALS] * Trial Order",
+                                      "Phrase Repetition Accuracy [Inaccurate] * Trial Order", 
+                                      "Phrase Repetition Accuracy * Speaker * Trial Order"),
+                  dv.labels = "Perceived Listening Effort",
+                  file = "Tables/perceived_effort_model.html")
+
+anova(m7, m8)
+
+```
+
+```{r, echo = F, message = F, warning = F}
+
+rm(m0, m1, m2, m3, m4, m5, m6, m7, m8, per_effort_des)
+
+```
+
+# Pupil Dilation
+
+## Preliminary Visualizations
+
+Needing to spot any participants with odd trackings. Based on the visualizations below, LE13 and LE23 appear to have odd trackings, so they will be dropped from the current analyses.
+
+```{r, warning = F, message = F}
+
+data |>
+  ggplot() +
+  aes(x = time_norm,
+      y = normed_pupil) +
+  geom_smooth() +
+  coord_cartesian(xlim = c(0,4908), ylim = c(-100, 200)) +
+  facet_wrap("subject")
+
+```
+
+
+## Descriptives
+
+### Getting Time Landmarks
+
+```{r, message = F, warning = F}
+
+data <- data |>
+  dplyr::filter(subject != "LE13" & subject != "LE23")
+
+data |>
+  # Selecting relevant parameters
+  dplyr::select(subject, trial, speaker, time_norm, code) |>
+  # Filtering out times before phase onset
+  dplyr::filter(time_norm >= 0) |>
+  dplyr::group_by(speaker, code) |>
+  dplyr::summarize(length = max(time_norm) - min(time_norm)) |>
+  dplyr::ungroup() |>
+  dplyr::summarize(av_length = mean(length),
+                   av_phrase = av_length - 3000,
+                   av_end_roi = av_length - 2000) %>%
+  gt::gt() |>
+  gt::cols_label(av_length = "Average Trial Length (ms)",
+                 av_phrase = "Average Phrase Length (ms)",
+                 av_end_roi = "Average Endpoint for ROI (ms)")
+
+```
+
+## Visualizations
+
+```{r, warning = F, message = F}
+
+data |>
+  ggplot() +
+  aes(x = time_norm,
+      y = normed_pupil,
+      group = speaker,
+      color = speaker) +
+  geom_smooth() +
+  geom_vline(xintercept = 0, size = 0.35) +
+  geom_vline(xintercept = 1910, linetype = 2) +
+  annotate("rect", xmin = 500, xmax = 2910, ymin = -50, ymax = 200, alpha = 0.2) +
+  coord_cartesian(xlim = c(0,4910), ylim = c(-100, 200)) +
+  labs(x = "Normalized Time (ms)", y = "Pupil Dilation (arbitrary units)",
+       caption = "Grey Box: Analysis Region of Interest \nSolid Line: Phrase Onset \nDotted Line: Phrase Offset") +
+  facet_wrap("rep_acc") + 
+  theme_bw() +
+  scale_color_manual(values = c(my_pal[1], my_pal[3])) +
+  theme(aspect.ratio = 1,
+        plot.caption = element_text(hjust = 0))
+
+
+ggsave("Plots/Pupil_dilation.png", plot = last_plot(), width = 10, height = 5, units = "in")
+
+```
+
+## Pupil Dilation Models
+
+### Unconditional Growth Curve Model
+
+```{r, warning = F, message = F}
+
+# Getting region of interest for analysis
+data_roi <- data |>
+  # filtering out timebins below 500 (i.e., keeping timebins above 500 ms)
+  dplyr::filter(time_norm >= 500) |>
+  dplyr::group_by(subject, trial) |>
+  # filtering out timebins 1000 ms after phrase offset
+  dplyr::filter(time_norm<= max(time_norm) - 2000) |>
+  ungroup()
+
+# Adding linear, quadratic, and cubic orthogonal polynomials to the df
+data_roi <- gazer::code_poly(data_roi, predictor = "time_norm", poly.order = 3, orthogonal = T, draw.poly = F)
+
+# Unconditional Growth Model
+m0 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 +
+                (poly1 + poly2 + poly3|subject) + (poly1 + poly2 + poly3|code), 
+              data = data_roi)
+
+sjPlot::tab_model(m0, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term"),
+                  dv.labels = "Pupil Dilation")
+
+performance::icc(m0)
+
+```
+### Model 1
+
+```{r, warning = F, message = F}
+
+# Running into convergence issues, so removed the random effects for phrase (i.e. code)
+m1 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker +
+                (poly1 + poly2 + poly3|subject), 
+              data = data_roi)
+
+sjPlot::tab_model(m1, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]"),
+                  dv.labels = "Pupil Dilation")
+
+anova(m0, m1)
+
+```
+
+### Model 2
+
+```{r, warning = F, message = F}
+
+m2 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
+                (poly1 + poly2 + poly3|subject), 
+              data = data_roi)
+
+sjPlot::tab_model(m2, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]",
+                                      "Phrase Repetition Accuracy [Inaccurate]"),
+                  dv.labels = "Pupil Dilation")
+
+anova(m1, m2)
+
+```
+### Model 3
+
+```{r, warning = F, message = F}
+
+m3 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
+                speaker*poly1 +
+                (poly1 + poly2 + poly3|subject), 
+              data = data_roi)
+
+sjPlot::tab_model(m3, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]",
+                                      "Phrase Repetition Accuracy [Inaccurate]", "Speaker [ALS] * Linear Term"),
+                  dv.labels = "Pupil Dilation")
+
+anova(m2, m3)
+
+```
+
+### Model 4
+
+```{r, warning = F, message = F}
+
+m4 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
+                speaker*poly1 + speaker*poly2 +
+                (poly1 + poly2 + poly3|subject), 
+              data = data_roi)
+
+sjPlot::tab_model(m4, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]",
+                                      "Phrase Repetition Accuracy [Inaccurate]", "Speaker [ALS] * Linear Term",
+                                      "Speaker [ALS] * Quadratic Term"),
+                  dv.labels = "Pupil Dilation")
+
+anova(m3, m4)
+
+```
+### Model 5
+
+```{r, warning = F, message = F}
+
+m5 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
+                speaker*poly1 + speaker*poly2 + speaker*poly3 +
+                (poly1 + poly2 + poly3|subject), 
+              data = data_roi)
+
+sjPlot::tab_model(m5, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]",
+                                      "Phrase Repetition Accuracy [Inaccurate]", "Speaker [ALS] * Linear Term",
+                                      "Speaker [ALS] * Quadratic Term", "Speaker [ALS] * Cubic Term"),
+                  dv.labels = "Pupil Dilation")
+
+anova(m4, m5)
+
+
+```
+### Model 6
+
+```{r, warning = F, message = F}
+
+m6 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
+                speaker*poly1 + speaker*poly2 + speaker*poly3 + speaker*rep_acc +
+                (poly1 + poly2 + poly3|subject), 
+              data = data_roi)
+
+sjPlot::tab_model(m6, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]",
+                                      "Phrase Repetition Accuracy [Inaccurate]", "Speaker [ALS] * Linear Term",
+                                      "Speaker [ALS] * Quadratic Term", "Speaker [ALS] * Cubic Term", 
+                                      "Speaker [ALS] * Phrase Repetition Accuracy [Inaccurate]"),
+                  dv.labels = "Pupil Dilation")
+
+anova(m5, m6)
+
+```
+### Model 7
+
+```{r, warning = F, message = F}
+
+m7 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
+                speaker*poly1 + speaker*poly2 + speaker*poly3 + speaker*rep_acc +
+                rep_acc*poly1 +
+                (poly1 + poly2 + poly3|subject), 
+              data = data_roi)
+
+sjPlot::tab_model(m7, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]",
+                                      "Phrase Repetition Accuracy [Inaccurate]", "Speaker [ALS] * Linear Term",
+                                      "Speaker [ALS] * Quadratic Term", "Speaker [ALS] * Cubic Term", 
+                                      "Speaker [ALS] * Phrase Repetition Accuracy [Inaccurate]", 
+                                      "Phrase Repetition Accuracy [Inaccurate] * Linear Term"),
+                  dv.labels = "Pupil Dilation")
+
+anova(m6, m7)
+
+```
+
+### Model 8
+
+```{r, warning = F, message = F}
+
+m8 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
+                speaker*poly1 + speaker*poly2 + speaker*poly3 + speaker*rep_acc +
+                rep_acc*poly1 + rep_acc*poly2 +
+                (poly1 + poly2|subject), 
+              data = data_roi)
+
+sjPlot::tab_model(m8, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]",
+                                      "Phrase Repetition Accuracy [Inaccurate]", "Speaker [ALS] * Linear Term",
+                                      "Speaker [ALS] * Quadratic Term", "Speaker [ALS] * Cubic Term", 
+                                      "Speaker [ALS] * Phrase Repetition Accuracy [Inaccurate]", 
+                                      "Phrase Repetition Accuracy [Inaccurate] * Linear Term", 
+                                      "Phrase Repetition Accuracy [Inaccurate] * Quadratic Term"),
+                  dv.labels = "Pupil Dilation")
+
+anova(m7, m8)
+
+```
+
+### Model 9
+
+```{r, warning = F, message = F}
+
+m9 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
+                speaker*poly1 + speaker*poly2 + speaker*poly3 + speaker*rep_acc +
+                rep_acc*poly1 + rep_acc*poly2 + rep_acc*poly3 +
+                (poly1 + poly2|subject), 
+              data = data_roi)
+
+sjPlot::tab_model(m9, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]",
+                                      "Phrase Repetition Accuracy [Inaccurate]", "Speaker [ALS] * Linear Term",
+                                      "Speaker [ALS] * Quadratic Term", "Speaker [ALS] * Cubic Term", 
+                                      "Speaker [ALS] * Phrase Repetition Accuracy [Inaccurate]", 
+                                      "Phrase Repetition Accuracy [Inaccurate] * Linear Term", 
+                                      "Phrase Repetition Accuracy [Inaccurate] * Quadratic Term",
+                                      "Phrase Repetition Accuracy [Inaccurate] * Cubic Term"),
+                  dv.labels = "Pupil Dilation")
+
+anova(m8, m9)
+
+```
+### Model 10
+
+```{r, warning = F, message = F}
+
+m10 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
+                speaker*poly1 + speaker*poly2 + speaker*poly3 + speaker*rep_acc +
+                rep_acc*poly1 + rep_acc*poly2 + rep_acc*poly3 +
+                speaker*rep_acc*poly1 +
+                (poly1 + poly2|subject), 
+              data = data_roi)
+
+sjPlot::tab_model(m10, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]",
+                                      "Phrase Repetition Accuracy [Inaccurate]", "Speaker [ALS] * Linear Term",
+                                      "Speaker [ALS] * Quadratic Term", "Speaker [ALS] * Cubic Term", 
+                                      "Speaker [ALS] * Phrase Repetition Accuracy [Inaccurate]", 
+                                      "Phrase Repetition Accuracy [Inaccurate] * Linear Term", 
+                                      "Phrase Repetition Accuracy [Inaccurate] * Quadratic Term",
+                                      "Phrase Repetition Accuracy [Inaccurate] * Cubic Term",
+                                      "Speaker * Phrase Repetition Accuracy * Linear Term"),
+                  dv.labels = "Pupil Dilation")
+
+anova(m9, m10)
+
+```
+### Model 11
+
+```{r, warning = F, message = F}
+
+m11 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
+                speaker*poly1 + speaker*poly2 + speaker*poly3 + speaker*rep_acc +
+                rep_acc*poly1 + rep_acc*poly2 + rep_acc*poly3 +
+                speaker*rep_acc*poly1 + speaker*rep_acc*poly2 +
+                (poly1 + poly2|subject), 
+              data = data_roi)
+
+sjPlot::tab_model(m11, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]",
+                                      "Phrase Repetition Accuracy [Inaccurate]", "Speaker [ALS] * Linear Term",
+                                      "Speaker [ALS] * Quadratic Term", "Speaker [ALS] * Cubic Term", 
+                                      "Speaker [ALS] * Phrase Repetition Accuracy [Inaccurate]", 
+                                      "Phrase Repetition Accuracy [Inaccurate] * Linear Term", 
+                                      "Phrase Repetition Accuracy [Inaccurate] * Quadratic Term",
+                                      "Phrase Repetition Accuracy [Inaccurate] * Cubic Term",
+                                      "Speaker * Phrase Repetition Accuracy * Linear Term",
+                                      "Speaker * Phrase Repetition Accuracy * Quadratic Term"),
+                  dv.labels = "Pupil Dilation")
+
+anova(m10, m11)
+
+
+```
+
+### Model 12
+
+```{r, warning = F, message = F}
+
+m12 <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
+                speaker*poly1 + speaker*poly2 + speaker*poly3 + speaker*rep_acc +
+                rep_acc*poly1 + rep_acc*poly2 + rep_acc*poly3 +
+                speaker*rep_acc*poly1 + speaker*rep_acc*poly2 + speaker*rep_acc*poly3 +
+                (poly1 + poly2|subject), 
+              data = data_roi)
+
+sjPlot::tab_model(m12, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]",
+                                      "Phrase Repetition Accuracy [Inaccurate]", "Speaker [ALS] * Linear Term",
+                                      "Speaker [ALS] * Quadratic Term", "Speaker [ALS] * Cubic Term", 
+                                      "Speaker [ALS] * Phrase Repetition Accuracy [Inaccurate]", 
+                                      "Phrase Repetition Accuracy [Inaccurate] * Linear Term", 
+                                      "Phrase Repetition Accuracy [Inaccurate] * Quadratic Term",
+                                      "Phrase Repetition Accuracy [Inaccurate] * Cubic Term",
+                                      "Speaker * Phrase Repetition Accuracy * Linear Term",
+                                      "Speaker * Phrase Repetition Accuracy * Quadratic Term",
+                                      "Speaker * Phrase Repetition Accuracy * Cubic Term"),
+                  dv.labels = "Pupil Dilation")
+
+anova(m11, m12)
+
+```
+
+### Final Model
+
+```{r, warning = F, message = F}
+
+final_model <- glmmTMB(normed_pupil ~ poly1 + poly2 + poly3 + speaker + rep_acc +
+                speaker*poly1 + speaker*poly2 + speaker*poly3 + speaker*rep_acc +
+                rep_acc*poly1 + rep_acc*poly2 + rep_acc*poly3 +
+                speaker*rep_acc*poly1 + speaker*rep_acc*poly2 +
+                (poly1 + poly2|subject), 
+              data = data_roi)
+
+sjPlot::tab_model(final_model, pred.labels = c("Intercept", "Linear Term", "Quadratic Term", "Cubic Term", "Speaker [ALS]",
+                                      "Phrase Repetition Accuracy [Inaccurate]", "Speaker [ALS] * Linear Term",
+                                      "Speaker [ALS] * Quadratic Term", "Speaker [ALS] * Cubic Term", 
+                                      "Speaker [ALS] * Phrase Repetition Accuracy [Inaccurate]", 
+                                      "Phrase Repetition Accuracy [Inaccurate] * Linear Term", 
+                                      "Phrase Repetition Accuracy [Inaccurate] * Quadratic Term",
+                                      "Phrase Repetition Accuracy [Inaccurate] * Cubic Term",
+                                      "Speaker * Phrase Repetition Accuracy * Linear Term",
+                                      "Speaker * Phrase Repetition Accuracy * Quadratic Term"),
+                  dv.labels = "Pupil Dilation", 
+                  file = "Tables/pupil_dilation_model.html")
+
+```
+
+
+```{r, echo = F, warning = F, message = F}
+
+rm(m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12)
+
+```
+
