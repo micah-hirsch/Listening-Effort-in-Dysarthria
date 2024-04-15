@@ -2,7 +2,7 @@
 
 # Author: Micah E. Hirsch, mhirsch@fsu.edu
 
-## Data: 3/25/2024
+## Data: 4/15/2024
 
 ## Purpose: To prepare the pupil dilation data for analysis.
 
@@ -92,22 +92,22 @@ rm(data, data_list, file, file_list)
 
 ## Extracting trial start times
 trial_start <- pupil_data |>
-  dplyr::filter(sample_message == "TRIAL_START") |>
+  dplyr::filter(grepl("TRIAL_START", sample_message)) |>
   dplyr::select(subject, trial, start_time = timestamp)
 
 ## Extracting phrase start times
 phrase_start <- pupil_data |>
-  dplyr::filter(sample_message == "PHRASE_START") |>
+  dplyr::filter(grepl("PHRASE_START", sample_message)) |>
   dplyr::select(subject, trial, phrase_start = timestamp)
 
 ## Extracting phrase end times
 phrase_end <- pupil_data |>
-  dplyr::filter(sample_message == "PHRASE_END") |>
+  dplyr::filter(grepl("PHRASE_END", sample_message)) |>
   dplyr::select(subject, trial, phrase_end = timestamp)
 
 ## Extracting trial end times (e.g. time response cue was presented)
 trial_end <- pupil_data |>
-  dplyr::filter(sample_message == "RESPONSE_CUE") |>
+  dplyr::filter(grepl("RESPONSE_CUE", sample_message)) |>
   dplyr::select(subject, trial, end_time = timestamp)
 
 ## Merging the dfs together 
