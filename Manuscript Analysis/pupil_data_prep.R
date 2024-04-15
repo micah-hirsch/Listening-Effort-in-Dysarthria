@@ -139,3 +139,109 @@ rm(pupil_data)
 
 trimmed_pupil_data <- gazer::count_missing_pupil(trimmed_pupil_data, missingthresh = 0.2)
 
+# Fill in missing data from blinks
+
+## Deblinking
+pupil_extend <- trimmed_pupil_data |>
+  dplyr::group_by(subject, trial) |>
+  dplyr::mutate(extendpupil = extend_blinks(pupil, 
+                                            fillback = 50, 
+                                            fillforward = 160, 
+                                            hz = 1000))
+
+## Linear interpolation
+interp <- interpolate_pupil(pupil_extend,
+                            extendblinks = T, 
+                            type = "linear", 
+                            hz = 1000)
+
+## 10 Hz 5-point moving average filter
+smoothed <- interp |>
+  dplyr::mutate(smoothed_pupil = moving_average_pupil(interp, n = 5)) |>
+  ## Selecting relevant variables
+  dplyr::select(c(subject, trial, sample_message, time, effort_rating, 
+                  code, speaker, targetphrase, counterbalance,smoothed_pupil)) |>
+  dplyr::relocate(smoothed_pupil, .after = time)
+
+# Baseline Pupil Correction
+
+baseline_pupil <- baseline_correction_pupil(smoothed, pupil_colname = "smoothed_pupil",
+                                            baseline_window = c(-500, 0))   
+
+# Artifact Rejection
+
+## Looking for rapid changes in pupil dilation using median absolute deviation
+mad_removal <- baseline_pupil |>
+  dplyr::group_by(subject, trial) |>
+  dplyr::mutate(speed = speed_pupil(baselinecorrectedp, time)) |>
+  dplyr::mutate(MAD = calc_mad(speed, n=16)) |>
+  dplyr::filter(speed < MAD)
+
+## Proportion of rows removed (as of 4/15/2024: 1.45%)
+((nrow(baseline_pupil) - nrow(mad_removal)) / nrow(baseline_pupil)) * 100
+
+## Checking to see if whole trials were removed from any of the participants (No Trials Removed)
+trial_check <- mad_removal |>
+  select(subject, trial) |>
+  distinct() |>
+  group_by(subject) |>
+  summarize(n = n())
+
+## Removing unneeded items from the environment
+rm(baseline_pupil, interp, pupil_extend, smoothed, trimmed_pupil_data, trial_check)
+
+# Downsampling
+
+bin.length <- 20
+
+data.binned <- mad_removal |>
+  mutate(timebins = round(time/bin.length)*bin.length) |>
+  dplyr::group_by(subject, trial, speaker, timebins, effort_rating,
+                  code, targetphrase, counterbalance) |>
+  dplyr::summarize(pupil.binned = mean(baselinecorrectedp)) |>
+  dplyr::ungroup()
+
+# Export Cleaned Data
+
+## Set working directory
+setwd("~/Documents/Listening-Effort-in-Dysarthria/Manuscript Analysis/Cleaned Data")
+
+## Export
+rio::export(data.binned, "cleaned_pupil_data.csv")
+
+# Downsampling ALS speaker trials
+## Based on findings from the 2023 ASHA Convention data analysis,the trials from the ALS speaker are much longer than the control talker.
+## Therefore we are creating a separate df that downsamples the ALS speaker's trials.
+
+bin.length <- 26.23
+
+ALS_trials <- data.binned |>
+  dplyr::filter(speaker == "ALS") |>
+  dplyr::mutate(time_n = round(timebins/bin.length)*bin.length) |>
+  dplyr::group_by(subject, trial, speaker, time_n, effort_rating, code, targetphrase, counterbalance) |>
+  dplyr::summarize(normed_pupil = mean(pupil.binned)) |>
+  dplyr::ungroup()
+
+control_trials <- data.binned |>
+  dplyr::filter(speaker == "Control") |>
+  dplyr::rename(time_n = timebins,
+                normed_pupil = pupil.binned)
+
+normed_data <- rbind(ALS_trials, control_trials)
+
+normed_data <- normed_data |>
+  dplyr::mutate(time_norm = case_when(speaker == "ALS" ~ time_n/1.5,
+                                      TRUE ~ time_n))
+
+normed_data |>
+  dplyr::filter(time_norm >= 0) %>%
+  dplyr::group_by(speaker, code) %>%
+  dplyr::summarize(length = max(time_norm) - min(time_norm)) %>%
+  dplyr::group_by(speaker) %>%
+  dplyr::summarize(av_length = mean(length),
+                   av_phrase = av_length - 3000,
+                   av_end_roi = av_length - 2000)
+
+# Export Normalized dataset
+
+rio::export(normed_data, "cleaned_pupil_data_normalized.csv")
