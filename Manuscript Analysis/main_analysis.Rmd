@@ -1,0 +1,64 @@
+---
+title: "Main Analysis"
+author: "Micah E. Hirsch"
+date: "2024-04-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Purpose
+
+The purpose of this document is to analyze and report findings related to M. Hirsch's dissertation project.
+
+```{r}
+
+library(rio)
+library(tidyverse)
+library(mgcv)
+library(itsadug)
+library(irr)
+
+phrase_acc <- rio::import("Cleaned Data/repetition_accuracy.csv")
+
+```
+
+# Transcription Reliability
+
+```{r}
+
+reliability <- phrase_acc |>
+  dplyr::filter(subject != "LE38" & subject != "LE33") |>
+  dplyr::filter(!is.na(correct_words_rel)) |>
+  dplyr::select(rep_acc, rep_acc_rel)
+
+# Computing Fleiss' Kappa
+
+kappam.fleiss(reliability, detail = T)
+
+```
+
+# Pupil Dilation
+
+```{r}
+
+pupil_data <- rio::import("Cleaned Data/cleaned_pupil_data.csv")
+
+pupil <- pupil_data |>
+  left_join(phrase_acc, by = c("subject", "trial", "targetphrase")) |>
+  dplyr::select(!c(rep_acc_rel, correct_words_rel, rel_response)) |>
+  dplyr::mutate(speaker = ifelse(speaker == "Control", 0, 1),
+                rep_acc = ifelse(rep_acc == "accurate", 0, 1),
+                speaker = factor(speaker, levels = c(0, 1), labels = c("Control", "ALS")),
+                rep_acc = factor(rep_acc, levels = c(0, 1), labels = c("accurate", "inaccurate")),
+                code = as.factor(code))
+
+pupil1 <- pupil |>
+  dplyr::filter(rep_acc != "") 
+
+
+```
+
+
