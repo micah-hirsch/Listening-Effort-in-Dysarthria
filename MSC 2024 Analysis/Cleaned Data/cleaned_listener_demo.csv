@@ -1,25 +1,35 @@
 id,age,gender,clarified_gender,ethnicity,race,native_lang,native_lang_clarified,commdis_hx,commdis_hx_explain,fam_commdis,fam_comdis_2,freq_commdis
 LE01,30,Woman,"",Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,no experience,never
 LE02,27,Man,"",Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,yes,healthcare worker,monthly
-LE04,37,Nonbinary,Agender,Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,no experience,daily
+LE04,37,Nonbinary,Agender,Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,no experience,
 LE05,24,Woman,"",Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,yes,healthcare worker,monthly
-LE06,22,Nonbinary,Agender,Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,teacher,daily
+LE06,22,Nonbinary,Agender,Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,,
 LE07,33,Man,"",Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,no experience,never
 LE08,37,Woman,"",Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,yes,healthcare worker,weekly
-LE09,20,Woman,"",Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,teacher,daily
-LE10,20,Woman,"",Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,teacher,daily
+LE09,20,Woman,"",Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,,
+LE10,20,Woman,"",Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,,
 LE11,32,Nonbinary,Gender-fluid,Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,yes,friend,daily
 LE12,25,Man,"",Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,no experience,never
 LE13,23,Woman,"",Hispanic/Latino(a/e),Biracial or Multiracial,Not American English,Spanish,no,,no,healthcare worker,weekly
-LE15,20,Woman,"",Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,teacher,daily
-LE16,21,Woman,"",Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,teacher,daily
+LE15,20,Woman,"",Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,,
+LE16,21,Woman,"",Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,,
 LE18,18,Woman,"",Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,yes,family member,weekly
-LE19,26,Woman,"",Not Hispanic/Latino(a/e),Race not listed,Not American English,Turkish,no,,no,teacher,daily
+LE19,26,Woman,"",Not Hispanic/Latino(a/e),Race not listed,Not American English,Turkish,no,,no,,
 LE20,36,Man,"",Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,no experience,never
-LE21,20,Woman,"",Not Hispanic/Latino(a/e),Biracial or Multiracial,American English,"",no,,no,teacher,daily
+LE21,20,Woman,"",Not Hispanic/Latino(a/e),Biracial or Multiracial,American English,"",no,,no,,
 LE22,39,Man,"",Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,no experience,never
 LE23,27,Woman,"",Not Hispanic/Latino(a/e),Black/African American,American English,"",no,,yes,healthcare worker,once
 LE24,27,Woman,"",Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,yes,family member,weekly
 LE25,20,Man,"",Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,no experience,never
 LE26,24,Woman,"",Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,yes,healthcare worker,weekly
 LE27,21,Woman,"",Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,yes,family member,yearly
+LE28,19,Woman,"",Not Hispanic/Latino(a/e),Biracial or Multiracial,American English,"",no,,no,no experience,never
+LE29,23,Woman,"",Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,,
+LE30,21,Woman,"",Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,no experience,once
+LE31,22,Woman,"",Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,no experience,never
+LE32,20,Woman,"",Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,yes,friend,monthly
+LE33,23,Man,"",Not Hispanic/Latino(a/e),Biracial or Multiracial,American English,"",no,,no,,
+LE34,21,Woman,"",Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,,
+LE35,22,Nonbinary,genderqueer,Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,no experience,never
+LE36,22,Woman,"",Not Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,no experience,never
+LE38,19,Woman,"",Hispanic/Latino(a/e),white/Caucasian,American English,"",no,,no,,
