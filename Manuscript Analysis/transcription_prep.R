@@ -83,8 +83,6 @@ setwd("~/Documents/Listening-Effort-in-Dysarthria/Manuscript Analysis/Cleaned Da
 
 pupil <- rio::import("cleaned_pupil_data.csv")
 
-pupil_normed <- rio::import("cleaned_pupil_data_normalized.csv")
-
 ## Getting phrase targets
 targets <- pupil |>
   dplyr::rename(id = subject,
