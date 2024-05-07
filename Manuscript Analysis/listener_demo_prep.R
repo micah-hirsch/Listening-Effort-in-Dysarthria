@@ -2,7 +2,7 @@
 
 # Author: Micah Hirsch, mhirsch@fsu.edu
 
-# Date: 4/18/2024
+# Date: 5/7/2024
 
 ## Purpose: To clean exported listener demographic data from RedCap and to
 ## prepare it for analysis.
@@ -21,6 +21,8 @@ demo <- rio::import("participant_demo_raw.csv")
 ## RedCap prior to uploading the df here.
 
 # Cleaning demographic data
+## Note: The code below fixes an error in previous versions of this script 
+## (seen in the ASHA and MSC folders)
 
 demo1 <- demo |>
   # Removing identifiable and unneeded variables from df
@@ -62,17 +64,20 @@ demo1 <- demo |>
                                          freq_commdis == 6 ~ "daily",
                                          TRUE ~ NA))
 
-# Removing participants who did not complete pupillometry part of the study
-
+# Marking participants who did not complete pupillometry part of the study
 ## Technical issues occurred during the recordings for these participants. 
-## So we are removing them from our df.
+
 demo1 <- demo1 |>
-  dplyr::filter(id != "LE14" & id != "LE17" & id != "LE37")
+  dplyr::mutate(pupil_complete = case_when(id == "LE14" ~ "incomplete",
+                                           id == "LE17" ~ "incomplete",
+                                           id == "LE37" ~ "incomplete",
+                                           id == "LE39" ~ "incomplete",
+                                           TRUE ~ "complete"))
 
 # Exporting cleaned demographic df
 
 ## Set working directory
-setwd("~/Documents/Listening-Effort-in-Dysarthria/MSC 2024 Analysis/Cleaned Data")
+setwd("~/Documents/Listening-Effort-in-Dysarthria/Manuscript Analysis/Cleaned Data")
 
 ## Export
 rio::export(demo1, "cleaned_listener_demo.csv")
