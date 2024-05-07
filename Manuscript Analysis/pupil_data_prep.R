@@ -2,7 +2,7 @@
 
 # Author: Micah E. Hirsch, mhirsch@fsu.edu
 
-## Data: 4/15/2024
+## Data: 5/7/2024
 
 ## Purpose: To prepare the pupil dilation data for analysis.
 
@@ -137,7 +137,23 @@ trimmed_pupil_data <- pupil_data |>
 
 rm(pupil_data)
 
-trimmed_pupil_data <- gazer::count_missing_pupil(trimmed_pupil_data, missingthresh = 0.2)
+trimmed_pupil_data <- gazer::count_missing_pupil(trimmed_pupil_data, missingthresh = 0.5)
+
+# Detect amount of missing data per trial due to blinks
+
+per_blinks <- trimmed_pupil_data |>
+  dplyr::group_by(subject, trial) |>
+  dplyr::filter(time >= -500) |>
+  dplyr::filter(time < max(time) - 2000) |>
+  dplyr::ungroup() |>
+  dplyr::group_by(subject, trial, blink) |>
+  dplyr::summarize(blinks = n()) |>
+  dplyr::ungroup() |>
+  dplyr::mutate(blink = ifelse(blink == 0, "no_blink", "blink")) |>
+  tidyr::pivot_wider(names_from = blink, values_from = blinks) |>
+  dplyr::mutate(percent_missing = (blink/(no_blink + blink))*100)
+
+
 
 # Fill in missing data from blinks
 
@@ -166,7 +182,7 @@ smoothed <- interp |>
 # Baseline Pupil Correction
 
 baseline_pupil <- baseline_correction_pupil(smoothed, pupil_colname = "smoothed_pupil",
-                                            baseline_window = c(-500, 0))   
+                                            baseline_window = c(-500, 0))
 
 # Artifact Rejection
 
