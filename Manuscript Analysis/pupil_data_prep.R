@@ -182,9 +182,15 @@ missing_pupil <- trimmed_pupil_data |>
 trimmed_pupil_data <- trimmed_pupil_data |>
   dplyr::left_join(missing_pupil, by = c("subject", "trial"))
 
+## Finding out how many trials are removed due to blinks (6 trials)
+missing <- trimmed_pupil_data |>
+  filter(percent_missing >= 50) |>
+  dplyr::select(subject, trial) |>
+  dplyr::distinct()
 
 ## Filtering out trials with greater than 50% of missing data
 trimmed_pupil_data <- trimmed_pupil_data |>
+  dplyr::mutate(percent_missing = ifelse(is.na(percent_missing), 0, percent_missing)) |>
   dplyr::filter(percent_missing < 50)
 
 rm(missing, missing_pupil)
@@ -209,8 +215,9 @@ interp <- interpolate_pupil(pupil_extend,
 smoothed <- interp |>
   dplyr::mutate(smoothed_pupil = moving_average_pupil(interp, n = 5)) |>
   ## Selecting relevant variables
-  dplyr::select(c(subject, trial, sample_message, time, effort_rating, 
-                  code, speaker, targetphrase, counterbalance,smoothed_pupil)) |>
+  dplyr::select(c(subject, trial, sample_message, time, 
+                  code, speaker, targetphrase, counterbalance,
+                  smoothed_pupil)) |>
   dplyr::relocate(smoothed_pupil, .after = time)
 
 # Baseline Pupil Correction
@@ -227,10 +234,10 @@ mad_removal <- baseline_pupil |>
   dplyr::mutate(MAD = calc_mad(speed, n=16)) |>
   dplyr::filter(speed < MAD)
 
-## Proportion of rows removed (as of 4/15/2024: 1.45%)
+## Proportion of rows removed (as of 5/9/2024: 1.44%)
 ((nrow(baseline_pupil) - nrow(mad_removal)) / nrow(baseline_pupil)) * 100
 
-## Checking to see if whole trials were removed from any of the participants (No Trials Removed)
+## Checking to see if whole trials were removed from any of the participants (No Additional Trials Removed)
 trial_check <- mad_removal |>
   select(subject, trial) |>
   distinct() |>
@@ -239,6 +246,37 @@ trial_check <- mad_removal |>
 
 ## Removing unneeded items from the environment
 rm(baseline_pupil, interp, pupil_extend, smoothed, trimmed_pupil_data, trial_check)
+
+# Outlier Flags
+
+## Baseline Deviation
+baseline_dev <- mad_removal |>
+  dplyr::group_by(subject) |>
+  dplyr::summarize(mean_base = mean(baseline, na.rm = T),
+                   sd_base = sd(baseline, na.rm = T)) |>
+  dplyr::ungroup() |>
+  dplyr::mutate(base_max = mean_base + (2*sd_base),
+                base_min = mean_base - (2*sd_base))
+
+## Peak Pupil Value Deviation
+peak_pupil_dev <- mad_removal |>
+  dplyr::group_by(subject, trial) |>
+  dplyr::summarize(peak_pupil = max(baselinecorrectedp)) |>
+  dplyr::ungroup() |>
+  dplyr::group_by(subject) |>
+  dplyr::summarize(mean_peak = mean(peak_pupil, na.rm = T),
+                   sd_peak = sd(peak_pupil, na.rm = T)) |>
+  dplyr::ungroup() |>
+  dplyr::mutate(peak_max = mean_peak + (2*sd_peak),
+                peak_min = mean_peak - (2*sd_peak))
+
+## Trial-by-trial Baseline Deviation
+baseline_flags <- mad_removal |>
+  dplyr::select(subject, trial, baseline) |>
+  dplyr::distinct() |>
+  dplyr::group_by(subject) |>
+  dplyr::mutate(speed = speed_pupil(baseline, trial),
+                MAD = calc_mad(speed, n=16))
 
 # Downsampling
 
@@ -256,8 +294,11 @@ data.binned <- mad_removal |>
 ## Set working directory
 setwd("~/Documents/Listening-Effort-in-Dysarthria/Manuscript Analysis/Cleaned Data")
 
-## Export
+## Export Pupil Dilation DF
 rio::export(data.binned, "cleaned_pupil_data.csv")
+
+## Export PLE Ratings
+rio::export(ple_data, "cleaned_ple_data.csv")
 
 # Downsampling ALS speaker trials
 ## Based on findings from the 2023 ASHA Convention data analysis,the trials from the ALS speaker are much longer than the control talker.
