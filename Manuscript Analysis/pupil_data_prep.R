@@ -88,6 +88,29 @@ pupil_data <- do.call(rbind, data_list)
 ## Removing unneeded items from the environment
 rm(data, data_list, file, file_list)
 
+# Creating a separate df for perceived listening effort ratings 
+## (will be exported later)
+ple_data <- pupil_data |>
+  dplyr::select(subject, trial, code, speaker, targetphrase, counterbalance, effort_rating) |>
+  dplyr::distinct() |>
+  ## Removing Practice Trials
+  dplyr::filter(speaker != "Practice") |>
+  ## I noted some erroneous trials, so I am removing them
+  dplyr::filter(speaker != "UNDEFINED") |>
+  ## Adjusting trial order labels since the erroneous trials were extra trials
+  dplyr::mutate(trial = case_when(subject == "LE31" & trial >= 24 ~ trial - 1,
+                                  subject == "LE34" ~ trial -1,
+                                  TRUE ~ trial))
+
+## Need to make the same adjustments to the pupil dilation df
+pupil_data <- pupil_data |>
+  dplyr::select(!effort_rating) |>
+  dplyr::filter(speaker != "UNDEFINED") |>
+  dplyr::mutate(trial = case_when(subject == "LE31" & trial >= 24 ~ trial - 1,
+                                  subject == "LE34" ~ trial -1,
+                                  TRUE ~ trial))
+
+
 # Filtering out rows before the trial start and after the response cue
 
 ## Extracting trial start times
@@ -137,23 +160,34 @@ trimmed_pupil_data <- pupil_data |>
 
 rm(pupil_data)
 
-trimmed_pupil_data <- gazer::count_missing_pupil(trimmed_pupil_data, missingthresh = 0.5)
-
 # Detect amount of missing data per trial due to blinks
 
-per_blinks <- trimmed_pupil_data |>
+## Calculating Percent of Missing Data
+missing_pupil <- trimmed_pupil_data |>
   dplyr::group_by(subject, trial) |>
+  ## Restricting this to the eventual analysis region of interest
   dplyr::filter(time >= -500) |>
   dplyr::filter(time < max(time) - 2000) |>
   dplyr::ungroup() |>
+  # Counting number of blink/no blink rows per trial
   dplyr::group_by(subject, trial, blink) |>
   dplyr::summarize(blinks = n()) |>
   dplyr::ungroup() |>
   dplyr::mutate(blink = ifelse(blink == 0, "no_blink", "blink")) |>
   tidyr::pivot_wider(names_from = blink, values_from = blinks) |>
-  dplyr::mutate(percent_missing = (blink/(no_blink + blink))*100)
+  dplyr::mutate(percent_missing = (blink/(no_blink + blink))*100) |>
+  dplyr::select(subject, trial, percent_missing)
+
+## Merging with main df
+trimmed_pupil_data <- trimmed_pupil_data |>
+  dplyr::left_join(missing_pupil, by = c("subject", "trial"))
 
 
+## Filtering out trials with greater than 50% of missing data
+trimmed_pupil_data <- trimmed_pupil_data |>
+  dplyr::filter(percent_missing < 50)
+
+rm(missing, missing_pupil)
 
 # Fill in missing data from blinks
 
