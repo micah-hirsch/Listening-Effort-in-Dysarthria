@@ -161,5 +161,7 @@ phrase_acc <- phrase_acc_initial |>
 
 # Export csv file of cleaned data
 
+
+
 rio::export(phrase_acc, "repetition_accuracy.csv")
 

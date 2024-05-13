@@ -83,16 +83,32 @@ demo_table |>
 ```
 
 
+```{r, echo = F, warning = F, message = F}
+
+# Removing unneeded items from the environment
+rm(demo, demo_table)
+
+```
 
 
+# Descriptives
 
-# Transcription Reliability
+## Transcription Reliability
 
-```{r}
+Phrase repetition accuracy was determined by transcriptions of the listener's spoken response. These reponses were transcribed by 2 research assistants. To determine interrater reliability, each RA transcribed at least 20% of the other RA's listener reponses. Fleiss' kappa was then used to calculated interrater reliability for the resulting phrase repetition accuracy determination (accurate or inaccurate). Based on the result below, our interrater reliability for phrase repetition accuracy was strong.
+
+```{r, warning = F, message = F}
+
+phrase_acc <- rio::import("Cleaned Data/repetition_accuracy.csv")
+
+phrase_acc <- phrase_acc |>
+  dplyr::mutate(rep_acc = ifelse(initial_response == "missing data", NA, 
+                                 ifelse(target_number == correct_words_initial, "accurate", "inaccurate")),
+                rep_acc_rel = ifelse(rel_response == "missing data", NA, 
+                                 ifelse(target_number == correct_words_rel, "accurate", "inaccurate")))
 
 reliability <- phrase_acc |>
-  dplyr::filter(subject != "LE38" & subject != "LE33") |>
-  dplyr::filter(!is.na(correct_words_rel)) |>
+  dplyr::filter(!is.na(rep_acc_rel)) |>
   dplyr::select(rep_acc, rep_acc_rel)
 
 # Computing Fleiss' Kappa
@@ -101,7 +117,7 @@ kappam.fleiss(reliability, detail = T)
 
 ```
 
-
+## Speaker Characteristics
 
 
 
