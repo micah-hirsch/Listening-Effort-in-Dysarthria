@@ -2,7 +2,7 @@
 
 # Author: Micah E. Hirsch, mhirsch@fsu.edu
 
-## Data: 5/7/2024
+## Data: 5/13/2024
 
 ## Purpose: To prepare the pupil dilation data for analysis.
 
@@ -276,7 +276,78 @@ baseline_flags <- mad_removal |>
   dplyr::distinct() |>
   dplyr::group_by(subject) |>
   dplyr::mutate(speed = speed_pupil(baseline, trial),
-                MAD = calc_mad(speed, n=16))
+                MAD = calc_mad(speed, n=16)) |>
+  dplyr::ungroup()
+
+## Odd Pupil Slope Detection
+
+slope_df <- mad_removal |>
+  ### Limiting range to first 500 ms after stimulus onset
+  dplyr::filter(time >= 0 & time <= 500) |>
+  group_by(subject, trial) |>
+  ### Calculating change in pupil dilation (i.e. slope) in the first 500 ms
+  dplyr::mutate(pupil_slope = (last(baselinecorrectedp) - first(baselinecorrectedp))/ (last(time) - first(time))) |>
+  dplyr::ungroup()
+
+
+### Visually determining a cutoff point for steep downward slope by plotting the histogram
+### Based on this visualization, pupil slope change greater than -.55 will be the cutoff
+slope_df |>
+  dplyr::select(subject, trial, speaker, pupil_slope) |>
+  distinct() |>
+  ggplot() +
+  aes(x = pupil_slope,
+      fill = speaker,
+      color = speaker) +
+  geom_histogram() +
+  geom_vline(xintercept = -.55)
+
+### Calculating mean and sd of pupil slopes (M = .0194, sd = .271)
+slope_df |>
+  distinct() |>
+  dplyr::summarize(mean = mean(pupil_slope,),
+                   sd = sd(pupil_slope))
+
+### Flagging Trials with Steep Negative Pupil Dilation Slopes
+slope_df <- slope_df |>
+  dplyr::mutate(steep_slope = ifelse(pupil_slope <= -.55, TRUE, FALSE))
+
+## Creating Flag Variables and merging with original df
+
+### Baseline Deviation
+
+baseline_dev <- baseline_dev |>
+  dplyr::select(subject, base_min, base_max) 
+
+mad_removal <- mad_removal |>
+  dplyr::left_join(baseline_dev, by = "subject") |>
+  dplyr::mutate(base_dev = ifelse(baseline < base_min | baseline > base_max, TRUE, FALSE)) 
+
+### Peak Pupil Deviation
+  
+peak_pupil_dev <- peak_pupil_dev |>
+  dplyr::select(subject, peak_min, peak_max) 
+
+mad_removal <- mad_removal |>
+  dplyr::left_join(peak_pupil_dev, by = "subject") |>
+  dplyr::group_by(subject, trial) |>
+  dplyr::mutate(peak_dev = ifelse(max(baselinecorrectedp) < peak_min | max(baselinecorrectedp) > peak_max, TRUE, FALSE)) |>
+  dplyr::ungroup()
+
+### Trial by Trial Baseline Deviation
+
+baseline_flags <- baseline_flags |>
+  mutate(trial_base_dev = ifelse(speed >= MAD, TRUE, FALSE)) |>
+  dplyr::select(subject, trial, trial_base_dev)
+
+mad_removal <- mad_removal |>
+  dplyr::left_join(baseline_flags, by = c("subject", "trial"))
+
+### Steep Pupil Slope
+
+slope_df <- slope_df |>
+  dplyr::select(subject, trial, steep_slope) |>
+  dplyr::distinct()
 
 # Downsampling
 
