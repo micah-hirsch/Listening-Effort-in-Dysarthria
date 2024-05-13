@@ -349,13 +349,39 @@ slope_df <- slope_df |>
   dplyr::select(subject, trial, steep_slope) |>
   dplyr::distinct()
 
+mad_removal <- mad_removal |>
+  dplyr::left_join(slope_df, by = c("subject", "trial"))
+
+### Removing Extra Variables
+
+mad_removal <- mad_removal |>
+  dplyr::select(!c(base_min, base_max, peak_min, peak_max))
+
+### Identifying outlier trials that will be removed (21 trials)
+removed_df <- mad_removal |>
+  group_by(subject, trial) |>
+  dplyr::filter(rowSums(across(base_dev:steep_slope)) >= 2)
+
+removed_df <- removed_df |>
+  dplyr::select(subject, trial, speaker) |>
+  dplyr::distinct()
+
+### Filtering out those responses 
+
+filtered_df <- mad_removal |>
+  group_by(subject, trial) |>
+  dplyr::filter(rowSums(across(base_dev:steep_slope)) < 2)
+
+# Removing unneeded objects from the environment
+rm(baseline_dev, baseline_flags, mad_removal, peak_pupil_dev, removed_df, slope_df)
+
 # Downsampling
 
 bin.length <- 20
 
-data.binned <- mad_removal |>
+data.binned <- filtered_df |>
   mutate(timebins = round(time/bin.length)*bin.length) |>
-  dplyr::group_by(subject, trial, speaker, timebins, effort_rating,
+  dplyr::group_by(subject, trial, speaker, timebins,
                   code, targetphrase, counterbalance) |>
   dplyr::summarize(pupil.binned = mean(baselinecorrectedp)) |>
   dplyr::ungroup()
@@ -380,7 +406,7 @@ bin.length <- 26.23
 ALS_trials <- data.binned |>
   dplyr::filter(speaker == "ALS") |>
   dplyr::mutate(time_n = round(timebins/bin.length)*bin.length) |>
-  dplyr::group_by(subject, trial, speaker, time_n, effort_rating, code, targetphrase, counterbalance) |>
+  dplyr::group_by(subject, trial, speaker, time_n, code, targetphrase, counterbalance) |>
   dplyr::summarize(normed_pupil = mean(pupil.binned)) |>
   dplyr::ungroup()
 
