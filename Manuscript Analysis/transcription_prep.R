@@ -81,10 +81,10 @@ reliability <- transcriptions |>
 ## Set working directory to location of cleaned pupil data
 setwd("~/Documents/Listening-Effort-in-Dysarthria/Manuscript Analysis/Cleaned Data")
 
-pupil <- rio::import("cleaned_pupil_data.csv")
+ple <- rio::import("cleaned_ple_data.csv")
 
 ## Getting phrase targets
-targets <- pupil |>
+targets <- ple |>
   dplyr::rename(id = subject,
                 target = targetphrase) |>
   dplyr::select(id, trial, target) |>
