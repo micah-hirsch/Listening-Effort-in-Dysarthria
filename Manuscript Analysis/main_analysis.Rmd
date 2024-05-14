@@ -33,6 +33,7 @@ library(gtsummary) # install.packages("gtsummary")
 library(glmmTMB) # install.packages("glmmTMB")
 library(performance) # install.packages("performance")
 library(sjPlot) # install.packages("sjPlot")
+library(viridis) #install.packages("viridis")
 
 
 ```
@@ -124,7 +125,7 @@ phrase_acc_df <- phrase_acc |>
 
 The speaker characteristics are listed below. Note: 41 trials were removed because they had missing listener responses (i.e. audio file cut out, etc.). Therefore, the summary statistics are based on 2679 trials total.
 
-```{r}
+```{r, warning = F, message = F}
 
 ple_data <- rio::import("Cleaned Data/cleaned_ple_data.csv") |>
   dplyr::left_join(phrase_acc_df, by = c("subject", "trial")) |>
@@ -164,7 +165,10 @@ speaker_table |>
 
 ple_data |>
   dplyr::select(speaker, effort_rating, rep_acc) |>
+  # Filtering out trials with cut-off listener responses
   dplyr::filter(!is.na(rep_acc)) |>
+  # filtering out trials with missing effort ratings (5 trials missing, 4 additionally removed)
+  dplyr::filter(effort_rating > 0) |>
   tbl_strata(
     strata = rep_acc,
     ~.x |>
@@ -185,10 +189,11 @@ Linear mixed effects (LME) models were used to test the influence of speaker (Co
 
 ### Fully Unconditional Model
 
-```{r}
+```{r, warning = F, message = F}
 
 ple_data <- ple_data |>
-  dplyr::filter(!is.na(rep_acc))
+  dplyr::filter(!is.na(rep_acc)) |>
+  dplyr::filter(effort_rating > 0)
 
 m0_ple <- glmmTMB(effort_rating ~ 1 + (1|subject) + (1|code), data = ple_data)
 sjPlot::tab_model(m0_ple, pred.labels = "Intercept",
@@ -201,12 +206,11 @@ performance::icc(m0_ple)
 
 In this step, we are adding trial order (trial_c) as a random slop for both the listener (subject) and phrase (code) random intercepts. The random intercept of trial order significantly improved model fit.
 
-```{r}
+```{r, warning = F, message = F}
 
 m1_ple <- glmmTMB(effort_rating ~ 1 + (trial_c|subject) + (trial_c|code), data = ple_data)
 sjPlot::tab_model(m1_ple, pred.labels = "Intercept",
                   dv.labels = "Perceived Listening Effort")
-
 performance::test_performance(m0_ple, m1_ple)
 
 ```
@@ -214,7 +218,7 @@ performance::test_performance(m0_ple, m1_ple)
 
 Trial order is the first random effect added to the model. Trial order is added in order to control for any possible order effects in the data. As noted in the results below, adding trial order did not significantly improve model fit to the data. However, I'll leave this fixed effect in the model to act as a covariate.
 
-```{r}
+```{r, warning = F, message = F}
 
 m2_ple <- glmmTMB(effort_rating ~ trial_c + (trial_c|subject) + (trial_c|code), data = ple_data)
 sjPlot::tab_model(m2_ple, 
@@ -229,7 +233,7 @@ performance::test_performance(m1_ple, m2_ple)
 
 Adding the main fixed effect of speaker significantly improved the model fit.
 
-```{r}
+```{r, warning = F, message = F}
 
 m3_ple <- glmmTMB(effort_rating ~ trial_c + speaker + (trial_c|subject) + (trial_c|code), data = ple_data)
 sjPlot::tab_model(m3_ple,
@@ -244,7 +248,7 @@ performance::test_performance(m2_ple, m3_ple)
 
 The main fixed effect of repetition accuracy significantly improved model fit.
 
-```{r}
+```{r, warning = F, message = F}
 
 m4_ple <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + (trial_c|subject) + (trial_c|code), data = ple_data)
 sjPlot::tab_model(m4_ple,
@@ -259,7 +263,7 @@ performance::test_performance(m3_ple, m4_ple)
 
 The interaction term between speaker and repetition accuracy did not significantly improve model fit. This indicates that the magnitude between accurate and inaccurate ratings was similar for both speakers.
 
-```{r}
+```{r, warning = F, message = F}
 
 m5_ple <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + speaker*rep_acc + (trial_c|subject) + (trial_c|code), data = ple_data)
 sjPlot::tab_model(m5_ple,
@@ -272,15 +276,70 @@ performance::test_performance(m4_ple, m5_ple)
 
 ```
 
+### Final PLE Model with Unstandardized Estimates
+
+```{r, warning = F, message = F}
+
+final_ple <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + (trial_c|subject) + (trial_c|code), data = ple_data)
+sjPlot::tab_model(final_ple,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]"),
+                  dv.labels = "Perceived Listening Effort",
+                  file = "Tables/ple_mod_unstd.html")
+
+```
+
+
+### Final PLE Model with Standardized Estimates
+
+```{r, warning = F, message = F}
+
+final_ple_std <- glmmTMB(scale(effort_rating) ~ scale(trial_c) + speaker + rep_acc + 
+                    (trial_c|subject) + (trial_c|code), data = ple_data)
+sjPlot::tab_model(final_ple_std,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]"),
+                  dv.labels = "Perceived Listening Effort",
+                  file = "Tables/ple_mod_std.html")
+
+```
+
+
+```{r, eval = F}
+
+sjPlot::tab_model(m1_ple, m2_ple, m3_ple, m4_ple, m5_ple,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
+                                  "Speaker [ALS] * Repetition Accuracy [Inaccurate]"),
+                  dv.labels = c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5"),
+                  file = "Tables/ple_models.html")
+
+```
+
+
 ## Plot
 
-```{r}
+```{r, warning = F, message = F}
 
-model_ple <- m5_ple |>
-  sjPlot::plot_model(type = "int")
+my_pal <- c("#4E4187", "#3083DC", "#F8FFE5", "#7DDE92", "#2EBFA5")
 
-plot_data_ple <- model_ple[["data"]] |>
-  as.data.frame()  
+ple_data |>
+  dplyr::group_by(speaker, rep_acc) |>
+  dplyr::summarize(per_effort = mean(effort_rating, na.rm = T), 
+                   sd = sd(effort_rating, na.rm = T),
+                   se = sd/sqrt(n())) |>
+  ggplot() +
+   aes(x = rep_acc,
+       y = per_effort,
+       group = speaker,
+       color = speaker,
+       fill = speaker) +
+  geom_bar(stat = "identity", alpha = 0.6, position = position_dodge()) +
+  geom_errorbar(aes(ymin = per_effort - se, ymax = per_effort + se), width = 0.4, position = position_dodge(.9)) +
+  labs(x = "Accuracy", y = "Perceived Listening Effort Rating") +
+  theme_bw() +
+  theme(aspect.ratio = 1) +
+  scale_color_manual(values = c(my_pal[1], my_pal[5])) +
+  scale_fill_manual(values = c(my_pal[1], my_pal[5]))
+
+ggsave("Figures/ple_plot.png", plot = last_plot())
 
 ```
 
