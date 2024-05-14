@@ -18,7 +18,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 The purpose of this document is to analyze and report findings related to M. Hirsch's dissertation project. The data preparation and analysis was conducted using R Version 4.3.3.
 
-```{r, echo = F, warning = F, messsage = F}
+```{r, echo = F, warning = F, message = F}
 
 # Load in Needed Packages
 
@@ -161,6 +161,8 @@ speaker_table |>
 
 ## Descriptives
 
+The summary statistics for perceived listening effort (PLE) ratings are shown in the table below. There were 5 trials with missing PLE ratings, so those were removed from the analysis. There is a total of 2675 trials represented in the data below.
+
 ```{r, warning = F, message = F}
 
 ple_data |>
@@ -278,6 +280,8 @@ performance::test_performance(m4_ple, m5_ple)
 
 ### Final PLE Model with Unstandardized Estimates
 
+Therefore, the best-fitting model for the data is model 4 with just the main effects of speaker and repetition accuracy. The results indicate that, on average, the ALS speaker was rated as more effortful by the listeners compared to the control speaker for accurately recognized phrases, controlling for trial order. Inaccurate repetitions, on average, were rated higher than accurately recognized phrases for the control speaker by the listeners. Since the interaction between speaker and repetition accuracy was not significant, this indicates the difference in PLE scores between accurately and inaccurately recognized phrases was similar between the two speakers.
+
 ```{r, warning = F, message = F}
 
 final_ple <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + (trial_c|subject) + (trial_c|code), data = ple_data)
@@ -290,6 +294,8 @@ sjPlot::tab_model(final_ple,
 
 
 ### Final PLE Model with Standardized Estimates
+
+This model shows the standardized estimates for the final PLE model.
 
 ```{r, warning = F, message = F}
 
@@ -343,13 +349,76 @@ ggsave("Figures/ple_plot.png", plot = last_plot())
 
 ```
 
+```{r, echo = F}
 
-# Pupil Dilation
-
-```{r}
-
-
+rm(final_ple, final_ple_std, m0_ple, m1_ple, m2_ple, m3_ple, m4_ple, m5_ple, reliability, speaker_table)
 
 ```
 
 
+# Pupil Dilation
+
+## Total Number of Trials
+
+A total of 2654 trials are included in the analysis
+
+```{r}
+
+pupil_df <- rio::import("Cleaned Data/cleaned_pupil_data_normalized.csv") |>
+  # Merging phrase accuracy information with df
+  dplyr::left_join(phrase_acc_df, by = c("subject", "trial")) |>
+  # Filter out trials with missing phrase repetition data |>
+  dplyr::filter(!is.na(rep_acc))
+
+pupil_df |>
+  dplyr::select(subject, trial) |>
+  dplyr::distinct() |>
+  dplyr::summarize(n = n())
+
+```
+
+
+## Pupil Dilation Models
+
+### Initial Model
+
+```{r}
+
+# Narrowing to the analysis region of interest
+
+pupil_roi <- pupil_df |>
+  # filtering out timebins below 500 (i.e., keeping timebins above 500 ms)
+  dplyr::filter(time_norm >= 500) |>
+  dplyr::group_by(subject, trial) |>
+  # filtering out timebins 1000 ms after phrase offset
+  dplyr::filter(time_norm<= max(time_norm) - 2000) |>
+  ungroup() |>
+  dplyr::mutate(speaker = factor(speaker, levels = c("Control", "ALS")),
+                rep_acc = factor(rep_acc, levels = c("accurate", "inaccurate")),
+                phrase = as.factor(code),
+                listener = as.factor(subject)) 
+
+m0_pupil <- bam(normed_pupil ~ speaker +
+                  s(time_norm, by = speaker, k = 20) +
+                  s(time_norm, by = rep_acc, k = 20) +
+                  # Random Smooths for listener and phrase
+                  s(time_norm, listener, bs = 'fs', m =1) +
+                  s(time_norm, phrase, bs = 'fs', m = 1),
+                discrete = T,
+                data = pupil_roi)
+
+plot_smooth(m0_pupil,
+            view = "time_norm",
+            plot_all = c("speaker", "rep_acc"),
+            rug = F, se = 1, rm.ranef = T)
+
+```
+#### Model Check
+
+```{r}
+
+gam.check(m0_pupil)
+
+acf_resid(m0_pupil)
+
+```
