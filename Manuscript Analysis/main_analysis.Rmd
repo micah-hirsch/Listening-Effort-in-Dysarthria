@@ -382,6 +382,8 @@ pupil_df |>
 
 ### Initial Model
 
+Initial model with smooths for speaker and phrase.
+
 ```{r}
 
 # Narrowing to the analysis region of interest
@@ -396,23 +398,32 @@ pupil_roi <- pupil_df |>
   dplyr::mutate(speaker = factor(speaker, levels = c("Control", "ALS")),
                 rep_acc = factor(rep_acc, levels = c("accurate", "inaccurate")),
                 phrase = as.factor(code),
-                listener = as.factor(subject)) 
+                listener = as.factor(subject),
+                condition = case_when(speaker == "Control" & rep_acc == "accurate" ~ "Control Accurate",
+                                      speaker == "Control" & rep_acc == "inaccurate" ~ "Control Inaccurate",
+                                      speaker == "ALS" & rep_acc == "accurate" ~ "ALS Accurate",
+                                      TRUE ~ "ALS Inaccurate"),
+                condition = factor(condition, 
+                                   levels = c("Control Accurate", "Control Inaccurate", "ALS Accurate", "ALS Inaccurate"))) 
 
-m0_pupil <- bam(normed_pupil ~ speaker +
-                  s(time_norm, by = speaker, k = 20) +
-                  s(time_norm, by = rep_acc, k = 20) +
+m0_pupil <- bam(normed_pupil ~ condition +
+                  s(time_norm, by = condition, k = 20) +
                   # Random Smooths for listener and phrase
                   s(time_norm, listener, bs = 'fs', m =1) +
                   s(time_norm, phrase, bs = 'fs', m = 1),
                 discrete = T,
                 data = pupil_roi)
 
+summary(m0_pupil)
+
 plot_smooth(m0_pupil,
             view = "time_norm",
-            plot_all = c("speaker", "rep_acc"),
+            plot_all = "condition",
             rug = F, se = 1, rm.ranef = T)
 
 ```
+
+
 #### Model Check
 
 ```{r}
@@ -422,3 +433,149 @@ gam.check(m0_pupil)
 acf_resid(m0_pupil)
 
 ```
+
+### Model 1
+
+Adding in AR(1) structure to address autocorrelation concerns. Also increased knots based on output from the initial model, and took away the random smooth for phrase due to model convergence issues.
+
+```{r}
+
+# Marking start of trials
+
+pupil_roi <- pupil_roi |>
+  dplyr::group_by(listener, speaker) |>
+  dplyr::mutate(num_points = n()) |>
+  dplyr::mutate(start_event = c(TRUE, rep(FALSE, each = (num_points - 1))))
+  
+m1_pupil <- bam(normed_pupil ~ condition +
+                  s(time_norm, by = condition, k = 25) +
+                  # Random Smooths for listener and phrase
+                  s(time_norm, listener, bs = 'fs', m =1),
+                discrete = T,
+                AR.start = start_event,
+                rho = start_value_rho(m0_pupil),
+                data = pupil_roi)
+
+summary(m1_pupil)
+
+plot_smooth(m1_pupil,
+            view = "time_norm",
+            plot_all = "condition",
+            rug = F, se = 1, rm.ranef = T)
+
+```
+
+#### Model Check
+
+Autocorrelation improved. This model's residuals also look better, but there are still some heavy residual tails.
+
+```{r}
+
+gam.check(m1_pupil)
+
+acf_resid(m1_pupil)
+
+```
+
+### Model 2 
+
+Adding scaled t distribution to fix model fit.
+
+```{r}
+
+m2_pupil <- bam(normed_pupil ~ condition +
+                  s(time_norm, by = condition, k = 25) +
+                  # Random Smooths for listener and phrase
+                  s(time_norm, listener, bs = 'fs', m =1),
+                discrete = T,
+                AR.start = start_event,
+                rho = start_value_rho(m0_pupil),
+                family = "scat",
+                data = pupil_roi)
+
+summary(m2_pupil)
+
+m2_prediction <- plot_smooth(m2_pupil,
+            view = "time_norm",
+            plot_all = "condition",
+            rug = F, se = 1, rm.ranef = T)
+
+```
+
+#### Model Check
+
+Model residuals look better, but not great
+
+```{r}
+
+gam.check(m2_pupil)
+
+acf_resid(m2_pupil)
+
+```
+
+#### Difference Plots
+
+```{r}
+
+plot_diff(m2_pupil, view = "time_norm",
+          comp = list(condition = c("ALS Accurate", "Control Accurate")),
+          rm.ranef = T)
+
+plot_diff(m2_pupil, view = "time_norm",
+          comp = list(condition = c("Control Inaccurate", "Control Accurate")),
+          rm.ranef = T)
+
+plot_diff(m2_pupil, view = "time_norm",
+          comp = list(condition = c("ALS Inaccurate", "ALS Accurate")),
+          rm.ranef = T)
+
+```
+## Plot
+
+Draft pupil dilation plot
+
+I am trying to find a way to predict model-predicted values against the actual data. geom_smooth doesn't consider the random effects, so I am thinking I need to extract model data from the final model to show the goodness of fit
+
+It might be good to do this for every iteration of the model to show the process too...
+
+```{r}
+
+ind_pupil_df <- pupil_df |>
+  dplyr::group_by(speaker, subject, rep_acc, time_norm) |>
+  summarize(pupil = mean(normed_pupil, na.rm = T),
+            se = sd(normed_pupil, na.rm = T)/sqrt(n()))
+
+sum_pupil_df <- ind_pupil_df |>
+  dplyr::group_by(speaker, rep_acc, time_norm) |>
+  summarize(m_pupil = mean(pupil, na.rm = T),
+            se_pupil = sd(pupil, na.rm = T)/sqrt(n()))
+
+# I'm trying to find a way to plot predicted values against actual data.
+predicted_values <- m2_prediction[[1]][c("condition", "time_norm", "ul", "ll")]
+
+sum_pupil_df |>
+  ggplot() +
+  aes(x = time_norm,
+      y = m_pupil,
+      color = speaker,
+      fill = speaker) +
+  geom_smooth() +
+  geom_line() +
+  geom_vline(xintercept = 0, size = 0.35) +
+  geom_vline(xintercept = 1910, linetype = 2) +
+  annotate("rect", xmin = 500, xmax = 2910, ymin = 0, ymax = 200, alpha = 0.2) +
+  coord_cartesian(ylim = c(-10, 250), xlim = c(0, 4910)) +
+  facet_wrap("rep_acc") +
+  theme_bw() +
+  theme(aspect.ratio = 1,
+        legend.position = "bottom") +
+  labs(x = "Normalized Time (ms)",
+       y = "Pupil Dilation (Arbitrary Units)") +
+  scale_color_manual(values = c(my_pal[1], my_pal[5])) +
+  scale_fill_manual(values = c(my_pal[1], my_pal[5]))
+
+ggsave("Figures/pupil_plot.png", plot = last_plot())
+
+```
+
