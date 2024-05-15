@@ -561,7 +561,7 @@ sum_pupil_df |>
       color = speaker,
       fill = speaker) +
   geom_smooth() +
-  geom_line() +
+  geom_line(size = 1) +
   geom_vline(xintercept = 0, size = 0.35) +
   geom_vline(xintercept = 1910, linetype = 2) +
   annotate("rect", xmin = 500, xmax = 2910, ymin = 0, ymax = 200, alpha = 0.2) +
