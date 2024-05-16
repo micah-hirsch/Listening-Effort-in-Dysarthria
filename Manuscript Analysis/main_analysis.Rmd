@@ -33,7 +33,6 @@ library(gtsummary) # install.packages("gtsummary")
 library(glmmTMB) # install.packages("glmmTMB")
 library(performance) # install.packages("performance")
 library(sjPlot) # install.packages("sjPlot")
-library(viridis) #install.packages("viridis")
 
 
 ```

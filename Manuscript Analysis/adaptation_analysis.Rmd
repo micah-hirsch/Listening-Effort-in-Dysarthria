@@ -13,19 +13,18 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This document contains the code and results for an exploratory analysis done with the data collected from this study. Specifically, this document reports findings about change in listening effort (measured by perceived listening effort ratings and pupil dilation) across the study trials. 
 
-```{r}
+```{r, echo = F, warning = F, message = F}
 
-library(rio)
-library(tidyverse)
-library(mgcv)
-library(itsadug)
+library(rio) # install.packages("rio")
+library(tidyverse) # install.packages("tidyverse")
+library(mgcv) # install.packages("mgcv")
+library(itsadug) # install.packages("itsadug")
 library(ggpubr) # installl.packages("ggpubr")
 library(gt) # install.packages("gt")
 library(gtsummary) # install.packages("gtsummary")
 library(glmmTMB) # install.packages("glmmTMB")
 library(performance) # install.packages("performance")
 library(sjPlot) # install.packages("sjPlot")
-library(viridis) #install.packages("viridis")
 
 ```
 
@@ -108,9 +107,24 @@ sjPlot::tab_model(m8_ple,
 performance::test_performance(m5_ple, m8_ple)
 
 ```
+
+
+
+```{r, echo = F, message = F, warning = F}
+
+sjPlot::tab_model(m5_ple, m6_ple, m7_ple, m8_ple,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
+                                  "Speaker [ALS] * Repetition Accuracy [Inaccurate]", "Trial Order * Speaker [ALS]",
+                                  "Trial Order * Repetition Accuracy [Inaccurate]", "Trial Order * Speaker * Repetition Accuracy"),
+                  dv.labels = c("Model 5", "Model 6", "Model 7", "Model 8"),
+                 file = "Tables/ple_adaptation_models.html")
+
+```
+
+
 ## Plot
 
-```{r}
+```{r, warning = F, message = F}
 
 my_pal <- c("#4E4187", "#3083DC", "#F8FFE5", "#7DDE92", "#2EBFA5")
 
@@ -190,6 +204,7 @@ plot_smooth(adapt_pupil,
             rug = F, se = 1, rm.ranef = T)
 
 ```
+
 
 ```{r}
 
