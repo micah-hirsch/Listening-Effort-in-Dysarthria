@@ -1,0 +1,142 @@
+---
+title: 'Exploratory Analyses: Adaptation'
+author: "Micah E. Hirsch"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Purpose
+
+This document contains the code and results for an exploratory analysis done with the data collected from this study. Specifically, this document reports findings about change in listening effort (measured by perceived listening effort ratings and pupil dilation) across the study trials. 
+
+```{r}
+
+library(rio)
+library(tidyverse)
+library(mgcv)
+library(itsadug)
+library(ggpubr) # installl.packages("ggpubr")
+library(gt) # install.packages("gt")
+library(gtsummary) # install.packages("gtsummary")
+library(glmmTMB) # install.packages("glmmTMB")
+library(performance) # install.packages("performance")
+library(sjPlot) # install.packages("sjPlot")
+library(viridis) #install.packages("viridis")
+
+```
+
+# Perceived Listening Effort
+
+## PLE Models
+
+### Model 5
+
+```{r}
+
+# Loading in Phrase Repetition Accuracy Data
+phrase_acc <- rio::import("Cleaned Data/repetition_accuracy.csv") |>
+  dplyr::select(subject, trial, targetphrase, initial_response, target_number, correct_words_initial, rep_acc) |>
+  dplyr::mutate(rep_acc = ifelse(initial_response == "missing data", NA, 
+                                 ifelse(target_number == correct_words_initial, "accurate", "inaccurate"))) |>
+  dplyr::select(!c(targetphrase, initial_response))
+
+# Loading in PLE data and merging transcription accuracy with it
+ple_data <- rio::import("Cleaned Data/cleaned_ple_data.csv") |>
+  dplyr::left_join(phrase_acc, by = c("subject", "trial")) |>
+  dplyr::mutate(speaker = factor(speaker, levels = c("Control", "ALS")),
+                trial_c = trial - 6,
+                rep_acc = factor(rep_acc, levels = c("accurate", "inaccurate"))) |>
+  dplyr::filter(!is.na(rep_acc)) |>
+  dplyr::filter(effort_rating > 0)
+
+m5_ple <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + speaker*rep_acc + (trial_c|subject) + (trial_c|code), data = ple_data)
+sjPlot::tab_model(m5_ple,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
+                                  "Speaker [ALS] * Repetition Accuracy [Inaccurate]"),
+                  dv.labels = "Perceived Listening Effort")
+
+```
+
+
+### Model 6
+
+```{r}
+
+m6_ple <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + speaker*rep_acc + 
+                    speaker*trial_c + (trial_c|subject) + (trial_c|code), data = ple_data)
+sjPlot::tab_model(m6_ple,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
+                                  "Speaker [ALS] * Repetition Accuracy [Inaccurate]", "Trial Order * Speaker [ALS]"),
+                  dv.labels = "Perceived Listening Effort")
+
+performance::test_performance(m5_ple, m6_ple)
+
+```
+
+### Model 7
+
+```{r}
+
+m7_ple <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + speaker*rep_acc + 
+                    speaker*trial_c + rep_acc*trial_c + (trial_c|subject) + (trial_c|code), data = ple_data)
+sjPlot::tab_model(m7_ple,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
+                                  "Speaker [ALS] * Repetition Accuracy [Inaccurate]", "Trial Order * Speaker [ALS]",
+                                  "Trial Order * Repetition Accuracy [Inaccurate]"),
+                  dv.labels = "Perceived Listening Effort")
+
+performance::test_performance(m5_ple, m7_ple)
+
+```
+
+### Model 8
+
+```{r}
+
+m8_ple <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + speaker*rep_acc + 
+                    speaker*trial_c + rep_acc*trial_c +  speaker*rep_acc*trial_c + (trial_c|subject) + (trial_c|code), data = ple_data)
+sjPlot::tab_model(m8_ple,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
+                                  "Speaker [ALS] * Repetition Accuracy [Inaccurate]", "Trial Order * Speaker [ALS]",
+                                  "Trial Order * Repetition Accuracy [Inaccurate]", "Trial Order * Speaker * Repetition Accuracy"),
+                  dv.labels = "Perceived Listening Effort")
+
+performance::test_performance(m5_ple, m8_ple)
+
+```
+## Plot
+
+```{r}
+
+my_pal <- c("#4E4187", "#3083DC", "#F8FFE5", "#7DDE92", "#2EBFA5")
+
+ple_data |>
+  dplyr::group_by(speaker, rep_acc, trial_c) |>
+  dplyr::summarize(per_effort = mean(effort_rating, na.rm = T), 
+                   sd = sd(effort_rating, na.rm = T),
+                   se = sd/sqrt(n())) |>
+  ggplot() +
+   aes(x = trial_c,
+       y = per_effort,
+       group = speaker,
+       color = speaker) +
+  geom_line() +
+  geom_errorbar(aes(ymin = per_effort - se, ymax = per_effort + se), width = 0) +
+  labs(x = "Trial", y = "Perceived Listening Effort Rating") +
+  facet_wrap("rep_acc", ncol = 1) +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  scale_color_manual(values = c(my_pal[1], my_pal[5])) +
+  scale_fill_manual(values = c(my_pal[1], my_pal[5]))
+
+ggsave("Figures/ple_trial_plot.png", plot = last_plot())
+
+```
+
+# Pupil Dilation
+
+
