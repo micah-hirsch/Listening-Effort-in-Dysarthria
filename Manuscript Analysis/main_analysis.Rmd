@@ -445,7 +445,8 @@ Adding in AR(1) structure to address autocorrelation concerns. Also increased kn
 pupil_roi <- pupil_roi |>
   dplyr::group_by(listener, speaker) |>
   dplyr::mutate(num_points = n()) |>
-  dplyr::mutate(start_event = c(TRUE, rep(FALSE, each = (num_points - 1))))
+  dplyr::mutate(start_event = c(TRUE, rep(FALSE, each = (num_points - 1)))) |>
+  ungroup()
   
 m1_pupil <- bam(normed_pupil ~ condition +
                   s(time_norm, by = condition, k = 25) +

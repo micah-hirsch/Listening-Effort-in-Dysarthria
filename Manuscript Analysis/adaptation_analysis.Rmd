@@ -139,4 +139,63 @@ ggsave("Figures/ple_trial_plot.png", plot = last_plot())
 
 # Pupil Dilation
 
+```{r}
+
+pupil_df <- rio::import("Cleaned Data/cleaned_pupil_data_normalized.csv") |>
+  # Merging phrase accuracy information with df
+  dplyr::left_join(phrase_acc, by = c("subject", "trial")) |>
+  # Filter out trials with missing phrase repetition data |>
+  dplyr::filter(!is.na(rep_acc))
+
+pupil_roi <- pupil_df |>
+  # filtering out timebins below 500 (i.e., keeping timebins above 500 ms)
+  dplyr::filter(time_norm >= 500) |>
+  dplyr::group_by(subject, trial) |>
+  # filtering out timebins 1000 ms after phrase offset
+  dplyr::filter(time_norm<= max(time_norm) - 2000) |>
+  ungroup() |>
+  dplyr::mutate(speaker = factor(speaker, levels = c("Control", "ALS")),
+                rep_acc = factor(rep_acc, levels = c("accurate", "inaccurate")),
+                phrase = as.factor(code),
+                listener = as.factor(subject),
+                condition = case_when(speaker == "Control" & rep_acc == "accurate" ~ "Control Accurate",
+                                      speaker == "Control" & rep_acc == "inaccurate" ~ "Control Inaccurate",
+                                      speaker == "ALS" & rep_acc == "accurate" ~ "ALS Accurate",
+                                      TRUE ~ "ALS Inaccurate"),
+                condition = factor(condition, 
+                                   levels = c("Control Accurate", "Control Inaccurate", "ALS Accurate", "ALS Inaccurate")),
+                trial_c = trial - 6) |>
+  dplyr::group_by(listener, speaker) |>
+  dplyr::mutate(num_points = n()) |>
+  dplyr::mutate(start_event = c(TRUE, rep(FALSE, each = (num_points - 1)))) |>
+  ungroup()
+
+adapt_pupil <- bam(normed_pupil ~ condition +
+                  s(time_norm, by = condition, k = 20) +
+                  te(time_norm, trial_c, by = condition) +
+                  # Random Smooths for listener, phrase, trial
+                  s(time_norm, listener, bs = 'fs', m =1) +
+                  s(time_norm, phrase, bs = 'fs', m = 1),
+                discrete = T,
+                family = "scat",
+                AR.start = start_event,
+                rho = .92,
+                data = pupil_roi)
+
+summary(adapt_pupil)
+
+plot_smooth(adapt_pupil,
+            view = "time_norm",
+            plot_all = "condition",
+            rug = F, se = 1, rm.ranef = T)
+
+```
+
+```{r}
+
+gam.check(adapt_pupil)
+
+acf_resid(adapt_pupil)
+
+```
 
