@@ -28,11 +28,8 @@ library(sjPlot) # install.packages("sjPlot")
 
 ```
 
-# Perceived Listening Effort
 
-## PLE Models
-
-### Model 5
+# Proportion of Correct Responses per Trial
 
 ```{r}
 
@@ -51,6 +48,65 @@ ple_data <- rio::import("Cleaned Data/cleaned_ple_data.csv") |>
                 rep_acc = factor(rep_acc, levels = c("accurate", "inaccurate"))) |>
   dplyr::filter(!is.na(rep_acc)) |>
   dplyr::filter(effort_rating > 0)
+
+my_pal <- c("#4E4187", "#3083DC", "#F8FFE5", "#7DDE92", "#2EBFA5")
+
+rep_acc_df <- ple_data |>
+  dplyr::select(subject, trial_c, speaker, rep_acc) 
+
+rep_acc_df |>
+  dplyr::mutate(trial_c = trial_c + 1) |>
+  dplyr::group_by(speaker, trial_c, rep_acc) |>
+  dplyr::summarize(n = n()) |>
+  dplyr::ungroup() |>
+  tidyr::pivot_wider(names_from = "rep_acc",
+                     values_from = "n") |>
+  dplyr::mutate(accurate = ifelse(is.na(accurate), 0, accurate),
+                inaccurate = ifelse(is.na(inaccurate), 0, inaccurate),
+                prop_accurate = accurate/(accurate + inaccurate)) |>
+  ggplot() +
+  aes(x = trial_c,
+      y = prop_accurate,
+      group = speaker,
+      color = speaker) +
+  geom_line() +
+  labs(y = "Proportion of Accurate Responses",
+       x = "Trial Number") +
+  facet_wrap("speaker", ncol = 1) +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  scale_color_manual(values = c(my_pal[1], my_pal[5])) 
+
+ggsave("Figures/acc_response_plot.png", plot = last_plot())
+
+```
+
+```{r}
+
+rep_acc_df <- rep_acc_df |>
+  dplyr::mutate(accurate = ifelse(rep_acc == "accurate", 1, 0))
+
+rep_acc_mod <- glmmTMB(accurate ~ trial_c*speaker + (trial_c|subject), family = "binomial", data = rep_acc_df)
+
+summary(rep_acc_mod)
+
+sjPlot::tab_model(rep_acc_mod, transform = NULL, show.est = TRUE, show.se = TRUE,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", 
+                                  "Trial Order * Speaker [ALS]"),
+                  dv.labels = "Perceived Listening Effort",
+                  file = "Tables/rep_acc_model.html")
+
+```
+
+
+# Perceived Listening Effort
+
+## PLE Models
+
+### Model 5
+
+```{r}
+
 
 m5_ple <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + speaker*rep_acc + (trial_c|subject) + (trial_c|code), data = ple_data)
 sjPlot::tab_model(m5_ple,
@@ -126,9 +182,8 @@ sjPlot::tab_model(m5_ple, m6_ple, m7_ple, m8_ple,
 
 ```{r, warning = F, message = F}
 
-my_pal <- c("#4E4187", "#3083DC", "#F8FFE5", "#7DDE92", "#2EBFA5")
-
 ple_data |>
+  dplyr::mutate(trial_c = trial_c + 1) |>
   dplyr::group_by(speaker, rep_acc, trial_c) |>
   dplyr::summarize(per_effort = mean(effort_rating, na.rm = T), 
                    sd = sd(effort_rating, na.rm = T),
@@ -150,6 +205,13 @@ ple_data |>
 ggsave("Figures/ple_trial_plot.png", plot = last_plot())
 
 ```
+
+```{r}
+
+rm(m5_ple, m6_ple, m7_ple, m8_ple, rep_acc_df, rep_acc_mod)
+
+```
+
 
 # Pupil Dilation
 
