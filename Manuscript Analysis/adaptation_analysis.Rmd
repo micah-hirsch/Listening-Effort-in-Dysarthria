@@ -68,14 +68,17 @@ rep_acc_df |>
   aes(x = trial_c,
       y = prop_accurate,
       group = speaker,
-      color = speaker) +
-  geom_line() +
+      color = speaker,
+      fill = speaker) +
+  geom_point() +
+  geom_smooth(method = "lm") +
   labs(y = "Proportion of Accurate Responses",
        x = "Trial Number") +
-  facet_wrap("speaker", ncol = 1) +
   theme_bw() +
-  theme(legend.position = "bottom") +
-  scale_color_manual(values = c(my_pal[1], my_pal[5])) 
+  theme(legend.position = "bottom",
+        aspect.ratio = 1) +
+  scale_color_manual(values = c(my_pal[1], my_pal[5])) +
+  scale_fill_manual(values = c(my_pal[1], my_pal[5])) 
 
 ggsave("Figures/acc_response_plot.png", plot = last_plot())
 
@@ -192,13 +195,15 @@ ple_data |>
    aes(x = trial_c,
        y = per_effort,
        group = speaker,
-       color = speaker) +
-  geom_line() +
-  geom_errorbar(aes(ymin = per_effort - se, ymax = per_effort + se), width = 0) +
+       color = speaker,
+       fill = speaker) +
+  geom_point() +
+  geom_smooth(method = "lm") +
   labs(x = "Trial", y = "Perceived Listening Effort Rating") +
-  facet_wrap("rep_acc", ncol = 1) +
+  facet_wrap("rep_acc") +
   theme_bw() +
-  theme(legend.position = "bottom") +
+  theme(legend.position = "bottom",
+        aspect.ratio = 1) +
   scale_color_manual(values = c(my_pal[1], my_pal[5])) +
   scale_fill_manual(values = c(my_pal[1], my_pal[5]))
 
@@ -220,7 +225,7 @@ rm(m5_ple, m6_ple, m7_ple, m8_ple, rep_acc_df, rep_acc_mod)
 pupil_df <- rio::import("Cleaned Data/cleaned_pupil_data_normalized.csv") |>
   # Merging phrase accuracy information with df
   dplyr::left_join(phrase_acc, by = c("subject", "trial")) |>
-  # Filter out trials with missing phrase repetition data |>
+  # Filter out trials with missing phrase repetition data 
   dplyr::filter(!is.na(rep_acc))
 
 pupil_roi <- pupil_df |>
