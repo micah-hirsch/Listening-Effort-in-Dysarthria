@@ -385,15 +385,7 @@ Initial model with smooths for speaker and phrase.
 
 ```{r}
 
-# Narrowing to the analysis region of interest
-
-pupil_roi <- pupil_df |>
-  # filtering out timebins below 500 (i.e., keeping timebins above 500 ms)
-  dplyr::filter(time_norm >= 500) |>
-  dplyr::group_by(subject, trial) |>
-  # filtering out timebins 1000 ms after phrase offset
-  dplyr::filter(time_norm<= max(time_norm) - 2000) |>
-  ungroup() |>
+pupil_df <- pupil_df |>
   dplyr::mutate(speaker = factor(speaker, levels = c("Control", "ALS")),
                 rep_acc = factor(rep_acc, levels = c("accurate", "inaccurate")),
                 phrase = as.factor(code),
@@ -411,7 +403,7 @@ m0_pupil <- bam(normed_pupil ~ condition +
                   s(time_norm, listener, bs = 'fs', m =1) +
                   s(time_norm, phrase, bs = 'fs', m = 1),
                 discrete = T,
-                data = pupil_roi)
+                data = pupil_df)
 
 summary(m0_pupil)
 
@@ -435,13 +427,13 @@ acf_resid(m0_pupil)
 
 ### Model 1
 
-Adding in AR(1) structure to address autocorrelation concerns. Also increased knots based on output from the initial model, and took away the random smooth for phrase due to model convergence issues.
+Adding in AR(1) structure to address autocorrelation concerns. Bumped up knots too.
 
 ```{r}
 
 # Marking start of trials
 
-pupil_roi <- pupil_roi |>
+pupil_df <- pupil_df |>
   dplyr::group_by(listener, speaker) |>
   dplyr::mutate(num_points = n()) |>
   dplyr::mutate(start_event = c(TRUE, rep(FALSE, each = (num_points - 1)))) |>
@@ -450,20 +442,23 @@ pupil_roi <- pupil_roi |>
 m1_pupil <- bam(normed_pupil ~ condition +
                   s(time_norm, by = condition, k = 25) +
                   # Random Smooths for listener and phrase
-                  s(time_norm, listener, bs = 'fs', m =1),
+                  s(time_norm, listener, bs = 'fs', m =1) +
+                  s(time_norm, phrase, bs = 'fs', m =1),
                 discrete = T,
                 AR.start = start_event,
                 rho = start_value_rho(m0_pupil),
-                data = pupil_roi)
+                data = pupil_df)
 
 summary(m1_pupil)
 
-plot_smooth(m1_pupil,
+m1_prediction <- plot_smooth(m1_pupil,
             view = "time_norm",
             plot_all = "condition",
             rug = F, se = 1, rm.ranef = T)
 
 ```
+
+
 
 #### Model Check
 
@@ -477,9 +472,51 @@ acf_resid(m1_pupil)
 
 ```
 
+#### Plot
+
+```{r}
+
+ind_pupil_df <- pupil_df |>
+  dplyr::group_by(speaker, subject, rep_acc, time_norm) |>
+  summarize(pupil = mean(normed_pupil, na.rm = T),
+            se = sd(normed_pupil, na.rm = T)/sqrt(n()))
+
+sum_pupil_df <- ind_pupil_df |>
+  dplyr::group_by(speaker, rep_acc, time_norm) |>
+  summarize(m_pupil = mean(pupil, na.rm = T),
+            se_pupil = sd(pupil, na.rm = T)/sqrt(n()))
+
+m1_predicted_values <- m1_prediction[[1]][c("condition", "time_norm", "fit", "ul", "ll")] |>
+  dplyr::mutate(rep_acc = ifelse(grepl("inaccurate", condition, ignore.case = T), "inaccurate", "accurate"),
+                speaker = ifelse(grepl("Control", condition, ignore.case = T), "Control", "ALS"))
+
+sum_pupil_df |>
+  ggplot() +
+  aes(x = time_norm,
+      y = m_pupil,
+      color = speaker,
+      fill = speaker) +
+  geom_line() +
+  geom_line(data = m1_predicted_values, aes(x = time_norm, y = fit, color = speaker, fill = speaker), linetype = 2) +
+  geom_vline(xintercept = 0, size = 0.35) +
+  geom_vline(xintercept = 1910, linetype = 2) +
+  annotate("rect", xmin = 500, xmax = 2910, ymin = 0, ymax = 200, alpha = 0.2) +
+  coord_cartesian(ylim = c(-10, 250), xlim = c(0, 4910)) +
+  facet_wrap("rep_acc") +
+  theme_bw() +
+  theme(aspect.ratio = 1,
+        legend.position = "bottom") +
+  labs(x = "Normalized Time (ms)",
+       y = "Pupil Dilation (Arbitrary Units)") +
+  scale_color_manual(values = c(my_pal[1], my_pal[5])) +
+  scale_fill_manual(values = c(my_pal[1], my_pal[5]))
+
+```
+
+
 ### Model 2 
 
-Adding scaled t distribution to fix model fit.
+Adding scaled t distribution to fix model fit. The model was originally running into an error with the random smooth for phrase. Therefore, it was removed in model 2.
 
 ```{r}
 
@@ -491,7 +528,7 @@ m2_pupil <- bam(normed_pupil ~ condition +
                 AR.start = start_event,
                 rho = start_value_rho(m0_pupil),
                 family = "scat",
-                data = pupil_roi)
+                data = pupil_df)
 
 summary(m2_pupil)
 
@@ -514,45 +551,15 @@ acf_resid(m2_pupil)
 
 ```
 
-#### Difference Plots
+
+#### Plot
+
 
 ```{r}
 
-plot_diff(m2_pupil, view = "time_norm",
-          comp = list(condition = c("ALS Accurate", "Control Accurate")),
-          rm.ranef = T)
-
-plot_diff(m2_pupil, view = "time_norm",
-          comp = list(condition = c("Control Inaccurate", "Control Accurate")),
-          rm.ranef = T)
-
-plot_diff(m2_pupil, view = "time_norm",
-          comp = list(condition = c("ALS Inaccurate", "ALS Accurate")),
-          rm.ranef = T)
-
-```
-## Plot
-
-Draft pupil dilation plot
-
-I am trying to find a way to predict model-predicted values against the actual data. geom_smooth doesn't consider the random effects, so I am thinking I need to extract model data from the final model to show the goodness of fit
-
-It might be good to do this for every iteration of the model to show the process too...
-
-```{r}
-
-ind_pupil_df <- pupil_df |>
-  dplyr::group_by(speaker, subject, rep_acc, time_norm) |>
-  summarize(pupil = mean(normed_pupil, na.rm = T),
-            se = sd(normed_pupil, na.rm = T)/sqrt(n()))
-
-sum_pupil_df <- ind_pupil_df |>
-  dplyr::group_by(speaker, rep_acc, time_norm) |>
-  summarize(m_pupil = mean(pupil, na.rm = T),
-            se_pupil = sd(pupil, na.rm = T)/sqrt(n()))
-
-# I'm trying to find a way to plot predicted values against actual data.
-predicted_values <- m2_prediction[[1]][c("condition", "time_norm", "ul", "ll")]
+m2_predicted_values <- m2_prediction[[1]][c("condition", "time_norm", "fit", "ul", "ll")] |>
+  dplyr::mutate(rep_acc = ifelse(grepl("inaccurate", condition, ignore.case = T), "inaccurate", "accurate"),
+                speaker = ifelse(grepl("Control", condition, ignore.case = T), "Control", "ALS"))
 
 sum_pupil_df |>
   ggplot() +
@@ -560,8 +567,8 @@ sum_pupil_df |>
       y = m_pupil,
       color = speaker,
       fill = speaker) +
-  geom_smooth() +
-  geom_line(size = 1) +
+  geom_line() +
+  geom_line(data = m2_predicted_values, aes(x = time_norm, y = fit, color = speaker, fill = speaker), linetype = 2) +
   geom_vline(xintercept = 0, size = 0.35) +
   geom_vline(xintercept = 1910, linetype = 2) +
   annotate("rect", xmin = 500, xmax = 2910, ymin = 0, ymax = 200, alpha = 0.2) +
@@ -575,7 +582,81 @@ sum_pupil_df |>
   scale_color_manual(values = c(my_pal[1], my_pal[5])) +
   scale_fill_manual(values = c(my_pal[1], my_pal[5]))
 
-ggsave("Figures/pupil_plot.png", plot = last_plot())
+```
+
+### Model 3
+
+Adjusting random smooth to be for each listener by condition
+
+```{r}
+
+m3_pupil <- bam(normed_pupil ~ condition +
+                  s(time_norm, by = condition, k = 25) +
+                  # Random Smooths for listener and phrase
+                  s(time_norm, listener, by = condition, bs = 'fs', m = 1),
+                discrete = T,
+                AR.start = start_event,
+                rho = start_value_rho(m0_pupil),
+                family = "scat",
+                data = pupil_df)
+
+summary(m3_pupil)
+
+m3_prediction <- plot_smooth(m3_pupil,
+            view = "time_norm",
+            plot_all = "condition",
+            rug = F, se = 1, rm.ranef = T)
+
+```
+
+#### Model Check
+
+```{r}
+
+gam.check(m3_pupil)
+
+acf_resid(m3_pupil)
+
+```
+
+
+
+#### Plot
+
+```{r}
+
+m3_predicted_values <- m3_prediction[[1]][c("condition", "time_norm", "fit", "ul", "ll")] |>
+  dplyr::mutate(rep_acc = ifelse(grepl("inaccurate", condition, ignore.case = T), "inaccurate", "accurate"),
+                speaker = ifelse(grepl("Control", condition, ignore.case = T), "Control", "ALS"))
+
+sum_pupil_df |>
+  ggplot() +
+  aes(x = time_norm,
+      y = m_pupil,
+      color = rep_acc,
+      fill = rep_acc) +
+  geom_line() +
+  geom_line(data = m3_predicted_values, aes(x = time_norm, y = fit, color = rep_acc, fill = rep_acc), linetype = 2) +
+  geom_vline(xintercept = 0, size = 0.35) +
+  geom_vline(xintercept = 1910, linetype = 2) +
+  annotate("rect", xmin = 500, xmax = 2910, ymin = 0, ymax = 200, alpha = 0.2) +
+  coord_cartesian(ylim = c(-10, 250), xlim = c(0, 4910)) +
+  facet_wrap("speaker") +
+  theme_bw() +
+  theme(aspect.ratio = 1,
+        legend.position = "bottom") +
+  labs(x = "Normalized Time (ms)",
+       y = "Pupil Dilation (Arbitrary Units)") +
+  scale_color_manual(values = c(my_pal[1], my_pal[5])) +
+  scale_fill_manual(values = c(my_pal[1], my_pal[5]))
+
+```
+
+### Model Comparisons
+
+```{r}
+
+compareML(m2_pupil, m3_pupil, signif.stars=T)
 
 ```
 
