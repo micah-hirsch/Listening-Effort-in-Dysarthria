@@ -35,7 +35,7 @@ library(sjPlot) # install.packages("sjPlot")
 
 # Proportion of Correct Responses per Trial
 
-```{r}
+```{r, warning = F, message = F}
 
 # Loading in Phrase Repetition Accuracy Data
 phrase_acc <- rio::import("Cleaned Data/repetition_accuracy.csv") |>
@@ -88,7 +88,7 @@ ggsave("Figures/acc_response_plot.png", plot = last_plot())
 
 ```
 
-```{r}
+```{r, warning = F, message = F}
 
 rep_acc_df <- rep_acc_df |>
   dplyr::mutate(accurate = ifelse(rep_acc == "accurate", 1, 0))
@@ -112,7 +112,7 @@ sjPlot::tab_model(rep_acc_mod, transform = NULL, show.est = TRUE, show.se = TRUE
 
 ### Model 5
 
-```{r}
+```{r, message = F, warning = F}
 
 
 m5_ple <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + speaker*rep_acc + (trial_c|subject) + (trial_c|code), data = ple_data)
@@ -126,7 +126,7 @@ sjPlot::tab_model(m5_ple,
 
 ### Model 6
 
-```{r}
+```{r, message = F, warning = F}
 
 m6_ple <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + speaker*rep_acc + 
                     speaker*trial_c + (trial_c|subject) + (trial_c|code), data = ple_data)
@@ -141,7 +141,7 @@ performance::test_performance(m5_ple, m6_ple)
 
 ### Model 7
 
-```{r}
+```{r, message = F, warning = F}
 
 m7_ple <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + speaker*rep_acc + 
                     speaker*trial_c + rep_acc*trial_c + (trial_c|subject) + (trial_c|code), data = ple_data)
@@ -157,7 +157,7 @@ performance::test_performance(m5_ple, m7_ple)
 
 ### Model 8
 
-```{r}
+```{r, message = F, warning = F}
 
 m8_ple <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + speaker*rep_acc + 
                     speaker*trial_c + rep_acc*trial_c +  speaker*rep_acc*trial_c + (trial_c|subject) + (trial_c|code), data = ple_data)
@@ -173,7 +173,7 @@ performance::test_performance(m5_ple, m8_ple)
 
 
 
-```{r, echo = F, message = F, warning = F}
+```{r, eval = F, message = F, warning = F}
 
 sjPlot::tab_model(m5_ple, m6_ple, m7_ple, m8_ple,
                   pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
@@ -215,6 +215,7 @@ ggsave("Figures/ple_trial_plot.png", plot = last_plot())
 
 ```
 
+
 ```{r}
 
 rm(m5_ple, m6_ple, m7_ple, m8_ple, rep_acc_df, rep_acc_mod)
@@ -224,6 +225,8 @@ rm(m5_ple, m6_ple, m7_ple, m8_ple, rep_acc_df, rep_acc_mod)
 
 # Pupil Dilation
 
+## Plot
+
 ```{r}
 
 pupil_df <- rio::import("Cleaned Data/cleaned_pupil_data_normalized.csv") |>
@@ -232,13 +235,7 @@ pupil_df <- rio::import("Cleaned Data/cleaned_pupil_data_normalized.csv") |>
   # Filter out trials with missing phrase repetition data 
   dplyr::filter(!is.na(rep_acc))
 
-pupil_roi <- pupil_df |>
-  # filtering out timebins below 500 (i.e., keeping timebins above 500 ms)
-  dplyr::filter(time_norm >= 500) |>
-  dplyr::group_by(subject, trial) |>
-  # filtering out timebins 1000 ms after phrase offset
-  dplyr::filter(time_norm<= max(time_norm) - 2000) |>
-  ungroup() |>
+pupil_df <- pupil_df |>
   dplyr::mutate(speaker = factor(speaker, levels = c("Control", "ALS")),
                 rep_acc = factor(rep_acc, levels = c("accurate", "inaccurate")),
                 phrase = as.factor(code),
@@ -255,17 +252,206 @@ pupil_roi <- pupil_df |>
   dplyr::mutate(start_event = c(TRUE, rep(FALSE, each = (num_points - 1)))) |>
   ungroup()
 
+
+# Extracting max pupil dilation
+max_pupil <- pupil_df |>  
+  dplyr::filter(time_norm >= 500) |>
+  dplyr::group_by(subject, trial) |>
+  # filtering out timebins 1000 ms after phrase offset
+  dplyr::filter(time_norm<= max(time_norm) - 2000) |>
+  dplyr::ungroup() |>
+  # Getting Peak Pupil Dilation Value
+  dplyr::group_by(subject, trial, speaker, code, rep_acc) |>
+  dplyr::summarize(peak_pupil = max(normed_pupil)) |>
+  dplyr::ungroup() |>
+  dplyr::mutate(trial_c = trial - 6)
+
+max_pupil |>
+  dplyr::mutate(trial_c = trial_c + 1) |>
+  dplyr::group_by(speaker, rep_acc, trial_c) |>
+  dplyr::summarize(peak = mean(peak_pupil, na.rm = T), 
+                   se = sd(peak_pupil, na.rm = T)/sqrt(n())) |>
+  ggplot() +
+  aes(x = trial_c,
+      y = peak,
+      color = speaker,
+      fill = speaker) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(x = "Trial", y = "Peak Pupil Dilation (Arbitrary Units)") +
+  facet_wrap("rep_acc") +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        aspect.ratio = 1) +
+  scale_color_manual(values = c(my_pal[1], my_pal[5])) +
+  scale_fill_manual(values = c(my_pal[1], my_pal[5]))
+  
+  
+```
+
+## LME Model: Peak Pupil
+
+### Fully Unconditional Model
+
+Tried running with random intercept for phrase too, but ran into singular fit issues. So it was removed. ICC = .331
+
+```{r}
+
+m0_pupil <- glmmTMB(peak_pupil ~ 1 + (1|subject), data = max_pupil)
+summary(m0_pupil)
+performance::icc(m0_pupil)
+
+```
+
+### Model 1
+
+Adding trial random slope
+
+```{r}
+
+m1_pupil <- glmmTMB(peak_pupil ~ 1 + (trial_c|subject), data = max_pupil)
+summary(m1_pupil)
+performance::test_performance(m0_pupil, m1_pupil)
+
+```
+
+### Model 2
+
+```{r}
+
+m2_pupil <- glmmTMB(peak_pupil ~ trial_c + (trial_c|subject), data = max_pupil)
+summary(m2_pupil)
+performance::test_performance(m1_pupil, m2_pupil)
+
+```
+
+### Model 3
+
+```{r}
+
+m3_pupil <- glmmTMB(peak_pupil ~ trial_c + speaker + (trial_c|subject), data = max_pupil)
+summary(m3_pupil)
+performance::test_performance(m2_pupil, m3_pupil)
+
+```
+
+### Model 4
+
+```{r}
+
+m4_pupil <- glmmTMB(peak_pupil ~ trial_c + speaker + rep_acc + (trial_c|subject), data = max_pupil)
+summary(m4_pupil)
+performance::test_performance(m3_pupil, m4_pupil)
+
+```
+
+### Model 5 
+
+```{r}
+
+m5_pupil <- glmmTMB(peak_pupil ~ trial_c + speaker + rep_acc + speaker*rep_acc + (trial_c|subject), data = max_pupil)
+summary(m5_pupil)
+performance::test_performance(m4_pupil, m5_pupil)
+
+```
+
+### Model 5b
+
+```{r}
+
+m5b_pupil <- glmmTMB(peak_pupil ~ speaker + rep_acc + speaker*rep_acc + (trial_c|subject), data = max_pupil)
+summary(m5b_pupil)
+performance::test_performance(m5_pupil, m5b_pupil)
+
+```
+
+
+### Model 6
+
+```{r}
+
+m6_pupil <- glmmTMB(peak_pupil ~ trial_c + speaker + rep_acc + 
+                      speaker*rep_acc + trial_c*speaker +(trial_c|subject), data = max_pupil)
+summary(m6_pupil)
+performance::test_performance(m4_pupil, m6_pupil)
+
+```
+
+### Model 7
+
+```{r}
+
+m7_pupil <- glmmTMB(peak_pupil ~ trial_c + speaker + rep_acc + 
+                      speaker*rep_acc + trial_c*speaker + trial_c*rep_acc + (trial_c|subject), data = max_pupil)
+summary(m7_pupil)
+performance::test_performance(m6_pupil, m7_pupil)
+
+```
+
+### Model 8
+
+```{r}
+
+m8_pupil <- glmmTMB(peak_pupil ~ trial_c + speaker + rep_acc + 
+                      speaker*rep_acc + trial_c*speaker + trial_c*rep_acc + 
+                      trial_c*speaker*rep_acc + (trial_c|subject), data = max_pupil)
+summary(m8_pupil)
+performance::test_performance(m7_pupil, m8_pupil)
+
+```
+
+### Final Model with Unstandardized Estimates
+
+```{r}
+
+sjPlot::tab_model(m7_pupil,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
+                                  "Speaker [ALS] * Repetition Accuracy [Inaccurate]", "Trial Order * Speaker [ALS]",
+                                  "Trial Order * Repetition Accuracy [Inaccurate]"),
+                  dv.labels = "Peak Pupil Dilation",
+                  file = "Tables/peak_pupil_adapt_unstd.html")
+
+```
+
+
+
+### Final Model with Standardized Estimates
+
+```{r}
+
+m7_pupil_std <- glmmTMB(scale(peak_pupil) ~ scale(trial_c) + speaker + rep_acc + 
+                      speaker*rep_acc + scale(trial_c)*speaker + scale(trial_c)*rep_acc + (trial_c|subject), data = max_pupil)
+sjPlot::tab_model(m7_pupil_std,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
+                                  "Speaker [ALS] * Repetition Accuracy [Inaccurate]", "Trial Order * Speaker [ALS]",
+                                  "Trial Order * Repetition Accuracy [Inaccurate]"),
+                  dv.labels = "Peak Pupil Dilation",
+                  file = "Tables/peak_pupil_adapt_std.html")
+
+```
+
+
+```{r}
+
+rm(m0_pupil, m1_pupil, m2_pupil, m3_pupil, m4_pupil, m5_pupil, m6_pupil, m7_pupil, m8_pupil, m5b_pupil, max_pupil)
+
+```
+
+
+## GAMM 
+
+```{r, eval = F}
+
 adapt_pupil <- bam(normed_pupil ~ condition +
-                  s(time_norm, by = condition, k = 20) +
-                  te(time_norm, trial_c, by = condition) +
-                  # Random Smooths for listener, phrase, trial
-                  s(time_norm, listener, bs = 'fs', m =1) +
-                  s(time_norm, phrase, bs = 'fs', m = 1),
+                  s(time_norm, by = condition, k = 25) +
+                  te(time_norm, trial_c, k = 25) +
+                  # Random Smooth for listener
+                  s(time_norm, listener, bs = 'fs', m =1),
                 discrete = T,
                 family = "scat",
                 AR.start = start_event,
                 rho = .92,
-                data = pupil_roi)
+                data = pupil_df)
 
 summary(adapt_pupil)
 
@@ -277,7 +463,7 @@ plot_smooth(adapt_pupil,
 ```
 
 
-```{r}
+```{r, eval = F}
 
 gam.check(adapt_pupil)
 
