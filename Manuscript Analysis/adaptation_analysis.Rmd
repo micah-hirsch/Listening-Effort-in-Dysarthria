@@ -498,6 +498,25 @@ rm(m0_pupil, m1_pupil, m2_pupil, m3_pupil, m4_pupil, m5_pupil, m6_pupil, m7_pupi
 
 ## GAMM Analysis
 
+### Main Model
+
+```{r}
+
+m2_pupil <- bam(normed_pupil ~ condition +
+                  s(time_norm, by = condition, k = 25) +
+                  # Random Smooth for listener
+                  s(time_norm, listener, bs = 'fs', m = 1),
+                discrete = T,
+                AR.start = start_event,
+                rho = .9341941,
+                family = "scat",
+                data = pupil_df)
+
+```
+
+
+### Adaptation Model
+
 ```{r}
 
 adapt_pupil <- bam(normed_pupil ~ condition +
@@ -508,7 +527,7 @@ adapt_pupil <- bam(normed_pupil ~ condition +
                 discrete = T,
                 family = "scat",
                 AR.start = start_event,
-                rho = .92,
+                rho = .9341941,
                 data = pupil_df)
 
 summary.gam(adapt_pupil)
@@ -520,27 +539,7 @@ plot_smooth(adapt_pupil,
 
 ```
 
-### By Trial Contours
-
-```{r}
-
-vis.gam(adapt_pupil, view = c("time_norm", "trial_c"), 
-        cond = list(condition = "Control Accurate"), 
-        theta = -45, phi = 55, color = "topo")
-
-vis.gam(adapt_pupil, view = c("time_norm", "trial_c"), 
-        cond = list(condition = "Control Inaccurate"), 
-        theta = -45, phi = 55, color = "topo")
-
-vis.gam(adapt_pupil, view = c("time_norm", "trial_c"), 
-        cond = list(condition = "ALS Accurate"), 
-        theta = -45, phi = 55, color = "topo")
-
-vis.gam(adapt_pupil, view = c("time_norm", "trial_c"), 
-        cond = list(condition = "ALS Inaccurate"), 
-        theta = -45, phi = 55, color = "topo")
-```
-
+#### Model Check
 
 ```{r, eval = F}
 
@@ -549,6 +548,37 @@ gam.check(adapt_pupil)
 acf_resid(adapt_pupil)
 
 ```
+
+#### Model Comparison
+
+```{r}
+
+compareML(m2_pupil, adapt_pupil, signif.stars = T, suggest.report = T)
+
+```
+#### By Trial Contours
+
+```{r}
+
+control_acc <- vis.gam(adapt_pupil, view = c("time_norm", "trial_c"), 
+        cond = list(condition = "Control Accurate"), 
+        theta = -45, phi = 55, color = "topo")
+
+control_inacc <- vis.gam(adapt_pupil, view = c("time_norm", "trial_c"), 
+        cond = list(condition = "Control Inaccurate"), 
+        theta = -45, phi = 55, color = "topo")
+
+ALS_acc <- vis.gam(adapt_pupil, view = c("time_norm", "trial_c"), 
+        cond = list(condition = "ALS Accurate"), 
+        theta = -45, phi = 55, color = "topo")
+
+ALS_inacc <- vis.gam(adapt_pupil, view = c("time_norm", "trial_c"), 
+        cond = list(condition = "ALS Inaccurate"), 
+        theta = -45, phi = 55, color = "topo")
+```
+
+
+
 ### Curve Differences
 
 #### Control vs ALS 
