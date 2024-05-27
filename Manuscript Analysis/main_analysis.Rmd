@@ -310,7 +310,7 @@ sjPlot::tab_model(final_ple_std,
 
 ```{r, eval = F}
 
-sjPlot::tab_model(m1_ple, m2_ple, m3_ple, m4_ple, m5_ple,
+sjPlot::tab_model(m1_ple, m2_ple, m3_ple, m4_ple, m5_ple, show.ci = F,
                   pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
                                   "Speaker [ALS] * Repetition Accuracy [Inaccurate]"),
                   dv.labels = c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5"),
@@ -417,7 +417,7 @@ plot_smooth(m0_pupil,
 
 #### Model Check
 
-```{r}
+```{r, warning = F, message = F}
 
 gam.check(m0_pupil)
 
@@ -429,7 +429,7 @@ acf_resid(m0_pupil)
 
 Adding in AR(1) structure to address autocorrelation concerns. Bumped up knots to 25.
 
-```{r}
+```{r, warning = F, message = F}
 
 # Marking start of trials
 
@@ -477,7 +477,7 @@ acf_resid(m1_pupil)
 
 In this model, the scaled t distribution was added to the model specifications to fix model fit to the data. The model was originally running into an error when the random smooth for phrase was included in the specification. Therefore, it was removed in this model. The random smooth for listener remained in this model.
 
-```{r}
+```{r, warning = F, message = F}
 
 m2_pupil <- bam(normed_pupil ~ condition +
                   s(time_norm, by = condition, k = 25) +
@@ -516,7 +516,7 @@ acf_resid(m2_pupil)
 
 In model 3, we are testing whether adjusting the random smooth specification significantly improves model fit to the data. In model 2, there was just a random smooth for listener. This random smooth specification is updated here to be a random smooth per listener for each condition level (interactions between speaker and phrase repetition accuracy).
 
-```{r}
+```{r, warning = F, message = F}
 
 m3_pupil <- bam(normed_pupil ~ condition +
                   s(time_norm, by = condition, k = 25) +
@@ -541,7 +541,7 @@ m3_prediction <- plot_smooth(m3_pupil,
 
 The model residuals look similar. The adjusted R-squared value is .192.
 
-```{r}
+```{r, warning = F, message = F}
 
 gam.check(m3_pupil)
 
@@ -554,7 +554,7 @@ acf_resid(m3_pupil)
 
 To test whether model 3 significantly improved the fit to the data, a generalized likelihood ratio test was conducted. The results suggest that model 3 did not significantly improve model fit. Therefore, we will retain model 2.
 
-```{r}
+```{r, warning = F}
 
 compareML(m2_pupil, m3_pupil, signif.stars = T, suggest.report = T)
 
