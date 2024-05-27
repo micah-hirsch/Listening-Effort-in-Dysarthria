@@ -95,8 +95,6 @@ rep_acc_df <- rep_acc_df |>
 
 rep_acc_mod <- glmmTMB(accurate ~ trial_c*speaker + (trial_c|subject), family = "binomial", data = rep_acc_df)
 
-summary(rep_acc_mod)
-
 sjPlot::tab_model(rep_acc_mod, transform = NULL, show.est = TRUE, show.se = TRUE,
                   pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", 
                                   "Trial Order * Speaker [ALS]"),
@@ -175,7 +173,7 @@ performance::test_performance(m5_ple, m8_ple)
 
 ```{r, eval = F, message = F, warning = F}
 
-sjPlot::tab_model(m5_ple, m6_ple, m7_ple, m8_ple,
+sjPlot::tab_model(m5_ple, m6_ple, m7_ple, m8_ple, show.ci = F,
                   pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
                                   "Speaker [ALS] * Repetition Accuracy [Inaccurate]", "Trial Order * Speaker [ALS]",
                                   "Trial Order * Repetition Accuracy [Inaccurate]", "Trial Order * Speaker * Repetition Accuracy"),
@@ -298,7 +296,7 @@ Tried running with random intercept for phrase too, but ran into singular fit is
 ```{r}
 
 m0_pupil <- glmmTMB(peak_pupil ~ 1 + (1|subject), data = max_pupil)
-summary(m0_pupil)
+sjPlot::tab_model(m0_pupil)
 performance::icc(m0_pupil)
 
 ```
@@ -310,7 +308,7 @@ Adding trial random slope
 ```{r}
 
 m1_pupil <- glmmTMB(peak_pupil ~ 1 + (trial_c|subject), data = max_pupil)
-summary(m1_pupil)
+sjPlot::tab_model(m1_pupil)
 performance::test_performance(m0_pupil, m1_pupil)
 
 ```
@@ -320,7 +318,7 @@ performance::test_performance(m0_pupil, m1_pupil)
 ```{r}
 
 m2_pupil <- glmmTMB(peak_pupil ~ trial_c + (trial_c|subject), data = max_pupil)
-summary(m2_pupil)
+sjPlot::tab_model(m2_pupil)
 performance::test_performance(m1_pupil, m2_pupil)
 
 ```
@@ -330,7 +328,7 @@ performance::test_performance(m1_pupil, m2_pupil)
 ```{r}
 
 m3_pupil <- glmmTMB(peak_pupil ~ trial_c + speaker + (trial_c|subject), data = max_pupil)
-summary(m3_pupil)
+sjPlot::tab_model(m3_pupil)
 performance::test_performance(m2_pupil, m3_pupil)
 
 ```
@@ -340,7 +338,7 @@ performance::test_performance(m2_pupil, m3_pupil)
 ```{r}
 
 m4_pupil <- glmmTMB(peak_pupil ~ trial_c + speaker + rep_acc + (trial_c|subject), data = max_pupil)
-summary(m4_pupil)
+sjPlot::tab_model(m4_pupil)
 performance::test_performance(m3_pupil, m4_pupil)
 
 ```
@@ -350,7 +348,7 @@ performance::test_performance(m3_pupil, m4_pupil)
 ```{r}
 
 m5_pupil <- glmmTMB(peak_pupil ~ trial_c + speaker + rep_acc + speaker*rep_acc + (trial_c|subject), data = max_pupil)
-summary(m5_pupil)
+sjPlot::tab_model(m5_pupil)
 performance::test_performance(m4_pupil, m5_pupil)
 
 ```
@@ -360,7 +358,7 @@ performance::test_performance(m4_pupil, m5_pupil)
 ```{r}
 
 m5b_pupil <- glmmTMB(peak_pupil ~ speaker + rep_acc + speaker*rep_acc + (trial_c|subject), data = max_pupil)
-summary(m5b_pupil)
+sjPlot::tab_model(m5b_pupil)
 performance::test_performance(m5_pupil, m5b_pupil)
 
 ```
@@ -372,7 +370,7 @@ performance::test_performance(m5_pupil, m5b_pupil)
 
 m6_pupil <- glmmTMB(peak_pupil ~ trial_c + speaker + rep_acc + 
                       speaker*rep_acc + trial_c*speaker +(trial_c|subject), data = max_pupil)
-summary(m6_pupil)
+sjPlot::tab_model(m6_pupil)
 performance::test_performance(m4_pupil, m6_pupil)
 
 ```
@@ -383,7 +381,7 @@ performance::test_performance(m4_pupil, m6_pupil)
 
 m7_pupil <- glmmTMB(peak_pupil ~ trial_c + speaker + rep_acc + 
                       speaker*rep_acc + trial_c*speaker + trial_c*rep_acc + (trial_c|subject), data = max_pupil)
-summary(m7_pupil)
+sjPlot::tab_model(m7_pupil)
 performance::test_performance(m6_pupil, m7_pupil)
 
 ```
@@ -395,7 +393,7 @@ performance::test_performance(m6_pupil, m7_pupil)
 m8_pupil <- glmmTMB(peak_pupil ~ trial_c + speaker + rep_acc + 
                       speaker*rep_acc + trial_c*speaker + trial_c*rep_acc + 
                       trial_c*speaker*rep_acc + (trial_c|subject), data = max_pupil)
-summary(m8_pupil)
+sjPlot::tab_model(m8_pupil)
 performance::test_performance(m7_pupil, m8_pupil)
 
 ```
@@ -443,8 +441,8 @@ rm(m0_pupil, m1_pupil, m2_pupil, m3_pupil, m4_pupil, m5_pupil, m6_pupil, m7_pupi
 ```{r, eval = F}
 
 adapt_pupil <- bam(normed_pupil ~ condition +
-                  s(time_norm, by = condition, k = 25) +
-                  te(time_norm, trial_c, k = 25) +
+                  s(time_norm, by = condition, k = 30) +
+                  te(time_norm, trial_c, k = 30) +
                   # Random Smooth for listener
                   s(time_norm, listener, bs = 'fs', m =1),
                 discrete = T,
@@ -453,13 +451,35 @@ adapt_pupil <- bam(normed_pupil ~ condition +
                 rho = .92,
                 data = pupil_df)
 
-summary(adapt_pupil)
+summary.gam(adapt_pupil)
 
 plot_smooth(adapt_pupil,
             view = "time_norm",
             plot_all = "condition",
             rug = F, se = 1, rm.ranef = T)
 
+```
+
+
+
+```{r}
+
+vis.gam(adapt_pupil, view = c("time_norm", "trial_c"), 
+        cond = list(condition = "Control Accurate"), 
+        theta = -45, phi = 55, color = "topo")
+
+vis.gam(adapt_pupil, view = c("time_norm", "trial_c"), 
+        cond = list(condition = "Control Inaccurate"), 
+        theta = -45, phi = 55, color = "topo")
+
+vis.gam(adapt_pupil, view = c("time_norm", "trial_c"), 
+        cond = list(condition = "ALS Accurate"), 
+        theta = -45, phi = 55, color = "topo")
+
+
+vis.gam(adapt_pupil, view = c("time_norm", "trial_c"), 
+        cond = list(condition = "ALS Inaccurate"), 
+        theta = -45, phi = 55, color = "topo")
 ```
 
 

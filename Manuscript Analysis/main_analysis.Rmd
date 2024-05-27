@@ -22,12 +22,12 @@ The purpose of this document is to analyze and report findings related to M. Hir
 
 # Load in Needed Packages
 
-library(rio)
-library(tidyverse)
-library(mgcv)
-library(itsadug)
-library(irr)
-library(ggpubr) # installl.packages("ggpubr")
+library(rio) # install.packages("rio")
+library(tidyverse) # install.packages("tidyverse")
+library(mgcv) # install.packages("mgcv")
+library(itsadug) # install.packages("itsadug")
+library(irr) # install.packages("irr")
+library(ggpubr) # install.packages("ggpubr")
 library(gt) # install.packages("gt")
 library(gtsummary) # install.packages("gtsummary")
 library(glmmTMB) # install.packages("glmmTMB")
@@ -427,7 +427,7 @@ acf_resid(m0_pupil)
 
 ### Model 1
 
-Adding in AR(1) structure to address autocorrelation concerns. Bumped up knots too.
+Adding in AR(1) structure to address autocorrelation concerns. Bumped up knots to 25.
 
 ```{r}
 
@@ -454,7 +454,7 @@ summary.gam(m1_pupil)
 m1_prediction <- plot_smooth(m1_pupil,
             view = "time_norm",
             plot_all = "condition",
-            rug = F, se = 1, rm.ranef = T, plot = F)
+            rug = F, se = 1, rm.ranef = T)
 
 ```
 
@@ -475,7 +475,7 @@ acf_resid(m1_pupil)
 
 ### Model 2 
 
-In this model, the scaled t distribution was added to the model specifications to fix model fit to the data. The model was originally running into an error when the random smooth for phrase was included in the specification. Therefore, it was removed in this model. The random smooth for listener remained in this model
+In this model, the scaled t distribution was added to the model specifications to fix model fit to the data. The model was originally running into an error when the random smooth for phrase was included in the specification. Therefore, it was removed in this model. The random smooth for listener remained in this model.
 
 ```{r}
 
@@ -514,6 +514,8 @@ acf_resid(m2_pupil)
 
 ### Model 3
 
+In model 3, we are testing whether adjusting the random smooth specification significantly improves model fit to the data. In model 2, there was just a random smooth for listener. This random smooth specification is updated here to be a random smooth per listener for each condition level (interactions between speaker and phrase repetition accuracy).
+
 ```{r}
 
 m3_pupil <- bam(normed_pupil ~ condition +
@@ -537,6 +539,8 @@ m3_prediction <- plot_smooth(m3_pupil,
 
 #### Model Check
 
+The model residuals look similar. The adjusted R-squared value is .192.
+
 ```{r}
 
 gam.check(m3_pupil)
@@ -545,7 +549,19 @@ acf_resid(m3_pupil)
 
 ```
 
-## Model 2 Fit
+
+## Model Comparison
+
+To test whether model 3 significantly improved the fit to the data, a generalized likelihood ratio test was conducted. The results suggest that model 3 did not significantly improve model fit. Therefore, we will retain model 2.
+
+```{r}
+
+compareML(m2_pupil, m3_pupil, signif.stars = T, suggest.report = T)
+
+```
+
+
+## Final Model (Model 2)
 
 ### Overall Model Plot
 
@@ -577,7 +593,7 @@ m2_predicted_values |>
   scale_color_manual(values = c(my_pal[1], my_pal[5])) +
   scale_fill_manual(values = c(my_pal[1], my_pal[5]))
 
-# ggsave("Figures/pupil_plot.png", plot = last_plot())
+ggsave("Figures/pupil_plot.png", plot = last_plot())
 
 ```
 
@@ -762,222 +778,7 @@ diff_plot_3
 ```
 
 
-## Model 3 Fit
 
-### Overall Model Plot
-
-```{r, warning = F, message = F}
-
-m3_predicted_values <- m3_prediction[[1]][c("condition", "time_norm", "fit", "ul", "ll")] |>
-  dplyr::mutate(rep_acc = ifelse(grepl("inaccurate", condition, ignore.case = T), "inaccurate", "accurate"),
-                speaker = ifelse(grepl("Control", condition, ignore.case = T), "Control", "ALS"),
-                speaker = factor(speaker, levels = c("Control", "ALS")))
-
-m3_predicted_values |>
-  ggplot() +
-  aes(x = time_norm,
-      y = fit,
-      color = speaker,
-      fill = speaker) +
-  geom_ribbon(aes(ymin = ul, ymax = ll), alpha = .5, color = NA) +
-  geom_line() +
-  geom_vline(xintercept = 0, size = 0.35) +
-  geom_vline(xintercept = 1910, linetype = 2) +
-  annotate("rect", xmin = 500, xmax = 2910, ymin = 0, ymax = 200, alpha = 0.15) +
-  coord_cartesian(ylim = c(-10, 250), xlim = c(0, 4910)) +
-  facet_wrap("rep_acc") +
-  theme_bw() +
-  theme(aspect.ratio = 1,
-        legend.position = "bottom") +
-  labs(x = "Normalized Time (ms)",
-       y = "Pupil Dilation (Arbitrary Units)") +
-  scale_color_manual(values = c(my_pal[1], my_pal[5])) +
-  scale_fill_manual(values = c(my_pal[1], my_pal[5]))
-
-# ggsave("Figures/pupil_plot.png", plot = last_plot())
-
-```
-
-### Curve Differences
-
-#### Control vs ALS 
-
-```{r, warning = F, message = F}
-
-add_limits_etc <- function(mod){
-  mod <- mod |>
-    dplyr::mutate(lower = est - CI,
-                  upper = est + CI,
-                  is_signif = ifelse(sign(upper) == sign(lower), "yes", "no"))
-  
-  return(mod)
-  }
-
-speaker_diff_df <- plot_diff(m3_pupil, view = "time_norm",
-          comp = list(condition = c("ALS Accurate", "Control Accurate")), plot = F) |>
-  mutate(speaker_1 = "ALS", speaker_2 = "Control", rep_acc = "Accurate", Type = " ALS vs Control") |>
-  add_limits_etc()
-
-speaker_diff_df$signif_chunk <- 1
-
-for (row_index in 2:nrow(speaker_diff_df)) {
-  speaker_diff_df$signif_chunk[row_index] <- 
-    ifelse(speaker_diff_df$is_signif[row_index] != speaker_diff_df$is_signif[row_index - 1],
-           speaker_diff_df$signif_chunk[row_index - 1] + 1,
-           speaker_diff_df$signif_chunk[row_index - 1])
-  
-}
-
-diff_color <- c(my_pal[4])
-
-diff_fill <- c( my_pal[4])
-
-diff_plot_1 <- speaker_diff_df |>
-  ggplot() +
-  aes(x = time_norm,
-      y = est,
-      ymin = lower,
-      ymax = upper) +
-  geom_ribbon(fill = "white", alpha = 1) +
-  geom_ribbon(fill = "grey60", alpha = .5) +
-  geom_line() +
-  scale_color_manual(values = diff_color) +
-  scale_fill_manual(values = diff_fill) +
-  geom_hline(yintercept = 0) +
-  annotate("rect", xmin = 500, xmax = 2910, ymin = -20, ymax = 200, alpha = 0.15) +
-  geom_vline(xintercept = 0, size = 0.35) +
-  geom_vline(xintercept = 1910, linetype = 2) +
-  labs(x = "Normed Time (ms)",
-       y = "Estimated Difference in Pupil Dilation",
-       title = "ALS vs Control for Accurately \nRecognized Phrases") +
-  coord_cartesian(ylim = c(-10, 150), xlim = c(0, 4910)) +
-  theme_bw() +
-  geom_ribbon(data = {speaker_diff_df |>
-                dplyr::filter(is_signif != "no")},
-              aes(group = signif_chunk, fill = is_signif), alpha = .4, show.legend = F) +
-  geom_line(data = {speaker_diff_df |>
-                dplyr::filter(is_signif != "no")},
-              aes(group = signif_chunk, color = is_signif), alpha = .8, show.legend = F) +
-  theme(aspect.ratio = 1,
-        plot.title = element_text(hjust = 0.5))
-
-diff_plot_1
-
-```
-
-#### Control Accurate vs Inaccurate
-
-```{r, warning = F, message = F}
-
-control_diff_df <- plot_diff(m3_pupil, view = "time_norm",
-          comp = list(condition = c("Control Inaccurate", "Control Accurate")), plot = F) |>
-  mutate(rep_1 = "Inaccurate", rep_2 = "Accurate", speaker = "Control", Type = "Control Inaccurate vs Accurate") |>
-  add_limits_etc()
-
-control_diff_df$signif_chunk <- 1
-
-for (row_index in 2:nrow(control_diff_df)) {
-  control_diff_df$signif_chunk[row_index] <- 
-    ifelse(control_diff_df$is_signif[row_index] != control_diff_df$is_signif[row_index - 1],
-           control_diff_df$signif_chunk[row_index - 1] + 1,
-           control_diff_df$signif_chunk[row_index - 1])
-  
-}
-
-diff_color <- c(my_pal[1])
-
-diff_fill <- c( my_pal[1])
-
-diff_plot_2 <- control_diff_df |>
-  ggplot() +
-  aes(x = time_norm,
-      y = est,
-      ymin = lower,
-      ymax = upper) +
-  geom_ribbon(fill = "white", alpha = 1) +
-  geom_ribbon(fill = "grey60", alpha = .5) +
-  geom_line() +
-  scale_color_manual(values = diff_color) +
-  scale_fill_manual(values = diff_fill) +
-  geom_hline(yintercept = 0) +
-  annotate("rect", xmin = 500, xmax = 2910, ymin = -20, ymax = 200, alpha = 0.15) +
-  geom_vline(xintercept = 0, size = 0.35) +
-  geom_vline(xintercept = 1910, linetype = 2) +
-  labs(x = "Normed Time (ms)",
-       y = "Estimated Difference in Pupil Dilation",
-       title = "Inaccurately vs Accurately Recognized \nPhrases For the Control Speaker") +
-  coord_cartesian(ylim = c(-10, 150), xlim = c(0, 4910)) +
-  theme_bw() +
-  geom_ribbon(data = {control_diff_df |>
-                dplyr::filter(is_signif != "no")},
-              aes(group = signif_chunk, fill = is_signif), alpha = .4, show.legend = F) +
-  geom_line(data = {control_diff_df |>
-                dplyr::filter(is_signif != "no")},
-              aes(group = signif_chunk, color = is_signif), alpha = .8, show.legend = F) +
-  theme(aspect.ratio = 1,
-        plot.title = element_text(hjust = 0.5))
-
-diff_plot_2
-
-```
-
-
-
-#### ALS Accurate vs Inaccurate
-
-```{r, warning = F, message = F}
-
-als_diff_df <- plot_diff(m3_pupil, view = "time_norm",
-          comp = list(condition = c("ALS Inaccurate", "ALS Accurate")), plot = F) |>
-  mutate(rep_1 = "Inaccurate", rep_2 = "Accurate", speaker = "ALS", Type = "ALS Inaccurate vs Accurate") |>
-  add_limits_etc()
-
-als_diff_df$signif_chunk <- 1
-
-for (row_index in 2:nrow(als_diff_df)) {
-  als_diff_df$signif_chunk[row_index] <- 
-    ifelse(als_diff_df$is_signif[row_index] != als_diff_df$is_signif[row_index - 1],
-           als_diff_df$signif_chunk[row_index - 1] + 1,
-           als_diff_df$signif_chunk[row_index - 1])
-  
-}
-
-diff_color <- c(my_pal[5])
-
-diff_fill <- c( my_pal[5])
-
-diff_plot_3 <- als_diff_df |>
-  ggplot() +
-  aes(x = time_norm,
-      y = est,
-      ymin = lower,
-      ymax = upper) +
-  geom_ribbon(fill = "white", alpha = 1) +
-  geom_ribbon(fill = "grey60", alpha = .5) +
-  geom_line() +
-  scale_color_manual(values = diff_color) +
-  scale_fill_manual(values = diff_fill) +
-  geom_hline(yintercept = 0) +
-  annotate("rect", xmin = 500, xmax = 2910, ymin = -20, ymax = 200, alpha = 0.15) +
-  geom_vline(xintercept = 0, size = 0.35) +
-  geom_vline(xintercept = 1910, linetype = 2) +
-  labs(x = "Normed Time (ms)",
-       y = "Estimated Difference in Pupil Dilation",
-       title = "Inaccurately vs Accurately Recognized \nPhrases for the ALS Speaker") +
-  coord_cartesian(ylim = c(-10, 150), xlim = c(0, 4910)) +
-  theme_bw() +
-  geom_ribbon(data = {als_diff_df |>
-                dplyr::filter(is_signif != "no")},
-              aes(group = signif_chunk, fill = is_signif), alpha = .4, show.legend = F) +
-  geom_line(data = {als_diff_df |>
-                dplyr::filter(is_signif != "no")},
-              aes(group = signif_chunk, color = is_signif), alpha = .8, show.legend = F) +
-  theme(aspect.ratio = 1,
-        plot.title = element_text(hjust = 0.5))
-
-diff_plot_3
-
-```
 
 ```{r, eval = F}
 
