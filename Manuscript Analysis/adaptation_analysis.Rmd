@@ -29,6 +29,7 @@ library(gtsummary) # install.packages("gtsummary")
 library(glmmTMB) # install.packages("glmmTMB")
 library(performance) # install.packages("performance")
 library(sjPlot) # install.packages("sjPlot")
+library(viridis) # install.packages("viridis")
 
 ```
 
@@ -92,6 +93,8 @@ ggsave("Figures/acc_response_plot.png", plot = last_plot())
 
 ```
 
+### Logistic Mixed-Effects Model
+
 ```{r, warning = F, message = F}
 
 rep_acc_df <- rep_acc_df |>
@@ -102,7 +105,7 @@ rep_acc_mod <- glmmTMB(accurate ~ trial_c*speaker + (trial_c|subject), family = 
 sjPlot::tab_model(rep_acc_mod, transform = NULL, show.est = TRUE, show.se = TRUE,
                   pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", 
                                   "Trial Order * Speaker [ALS]"),
-                  dv.labels = "Perceived Listening Effort",
+                  dv.labels = "Accurately Recognized Phrases",
                   file = "Tables/rep_acc_model.html")
 
 ```
@@ -222,7 +225,7 @@ ggsave("Figures/ple_trial_plot.png", plot = last_plot())
 ```
 
 
-```{r}
+```{r, echo = F, warning = F, message = F}
 
 rm(m5_ple, m6_ple, m7_ple, m8_ple, rep_acc_df, rep_acc_mod)
 
@@ -233,7 +236,7 @@ rm(m5_ple, m6_ple, m7_ple, m8_ple, rep_acc_df, rep_acc_mod)
 
 ## Plot
 
-```{r}
+```{r, warning = F, message = F}
 
 pupil_df <- rio::import("Cleaned Data/cleaned_pupil_data_normalized.csv") |>
   # Merging phrase accuracy information with df
@@ -307,7 +310,7 @@ ggsave("Figures/peak_pupil_trial_plot.png", plot = last_plot())
 
 Tried running with random intercept for phrase too, but ran into singular fit issues. So it was removed. ICC = .331
 
-```{r}
+```{r, warning = F, message = F}
 
 m0_pupil <- glmmTMB(peak_pupil ~ 1 + (1|subject), data = max_pupil)
 sjPlot::tab_model(m0_pupil,
@@ -321,7 +324,7 @@ performance::icc(m0_pupil)
 
 Adding trial random slope
 
-```{r}
+```{r, warning = F, message = F}
 
 m1_pupil <- glmmTMB(peak_pupil ~ 1 + (trial_c|subject), data = max_pupil)
 sjPlot::tab_model(m1_pupil, 
@@ -333,7 +336,7 @@ performance::test_performance(m0_pupil, m1_pupil)
 
 ### Model 2
 
-```{r}
+```{r, warning = F, message = F}
 
 m2_pupil <- glmmTMB(peak_pupil ~ trial_c + (trial_c|subject), data = max_pupil)
 sjPlot::tab_model(m2_pupil, 
@@ -345,7 +348,7 @@ performance::test_performance(m1_pupil, m2_pupil)
 
 ### Model 3
 
-```{r}
+```{r, warning = F, message = F}
 
 m3_pupil <- glmmTMB(peak_pupil ~ trial_c + speaker + (trial_c|subject), data = max_pupil)
 sjPlot::tab_model(m3_pupil,
@@ -357,7 +360,7 @@ performance::test_performance(m2_pupil, m3_pupil)
 
 ### Model 4
 
-```{r}
+```{r, warning = F, message = F}
 
 m4_pupil <- glmmTMB(peak_pupil ~ trial_c + speaker + rep_acc + (trial_c|subject), data = max_pupil)
 sjPlot::tab_model(m4_pupil,
@@ -369,7 +372,7 @@ performance::test_performance(m3_pupil, m4_pupil)
 
 ### Model 5 
 
-```{r}
+```{r, warning = F, message = F}
 
 m5_pupil <- glmmTMB(peak_pupil ~ trial_c + speaker + rep_acc + speaker*rep_acc + (trial_c|subject), data = max_pupil)
 sjPlot::tab_model(m5_pupil,
@@ -382,7 +385,7 @@ performance::test_performance(m4_pupil, m5_pupil)
 
 ### Model 5b
 
-```{r}
+```{r, warning = F, message = F}
 
 m5b_pupil <- glmmTMB(peak_pupil ~ speaker + rep_acc + speaker*rep_acc + (trial_c|subject), data = max_pupil)
 sjPlot::tab_model(m5b_pupil,
@@ -396,7 +399,7 @@ performance::test_performance(m5_pupil, m5b_pupil)
 
 ### Model 6
 
-```{r}
+```{r, warning = F, message = F}
 
 m6_pupil <- glmmTMB(peak_pupil ~ trial_c + speaker + rep_acc + 
                       speaker*rep_acc + trial_c*speaker +(trial_c|subject), data = max_pupil)
@@ -410,7 +413,7 @@ performance::test_performance(m4_pupil, m6_pupil)
 
 ### Model 7
 
-```{r}
+```{r, warning = F, message = F}
 
 m7_pupil <- glmmTMB(peak_pupil ~ trial_c + speaker + rep_acc + 
                       speaker*rep_acc + trial_c*speaker + trial_c*rep_acc + (trial_c|subject), data = max_pupil)
@@ -425,7 +428,7 @@ performance::test_performance(m6_pupil, m7_pupil)
 
 ### Model 8
 
-```{r}
+```{r, warning = F, message = F}
 
 m8_pupil <- glmmTMB(peak_pupil ~ trial_c + speaker + rep_acc + 
                       speaker*rep_acc + trial_c*speaker + trial_c*rep_acc + 
@@ -442,7 +445,7 @@ performance::test_performance(m7_pupil, m8_pupil)
 
 ### Final Model with Unstandardized Estimates
 
-```{r}
+```{r, warning = F, message = F}
 
 sjPlot::tab_model(m7_pupil,
                   pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
@@ -457,7 +460,7 @@ sjPlot::tab_model(m7_pupil,
 
 ### Final Model with Standardized Estimates
 
-```{r}
+```{r, warning = F, message = F}
 
 m7_pupil_std <- glmmTMB(scale(peak_pupil) ~ scale(trial_c) + speaker + rep_acc + 
                       speaker*rep_acc + scale(trial_c)*speaker + scale(trial_c)*rep_acc + (trial_c|subject), data = max_pupil)
@@ -489,7 +492,7 @@ sjPlot::tab_model(m5_pupil, m6_pupil, m7_pupil, m8_pupil, show.ci = F,
 ```
 
 
-```{r}
+```{r, echo = F, warning = F, message = F}
 
 rm(m0_pupil, m1_pupil, m2_pupil, m3_pupil, m4_pupil, m5_pupil, m6_pupil, m7_pupil, m7_pupil_std, m8_pupil, m5b_pupil, max_pupil)
 
@@ -500,7 +503,7 @@ rm(m0_pupil, m1_pupil, m2_pupil, m3_pupil, m4_pupil, m5_pupil, m6_pupil, m7_pupi
 
 ### Main Model
 
-```{r}
+```{r, warning = F, message = F}
 
 m2_pupil <- bam(normed_pupil ~ condition +
                   s(time_norm, by = condition, k = 25) +
@@ -517,7 +520,7 @@ m2_pupil <- bam(normed_pupil ~ condition +
 
 ### Adaptation Model
 
-```{r}
+```{r, warning = F, message = F}
 
 adapt_pupil <- bam(normed_pupil ~ condition +
                   s(time_norm, by = condition, k = 35) +
@@ -551,32 +554,78 @@ acf_resid(adapt_pupil)
 
 #### Model Comparison
 
-```{r}
+```{r, warning = F}
 
 compareML(m2_pupil, adapt_pupil, signif.stars = T, suggest.report = T)
 
 ```
 #### By Trial Contours
 
-```{r}
+```{r, warning = F, message = F}
 
-control_acc <- vis.gam(adapt_pupil, view = c("time_norm", "trial_c"), 
+vis.gam(adapt_pupil, view = c("time_norm", "trial_c"), 
         cond = list(condition = "Control Accurate"), 
         theta = -45, phi = 55, color = "topo")
 
-control_inacc <- vis.gam(adapt_pupil, view = c("time_norm", "trial_c"), 
+vis.gam(adapt_pupil, view = c("time_norm", "trial_c"), 
         cond = list(condition = "Control Inaccurate"), 
         theta = -45, phi = 55, color = "topo")
 
-ALS_acc <- vis.gam(adapt_pupil, view = c("time_norm", "trial_c"), 
+vis.gam(adapt_pupil, view = c("time_norm", "trial_c"), 
         cond = list(condition = "ALS Accurate"), 
         theta = -45, phi = 55, color = "topo")
 
-ALS_inacc <- vis.gam(adapt_pupil, view = c("time_norm", "trial_c"), 
+vis.gam(adapt_pupil, view = c("time_norm", "trial_c"), 
         cond = list(condition = "ALS Inaccurate"), 
         theta = -45, phi = 55, color = "topo")
 ```
 
+
+```{r, warning = F, message = F}
+
+df_pred <- expand_grid(
+  time_norm = seq(from=min(pupil_df$time_norm), 
+              to=max(pupil_df$time_norm), 
+              length.out = 100),
+  trial_c = seq(from=min(pupil_df$trial_c), 
+              to=max(pupil_df$trial_c), 
+              length.out = 100),
+  condition = c("Control Accurate", "Control Inaccurate", "ALS Accurate", "ALS Inaccurate"),
+  listener = c("LE01", "LE02", "LE04", "LE05", "LE06", "LE07", "LE08", "LE09", "LE10", "LE11",
+               "LE12", "LE13", "LE15", "LE16", "LE18", "LE19", "LE20", "LE21", "LE22", "LE23",
+               "LE24", "LE25", "LE26", "LE27", "LE28", "LE29", "LE30", "LE31", "LE32", "LE33", 
+               "LE34", "LE35", "LE36", "LE38")
+)
+
+df_pred <- predict(adapt_pupil, newdata = df_pred, 
+                      se.fit = TRUE) |> 
+  as_tibble() |>
+  cbind(df_pred)
+
+df_pred |>
+  dplyr::mutate(condition = factor(condition, levels = c("Control Accurate", "Control Inaccurate",
+                                                         "ALS Accurate", "ALS Inaccurate"))) |>
+  dplyr::filter(time_norm >= 0 & time_norm <= 5000) |>
+  ggplot() +
+  aes(x = time_norm,
+      y = trial_c,
+      group = condition) +
+  geom_tile(aes(fill = fit)) +
+  geom_contour(aes(z = fit), colour = "white") +
+  facet_wrap("condition") +
+  theme_classic() +
+  labs(fill = "Model Estimate",
+       x = "Normed Time (ms)",
+       y = "Trial Number") +
+  scale_fill_viridis(option = "D") +
+  theme(aspect.ratio = 1,
+        legend.position = "bottom",
+        axis.line = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust=1))
+
+ggsave("Figures/pupil_heatmap.png", plot = last_plot())
+
+```
 
 
 ### Curve Differences

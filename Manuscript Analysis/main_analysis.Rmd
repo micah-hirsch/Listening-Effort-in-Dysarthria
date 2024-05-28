@@ -577,7 +577,8 @@ m2_predicted_values |>
   aes(x = time_norm,
       y = fit,
       color = speaker,
-      fill = speaker) +
+      fill = speaker,
+      linetype = speaker) +
   geom_ribbon(aes(ymin = ul, ymax = ll), alpha = .5, color = NA) +
   geom_line() +
   geom_vline(xintercept = 0, size = 0.35) +
@@ -591,7 +592,8 @@ m2_predicted_values |>
   labs(x = "Normalized Time (ms)",
        y = "Pupil Dilation (Arbitrary Units)") +
   scale_color_manual(values = c(my_pal[1], my_pal[5])) +
-  scale_fill_manual(values = c(my_pal[1], my_pal[5]))
+  scale_fill_manual(values = c(my_pal[1], my_pal[5])) +
+  scale_linetype_manual(values = c("solid", "dashed"))
 
 ggsave("Figures/pupil_plot.png", plot = last_plot())
 
@@ -600,6 +602,8 @@ ggsave("Figures/pupil_plot.png", plot = last_plot())
 ### Curve Differences
 
 #### Control vs ALS 
+
+First the difference in pupil dilation between the control and ALS speakers for accurately recognized phrases is plotted below. The grey box indicates the analysis region of interest. The dotted line represents the average phrase offset time. The highlighted sections of the line (i.e., the green sections) indicate there was a significant difference in pupil dilation between the two speakers. Positive values indicate that pupil dilation while listening to the ALS speaker was greater than the control speaker for accurately recognized phrases.
 
 ```{r, warning = F, message = F}
 
@@ -648,7 +652,7 @@ diff_plot_1 <- speaker_diff_df |>
   geom_vline(xintercept = 1910, linetype = 2) +
   labs(x = "Normed Time (ms)",
        y = "Estimated Difference in Pupil Dilation",
-       title = "ALS vs Control for Accurately \nRecognized Phrases") +
+       title = "ALS vs Neurotypical Speaker") +
   coord_cartesian(ylim = c(-10, 150), xlim = c(0, 4910)) +
   theme_bw() +
   geom_ribbon(data = {speaker_diff_df |>
@@ -666,6 +670,8 @@ diff_plot_1
 
 
 #### Control Accurate vs Inaccurate
+
+The difference in pupil dilation for accurately and inaccurately recognized phrases for the control speaker are shown below. A significant difference is indicated by the purple highlight. Positive values mean that inaccurately recognized phrases had larger pupil dilation at that time point. The grey box indicates the analysis region of interest. The dotted line represents the average phrase offset time.
 
 ```{r, warning = F, message = F}
 
@@ -705,7 +711,7 @@ diff_plot_2 <- control_diff_df |>
   geom_vline(xintercept = 1910, linetype = 2) +
   labs(x = "Normed Time (ms)",
        y = "Estimated Difference in Pupil Dilation",
-       title = "Inaccurately vs Accurately Recognized \nPhrases For the Control Speaker") +
+       title = "Neurotypical Speaker") +
   coord_cartesian(ylim = c(-10, 150), xlim = c(0, 4910)) +
   theme_bw() +
   geom_ribbon(data = {control_diff_df |>
@@ -722,6 +728,8 @@ diff_plot_2
 ```
 
 #### ALS Accurate vs Inaccurate
+
+The difference in pupil dilation for accurately and inaccurately recognized phrases for the ALS speaker are shown below. A significant difference is indicated by the aqua highlight. Positive values mean that inaccurately recognized phrases had larger pupil dilation at that time point. The grey box indicates the analysis region of interest. The dotted line represents the average phrase offset time.
 
 ```{r, warning = F, message = F}
 
@@ -761,7 +769,7 @@ diff_plot_3 <- als_diff_df |>
   geom_vline(xintercept = 1910, linetype = 2) +
   labs(x = "Normed Time (ms)",
        y = "Estimated Difference in Pupil Dilation",
-       title = "Inaccurately vs Accurately Recognized \nPhrases for the ALS Speaker") +
+       title = "ALS Speaker") +
   coord_cartesian(ylim = c(-10, 150), xlim = c(0, 4910)) +
   theme_bw() +
   geom_ribbon(data = {als_diff_df |>
@@ -782,11 +790,15 @@ diff_plot_3
 
 ```{r, eval = F}
 
+ggsave("Figures/difference_plots_speakers.png", plot = diff_plot_1)
+
 library(patchwork)
 
-diff_plot_1 + diff_plot_2 + diff_plot_3
+diff_plot_2 + diff_plot_3
 
-ggsave("Figures/difference_plots.png", plot = last_plot(), width = 6, height = 2.5, units = "in", scale = 1.8)
+ggsave("Figures/difference_plots_accuracy.png", plot = last_plot(), width = 4, height = 2.5, units = "in", scale = 1.8)
+
+
 
 ```
 
