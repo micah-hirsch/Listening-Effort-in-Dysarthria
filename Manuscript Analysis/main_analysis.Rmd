@@ -1,0 +1,807 @@
+---
+title: "Main Analysis"
+author: "Micah E. Hirsch"
+date: "2024-05-13"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+    
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Purpose
+
+The purpose of this document is to analyze and report findings related to M. Hirsch's dissertation project. The data preparation and analysis was conducted using R Version 4.3.3.
+
+```{r, echo = F, warning = F, message = F}
+
+# Load in Needed Packages
+
+library(rio) # install.packages("rio")
+library(tidyverse) # install.packages("tidyverse")
+library(mgcv) # install.packages("mgcv")
+library(itsadug) # install.packages("itsadug")
+library(irr) # install.packages("irr")
+library(ggpubr) # install.packages("ggpubr")
+library(gt) # install.packages("gt")
+library(gtsummary) # install.packages("gtsummary")
+library(glmmTMB) # install.packages("glmmTMB")
+library(performance) # install.packages("performance")
+library(sjPlot) # install.packages("sjPlot")
+
+
+```
+
+
+# Listener Demographics
+
+The table below shows the demographic information for the listeners in this study. A total of 39 listeners were recruited to participate in the study. However, 1 participant withdrew from the study (their data was already destroyed before exporting the listener demographic dataset) and 4 participants were dismissed due to difficulty during the calibration phase of the study. Therefore, there ended up being 34 total listeners in this study. The demographic table shows the demographic information for the 34 participants included in the study (complete) and the 4 who were not able to be tracked by the eye-tracking camera (incomplete).
+
+All listeners reported being a fluent speaker of English. However, two participants noted that their native language was different than American English. Their reported native languages were Turkish and Spanish.
+
+```{r, warning = F, message = F}
+
+demo <- rio::import("Cleaned Data/cleaned_listener_demo.csv") |>
+  dplyr::mutate(gender = factor(gender, levels = c("Man", "Woman", "Nonbinary", "Questioning", "Prefer not to answer")),
+                ethnicity = factor(ethnicity, levels = c("Hispanic/Latino(a/e)", "Not Hispanic/Latino(a/e)", "Prefer not to answer")),
+                race = factor(race, levels = c("white/Caucasian", "Black/African American", "Asian/Asian American",
+                                               "Native Hawaiian or Other Pacific Islander", "Native American or Alaska Native",
+                                               "Biracial or Multiracial", "Prefer not to answer", "Race not listed")),
+                native_lang = factor(native_lang, c("American English", "Not American English")))
+  
+demo_table <- demo |>
+  dplyr::select(age, gender, ethnicity, race, native_lang, pupil_complete) |>
+  tbl_strata(
+    strata = pupil_complete,
+    ~.x |>
+      tbl_summary(type = list(age ~ "continuous",
+                          gender ~ "categorical",
+                          ethnicity ~ "categorical",
+                          race ~ "categorical",
+                          native_lang ~ "categorical"),
+                  statistic = list(all_continuous() ~ "{mean} ({sd}, {min}-{max})",
+                               all_categorical() ~ "{n} ({p}%)"),
+                  digits = list(everything() ~ c(2)),
+                  label = list(age ~ "Age",
+                           gender ~ "Gender",
+                           ethnicity ~ "Ethnicity",
+                           race ~ "Race",
+                           native_lang ~ "Native Language"))
+    ) |>
+  as_gt()
+
+demo_table
+
+demo_table |>
+  gt::gtsave("Tables/demographic_table.html")
+
+```
+
+
+```{r, echo = F, warning = F, message = F}
+
+# Removing unneeded items from the environment
+rm(demo, demo_table)
+
+```
+
+
+# Descriptives
+
+## Transcription Reliability
+
+Phrase repetition accuracy was determined by transcriptions of the listener's spoken response. These reponses were transcribed by 2 research assistants. To determine interrater reliability, each RA transcribed at least 20% of the other RA's listener reponses. Fleiss' kappa was then used to calculated interrater reliability for the resulting phrase repetition accuracy determination (accurate or inaccurate). Based on the result below, our interrater reliability for phrase repetition accuracy was strong.
+
+```{r, warning = F, message = F}
+
+phrase_acc <- rio::import("Cleaned Data/repetition_accuracy.csv")
+
+phrase_acc <- phrase_acc |>
+  dplyr::mutate(rep_acc = ifelse(initial_response == "missing data", NA, 
+                                 ifelse(target_number == correct_words_initial, "accurate", "inaccurate")),
+                rep_acc_rel = ifelse(rel_response == "missing data", NA, 
+                                 ifelse(target_number == correct_words_rel, "accurate", "inaccurate")))
+
+reliability <- phrase_acc |>
+  dplyr::filter(!is.na(rep_acc_rel)) |>
+  dplyr::select(rep_acc, rep_acc_rel)
+
+# Computing Fleiss' Kappa
+
+kappam.fleiss(reliability, detail = T)
+
+phrase_acc_df <- phrase_acc |>
+  dplyr::select(subject, trial, target_number, correct_words_initial, rep_acc)
+
+```
+
+## Speaker Characteristics
+
+The speaker characteristics are listed below. Note: 41 trials were removed because they had missing listener responses (i.e. audio file cut out, etc.). Therefore, the summary statistics are based on 2679 trials total.
+
+```{r, warning = F, message = F}
+
+ple_data <- rio::import("Cleaned Data/cleaned_ple_data.csv") |>
+  dplyr::left_join(phrase_acc_df, by = c("subject", "trial")) |>
+  dplyr::mutate(speaker = factor(speaker, levels = c("Control", "ALS")),
+                trial_c = trial - 6,
+                rep_acc = factor(rep_acc, levels = c("accurate", "inaccurate")))
+
+speaker_table <- ple_data |>
+  dplyr::filter(!is.na(rep_acc)) |>
+  dplyr::select(subject, trial, speaker, correct_words_initial, target_number, rep_acc) |>
+  dplyr::mutate(intel = (correct_words_initial/target_number)*100) |>
+  dplyr::select(-c(subject, trial, correct_words_initial, target_number)) |>
+  tbl_summary(by = speaker,
+              type = list(intel ~ "continuous",
+                          rep_acc ~ "categorical"),
+              statistic = list(all_continuous() ~ "{mean} ({sd})",
+                               all_categorical() ~ "{n} ({p}%)"),
+              digits = list(everything() ~ c(2)),
+              label = list(intel ~ "Intelligibility",
+                           rep_acc ~ "Repetition Accuracy")) |>
+  as_gt()
+
+speaker_table
+
+speaker_table |>
+  gt::gtsave("Tables/speaker_table.html")
+
+
+```
+
+
+# Perceived Listening Effort Ratings
+
+## Descriptives
+
+The summary statistics for perceived listening effort (PLE) ratings are shown in the table below. There were 5 trials with missing PLE ratings, so those were removed from the analysis. There is a total of 2675 trials represented in the data below.
+
+```{r, warning = F, message = F}
+
+ple_data |>
+  dplyr::select(speaker, effort_rating, rep_acc) |>
+  # Filtering out trials with cut-off listener responses
+  dplyr::filter(!is.na(rep_acc)) |>
+  # filtering out trials with missing effort ratings (5 trials missing, 4 additionally removed)
+  dplyr::filter(effort_rating > 0) |>
+  tbl_strata(
+    strata = rep_acc,
+    ~.x |>
+      tbl_summary(
+        by = speaker,
+        type = list(effort_rating ~ "continuous"),
+        statistic = list(all_continuous() ~ c("{mean} ({sd})")),
+        missing = "no",
+        digits = all_continuous() ~ 2,
+        label = list(effort_rating ~ "Perceived Listening Effort")
+      ))
+
+```
+
+## PLE Models
+
+Linear mixed effects (LME) models were used to test the influence of speaker (Control vs ALS) and phrase repetition accuracy (accurate vs inaccurate) on perceived listening effort ratings. We used a model-building approach for this analysis. The steps are detailed below.
+
+### Fully Unconditional Model
+
+```{r, warning = F, message = F}
+
+ple_data <- ple_data |>
+  dplyr::filter(!is.na(rep_acc)) |>
+  dplyr::filter(effort_rating > 0)
+
+m0_ple <- glmmTMB(effort_rating ~ 1 + (1|subject) + (1|code), data = ple_data)
+sjPlot::tab_model(m0_ple, pred.labels = "Intercept",
+                  dv.labels = "Perceived Listening Effort")
+
+performance::icc(m0_ple)
+
+```
+### PLE Model 1
+
+In this step, we are adding trial order (trial_c) as a random slop for both the listener (subject) and phrase (code) random intercepts. The random intercept of trial order significantly improved model fit.
+
+```{r, warning = F, message = F}
+
+m1_ple <- glmmTMB(effort_rating ~ 1 + (trial_c|subject) + (trial_c|code), data = ple_data)
+sjPlot::tab_model(m1_ple, pred.labels = "Intercept",
+                  dv.labels = "Perceived Listening Effort")
+performance::test_performance(m0_ple, m1_ple)
+
+```
+### PLE Model 2
+
+Trial order is the first random effect added to the model. Trial order is added in order to control for any possible order effects in the data. As noted in the results below, adding trial order did not significantly improve model fit to the data. However, I'll leave this fixed effect in the model to act as a covariate.
+
+```{r, warning = F, message = F}
+
+m2_ple <- glmmTMB(effort_rating ~ trial_c + (trial_c|subject) + (trial_c|code), data = ple_data)
+sjPlot::tab_model(m2_ple, 
+                  pred.labels = c("Intercept", "Trial Order"),
+                  dv.labels = "Perceived Listening Effort")
+
+performance::test_performance(m1_ple, m2_ple)
+
+```
+
+### PLE Model 3
+
+Adding the main fixed effect of speaker significantly improved the model fit.
+
+```{r, warning = F, message = F}
+
+m3_ple <- glmmTMB(effort_rating ~ trial_c + speaker + (trial_c|subject) + (trial_c|code), data = ple_data)
+sjPlot::tab_model(m3_ple,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]"),
+                  dv.labels = "Perceived Listening Effort")
+
+performance::test_performance(m2_ple, m3_ple)
+
+```
+
+### PLE Model 4
+
+The main fixed effect of repetition accuracy significantly improved model fit.
+
+```{r, warning = F, message = F}
+
+m4_ple <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + (trial_c|subject) + (trial_c|code), data = ple_data)
+sjPlot::tab_model(m4_ple,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]"),
+                  dv.labels = "Perceived Listening Effort")
+
+performance::test_performance(m3_ple, m4_ple)
+
+
+```
+### PLE Model 5
+
+The interaction term between speaker and repetition accuracy did not significantly improve model fit. This indicates that the magnitude between accurate and inaccurate ratings was similar for both speakers.
+
+```{r, warning = F, message = F}
+
+m5_ple <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + speaker*rep_acc + (trial_c|subject) + (trial_c|code), data = ple_data)
+sjPlot::tab_model(m5_ple,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
+                                  "Speaker [ALS] * Repetition Accuracy [Inaccurate]"),
+                  dv.labels = "Perceived Listening Effort")
+
+performance::test_performance(m4_ple, m5_ple)
+
+
+```
+
+### Final PLE Model with Unstandardized Estimates
+
+Therefore, the best-fitting model for the data is model 4 with just the main effects of speaker and repetition accuracy. The results indicate that, on average, the ALS speaker was rated as more effortful by the listeners compared to the control speaker for accurately recognized phrases, controlling for trial order. Inaccurate repetitions, on average, were rated higher than accurately recognized phrases for the control speaker by the listeners. Since the interaction between speaker and repetition accuracy was not significant, this indicates the difference in PLE scores between accurately and inaccurately recognized phrases was similar between the two speakers.
+
+```{r, warning = F, message = F}
+
+final_ple <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + (trial_c|subject) + (trial_c|code), data = ple_data)
+sjPlot::tab_model(final_ple,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]"),
+                  dv.labels = "Perceived Listening Effort",
+                  file = "Tables/ple_mod_unstd.html")
+
+```
+
+
+### Final PLE Model with Standardized Estimates
+
+This model shows the standardized estimates for the final PLE model.
+
+```{r, warning = F, message = F}
+
+final_ple_std <- glmmTMB(scale(effort_rating) ~ scale(trial_c) + speaker + rep_acc + 
+                    (trial_c|subject) + (trial_c|code), data = ple_data)
+sjPlot::tab_model(final_ple_std,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]"),
+                  dv.labels = "Perceived Listening Effort",
+                  file = "Tables/ple_mod_std.html")
+
+```
+
+
+```{r, eval = F}
+
+sjPlot::tab_model(m1_ple, m2_ple, m3_ple, m4_ple, m5_ple, show.ci = F,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
+                                  "Speaker [ALS] * Repetition Accuracy [Inaccurate]"),
+                  dv.labels = c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5"),
+                  file = "Tables/ple_models.html")
+
+```
+
+
+## Plot
+
+```{r, warning = F, message = F}
+
+my_pal <- c("#4E4187", "#3083DC", "#F8FFE5", "#7DDE92", "#2EBFA5")
+
+ple_data |>
+  dplyr::group_by(speaker, rep_acc) |>
+  dplyr::summarize(per_effort = mean(effort_rating, na.rm = T), 
+                   sd = sd(effort_rating, na.rm = T),
+                   se = sd/sqrt(n())) |>
+  ggplot() +
+   aes(x = rep_acc,
+       y = per_effort,
+       group = speaker,
+       color = speaker,
+       fill = speaker) +
+  geom_bar(stat = "identity", alpha = 0.6, position = position_dodge()) +
+  geom_errorbar(aes(ymin = per_effort - se, ymax = per_effort + se), width = 0.4, position = position_dodge(.9)) +
+  labs(x = "Accuracy", y = "Perceived Listening Effort Rating", color = "Speaker", fill = "Speaker") +
+  theme_bw() +
+  theme(aspect.ratio = 1) +
+  scale_color_manual(values = c(my_pal[1], my_pal[5]), labels =  c("Neurotypical", "ALS")) +
+  scale_fill_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS"))
+
+ggsave("Figures/ple_plot.png", plot = last_plot())
+
+```
+
+```{r, echo = F}
+
+rm(final_ple, final_ple_std, m0_ple, m1_ple, m2_ple, m3_ple, m4_ple, m5_ple, reliability, speaker_table)
+
+```
+
+
+# Pupil Dilation
+
+## Total Number of Trials
+
+A total of 2654 trials are included in the analysis.
+
+```{r, warning = F, message = F}
+
+pupil_df <- rio::import("Cleaned Data/cleaned_pupil_data_normalized.csv") |>
+  # Merging phrase accuracy information with df
+  dplyr::left_join(phrase_acc_df, by = c("subject", "trial")) |>
+  # Filter out trials with missing phrase repetition data |>
+  dplyr::filter(!is.na(rep_acc))
+
+pupil_df |>
+  dplyr::select(subject, trial) |>
+  dplyr::distinct() |>
+  dplyr::summarize(n = n())
+
+```
+
+
+## Pupil Dilation Models
+
+### Initial Model
+
+An initial GAMM was run with random smooths added for listener and phrases. 
+
+```{r, warning = F, message = F}
+
+pupil_df <- pupil_df |>
+  dplyr::mutate(speaker = factor(speaker, levels = c("Control", "ALS")),
+                rep_acc = factor(rep_acc, levels = c("accurate", "inaccurate")),
+                phrase = as.factor(code),
+                listener = as.factor(subject),
+                condition = case_when(speaker == "Control" & rep_acc == "accurate" ~ "Control Accurate",
+                                      speaker == "Control" & rep_acc == "inaccurate" ~ "Control Inaccurate",
+                                      speaker == "ALS" & rep_acc == "accurate" ~ "ALS Accurate",
+                                      TRUE ~ "ALS Inaccurate"),
+                condition = factor(condition, 
+                                   levels = c("Control Accurate", "Control Inaccurate", "ALS Accurate", "ALS Inaccurate"))) 
+
+m0_pupil <- bam(normed_pupil ~ condition +
+                  s(time_norm, by = condition, k = 20) +
+                  # Random Smooths for listener and phrase
+                  s(time_norm, listener, bs = 'fs', m =1) +
+                  s(time_norm, phrase, bs = 'fs', m = 1),
+                discrete = T,
+                data = pupil_df)
+
+#summary(m0_pupil)
+
+plot_smooth(m0_pupil,
+            view = "time_norm",
+            plot_all = "condition",
+            rug = F, se = 1, rm.ranef = T)
+
+```
+
+
+#### Model Check
+
+```{r, warning = F, message = F}
+
+gam.check(m0_pupil)
+
+acf_resid(m0_pupil)
+
+```
+
+### Model 1
+
+Adding in AR(1) structure to address autocorrelation concerns. Bumped up knots to 25.
+
+```{r, warning = F, message = F}
+
+# Marking start of trials
+
+pupil_df <- pupil_df |>
+  dplyr::group_by(listener, speaker) |>
+  dplyr::mutate(num_points = n()) |>
+  dplyr::mutate(start_event = c(TRUE, rep(FALSE, each = (num_points - 1)))) |>
+  ungroup()
+  
+m1_pupil <- bam(normed_pupil ~ condition +
+                  s(time_norm, by = condition, k = 25) +
+                  # Random Smooths for listener and phrase
+                  s(time_norm, listener, bs = 'fs', m =1) +
+                  s(time_norm, phrase, bs = 'fs', m =1),
+                discrete = T,
+                AR.start = start_event,
+                rho = start_value_rho(m0_pupil),
+                data = pupil_df)
+
+summary.gam(m1_pupil)
+
+m1_prediction <- plot_smooth(m1_pupil,
+            view = "time_norm",
+            plot_all = "condition",
+            rug = F, se = 1, rm.ranef = T)
+
+```
+
+
+
+#### Model Check
+
+Adding the AR(1) structure improved the autocorrelation from the initial. This model's residuals also look better, but there are still some heavy residual tails.
+
+```{r, warning = F, message = F}
+
+gam.check(m1_pupil)
+
+acf_resid(m1_pupil)
+
+```
+
+
+### Model 2 
+
+In this model, the scaled t distribution was added to the model specifications to fix model fit to the data. The model was originally running into an error when the random smooth for phrase was included in the specification. Therefore, it was removed in this model. The random smooth for listener remained in this model.
+
+```{r, warning = F, message = F}
+
+m2_pupil <- bam(normed_pupil ~ condition +
+                  s(time_norm, by = condition, k = 25) +
+                  # Random Smooth for listener
+                  s(time_norm, listener, bs = 'fs', m = 1),
+                discrete = T,
+                AR.start = start_event,
+                rho = start_value_rho(m0_pupil),
+                family = "scat",
+                data = pupil_df)
+
+summary.gam(m2_pupil)
+
+m2_prediction <- plot_smooth(m2_pupil,
+            view = "time_norm",
+            plot_all = "condition",
+            rug = F, se = 1, rm.ranef = T)
+
+```
+
+#### Model Check
+
+Model residuals look better in model 2. Adjusted R-squared = 0.173
+
+```{r, warning = F, message = F}
+
+gam.check(m2_pupil)
+
+acf_resid(m2_pupil)
+
+```
+
+
+
+### Model 3
+
+In model 3, we are testing whether adjusting the random smooth specification significantly improves model fit to the data. In model 2, there was just a random smooth for listener. This random smooth specification is updated here to be a random smooth per listener for each condition level (interactions between speaker and phrase repetition accuracy).
+
+```{r, warning = F, message = F}
+
+m3_pupil <- bam(normed_pupil ~ condition +
+                  s(time_norm, by = condition, k = 25) +
+                  # Random Smooths for listener
+                  s(time_norm, listener, by = condition, bs = 'fs', m =1),
+                discrete = T,
+                AR.start = start_event,
+                rho = start_value_rho(m0_pupil),
+                family = "scat",
+                data = pupil_df)
+
+summary.gam(m3_pupil)
+
+m3_prediction <- plot_smooth(m3_pupil,
+            view = "time_norm",
+            plot_all = "condition",
+            rug = F, se = 1, rm.ranef = T)
+
+```
+
+#### Model Check
+
+The model residuals look similar. The adjusted R-squared value is .192.
+
+```{r, warning = F, message = F}
+
+gam.check(m3_pupil)
+
+acf_resid(m3_pupil)
+
+```
+
+
+## Model Comparison
+
+To test whether model 3 significantly improved the fit to the data, a generalized likelihood ratio test was conducted. The results suggest that model 3 did not significantly improve model fit. Therefore, we will retain model 2.
+
+```{r, warning = F}
+
+compareML(m2_pupil, m3_pupil, signif.stars = T, suggest.report = T)
+
+```
+
+
+## Final Model (Model 2)
+
+### Overall Model Plot
+
+```{r, warning = F, message = F}
+
+m2_predicted_values <- m2_prediction[[1]][c("condition", "time_norm", "fit", "ul", "ll")] |>
+  dplyr::mutate(rep_acc = ifelse(grepl("inaccurate", condition, ignore.case = T), "inaccurate", "accurate"),
+                speaker = ifelse(grepl("Control", condition, ignore.case = T), "Control", "ALS"),
+                speaker = factor(speaker, levels = c("Control", "ALS")))
+
+m2_predicted_values |>
+  ggplot() +
+  aes(x = time_norm,
+      y = fit,
+      color = speaker,
+      fill = speaker,
+      linetype = speaker) +
+  geom_ribbon(aes(ymin = ul, ymax = ll), alpha = .5, color = NA) +
+  geom_line() +
+  geom_vline(xintercept = 0, size = 0.35) +
+  geom_vline(xintercept = 1910, linetype = 2) +
+  annotate("rect", xmin = 500, xmax = 2910, ymin = 0, ymax = 200, alpha = 0.15) +
+  coord_cartesian(ylim = c(-10, 250), xlim = c(0, 4910)) +
+  facet_wrap("rep_acc") +
+  theme_bw() +
+  theme(aspect.ratio = 1,
+        legend.position = "bottom") +
+  labs(x = "Normalized Time (ms)",
+       y = "Pupil Dilation (Arbitrary Units)",
+       color = "Speaker",
+       fill = "Speaker",
+       linetype = "Speaker") +
+  scale_color_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS")) +
+  scale_fill_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS")) +
+  scale_linetype_manual(values = c("solid", "dashed"), labels = c("Neurotypical", "ALS"))
+
+ggsave("Figures/pupil_plot.png", plot = last_plot())
+
+```
+
+### Curve Differences
+
+#### Control vs ALS 
+
+First the difference in pupil dilation between the control and ALS speakers for accurately recognized phrases is plotted below. The grey box indicates the analysis region of interest. The dotted line represents the average phrase offset time. The highlighted sections of the line (i.e., the green sections) indicate there was a significant difference in pupil dilation between the two speakers. Positive values indicate that pupil dilation while listening to the ALS speaker was greater than the control speaker for accurately recognized phrases.
+
+```{r, warning = F, message = F}
+
+add_limits_etc <- function(mod){
+  mod <- mod |>
+    dplyr::mutate(lower = est - CI,
+                  upper = est + CI,
+                  is_signif = ifelse(sign(upper) == sign(lower), "yes", "no"))
+  
+  return(mod)
+  }
+
+speaker_diff_df <- plot_diff(m2_pupil, view = "time_norm",
+          comp = list(condition = c("ALS Accurate", "Control Accurate")), plot = F) |>
+  mutate(speaker_1 = "ALS", speaker_2 = "Control", rep_acc = "Accurate", Type = " ALS vs Control") |>
+  add_limits_etc()
+
+speaker_diff_df$signif_chunk <- 1
+
+for (row_index in 2:nrow(speaker_diff_df)) {
+  speaker_diff_df$signif_chunk[row_index] <- 
+    ifelse(speaker_diff_df$is_signif[row_index] != speaker_diff_df$is_signif[row_index - 1],
+           speaker_diff_df$signif_chunk[row_index - 1] + 1,
+           speaker_diff_df$signif_chunk[row_index - 1])
+  
+}
+
+diff_color <- c(my_pal[4])
+
+diff_fill <- c( my_pal[4])
+
+diff_plot_1 <- speaker_diff_df |>
+  ggplot() +
+  aes(x = time_norm,
+      y = est,
+      ymin = lower,
+      ymax = upper) +
+  geom_ribbon(fill = "white", alpha = 1) +
+  geom_ribbon(fill = "grey60", alpha = .5) +
+  geom_line() +
+  scale_color_manual(values = diff_color) +
+  scale_fill_manual(values = diff_fill) +
+  geom_hline(yintercept = 0) +
+  annotate("rect", xmin = 500, xmax = 2910, ymin = -20, ymax = 200, alpha = 0.15) +
+  geom_vline(xintercept = 0, size = 0.35) +
+  geom_vline(xintercept = 1910, linetype = 2) +
+  labs(x = "Normed Time (ms)",
+       y = "Estimated Difference in Pupil Dilation",
+       title = "ALS vs Neurotypical Speaker") +
+  coord_cartesian(ylim = c(-10, 150), xlim = c(0, 4910)) +
+  theme_bw() +
+  geom_ribbon(data = {speaker_diff_df |>
+                dplyr::filter(is_signif != "no")},
+              aes(group = signif_chunk, fill = is_signif), alpha = .4, show.legend = F) +
+  geom_line(data = {speaker_diff_df |>
+                dplyr::filter(is_signif != "no")},
+              aes(group = signif_chunk, color = is_signif), alpha = .8, show.legend = F) +
+  theme(aspect.ratio = 1,
+        plot.title = element_text(hjust = 0.5))
+
+diff_plot_1
+
+```
+
+
+#### Control Accurate vs Inaccurate
+
+The difference in pupil dilation for accurately and inaccurately recognized phrases for the control speaker are shown below. A significant difference is indicated by the purple highlight. Positive values mean that inaccurately recognized phrases had larger pupil dilation at that time point. The grey box indicates the analysis region of interest. The dotted line represents the average phrase offset time.
+
+```{r, warning = F, message = F}
+
+control_diff_df <- plot_diff(m2_pupil, view = "time_norm",
+          comp = list(condition = c("Control Inaccurate", "Control Accurate")), plot = F) |>
+  mutate(rep_1 = "Inaccurate", rep_2 = "Accurate", speaker = "Control", Type = "Control Inaccurate vs Accurate") |>
+  add_limits_etc()
+
+control_diff_df$signif_chunk <- 1
+
+for (row_index in 2:nrow(control_diff_df)) {
+  control_diff_df$signif_chunk[row_index] <- 
+    ifelse(control_diff_df$is_signif[row_index] != control_diff_df$is_signif[row_index - 1],
+           control_diff_df$signif_chunk[row_index - 1] + 1,
+           control_diff_df$signif_chunk[row_index - 1])
+  
+}
+
+diff_color <- c(my_pal[1])
+
+diff_fill <- c( my_pal[1])
+
+diff_plot_2 <- control_diff_df |>
+  ggplot() +
+  aes(x = time_norm,
+      y = est,
+      ymin = lower,
+      ymax = upper) +
+  geom_ribbon(fill = "white", alpha = 1) +
+  geom_ribbon(fill = "grey60", alpha = .5) +
+  geom_line() +
+  scale_color_manual(values = diff_color) +
+  scale_fill_manual(values = diff_fill) +
+  geom_hline(yintercept = 0) +
+  annotate("rect", xmin = 500, xmax = 2910, ymin = -20, ymax = 200, alpha = 0.15) +
+  geom_vline(xintercept = 0, size = 0.35) +
+  geom_vline(xintercept = 1910, linetype = 2) +
+  labs(x = "Normed Time (ms)",
+       y = "Estimated Difference in Pupil Dilation",
+       title = "Neurotypical Speaker") +
+  coord_cartesian(ylim = c(-10, 150), xlim = c(0, 4910)) +
+  theme_bw() +
+  geom_ribbon(data = {control_diff_df |>
+                dplyr::filter(is_signif != "no")},
+              aes(group = signif_chunk, fill = is_signif), alpha = .4, show.legend = F) +
+  geom_line(data = {control_diff_df |>
+                dplyr::filter(is_signif != "no")},
+              aes(group = signif_chunk, color = is_signif), alpha = .8, show.legend = F) +
+  theme(aspect.ratio = 1,
+        plot.title = element_text(hjust = 0.5))
+
+diff_plot_2
+
+```
+
+#### ALS Accurate vs Inaccurate
+
+The difference in pupil dilation for accurately and inaccurately recognized phrases for the ALS speaker are shown below. A significant difference is indicated by the aqua highlight. Positive values mean that inaccurately recognized phrases had larger pupil dilation at that time point. The grey box indicates the analysis region of interest. The dotted line represents the average phrase offset time.
+
+```{r, warning = F, message = F}
+
+als_diff_df <- plot_diff(m2_pupil, view = "time_norm",
+          comp = list(condition = c("ALS Inaccurate", "ALS Accurate")), plot = F) |>
+  mutate(rep_1 = "Inaccurate", rep_2 = "Accurate", speaker = "ALS", Type = "ALS Inaccurate vs Accurate") |>
+  add_limits_etc()
+
+als_diff_df$signif_chunk <- 1
+
+for (row_index in 2:nrow(als_diff_df)) {
+  als_diff_df$signif_chunk[row_index] <- 
+    ifelse(als_diff_df$is_signif[row_index] != als_diff_df$is_signif[row_index - 1],
+           als_diff_df$signif_chunk[row_index - 1] + 1,
+           als_diff_df$signif_chunk[row_index - 1])
+  
+}
+
+diff_color <- c(my_pal[5])
+
+diff_fill <- c( my_pal[5])
+
+diff_plot_3 <- als_diff_df |>
+  ggplot() +
+  aes(x = time_norm,
+      y = est,
+      ymin = lower,
+      ymax = upper) +
+  geom_ribbon(fill = "white", alpha = 1) +
+  geom_ribbon(fill = "grey60", alpha = .5) +
+  geom_line() +
+  scale_color_manual(values = diff_color) +
+  scale_fill_manual(values = diff_fill) +
+  geom_hline(yintercept = 0) +
+  annotate("rect", xmin = 500, xmax = 2910, ymin = -20, ymax = 200, alpha = 0.15) +
+  geom_vline(xintercept = 0, size = 0.35) +
+  geom_vline(xintercept = 1910, linetype = 2) +
+  labs(x = "Normed Time (ms)",
+       y = "Estimated Difference in Pupil Dilation",
+       title = "ALS Speaker") +
+  coord_cartesian(ylim = c(-10, 150), xlim = c(0, 4910)) +
+  theme_bw() +
+  geom_ribbon(data = {als_diff_df |>
+                dplyr::filter(is_signif != "no")},
+              aes(group = signif_chunk, fill = is_signif), alpha = .4, show.legend = F) +
+  geom_line(data = {als_diff_df |>
+                dplyr::filter(is_signif != "no")},
+              aes(group = signif_chunk, color = is_signif), alpha = .8, show.legend = F) +
+  theme(aspect.ratio = 1,
+        plot.title = element_text(hjust = 0.5))
+
+diff_plot_3
+
+```
+
+
+
+
+```{r, eval = F}
+
+ggsave("Figures/difference_plots_speakers.png", plot = diff_plot_1, scale = 1.8)
+
+library(patchwork)
+
+diff_plot_2 + diff_plot_3
+
+ggsave("Figures/difference_plots_accuracy.png", plot = last_plot(), width = 4, height = 2.5, units = "in", scale = 1.8)
+
+
+
+```
+

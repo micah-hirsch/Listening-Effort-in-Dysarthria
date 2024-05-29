@@ -2,7 +2,7 @@
 
 # Author: Micah E. Hirsch, M.S., mhirsch@fsu.edu
 
-# Date: 4/15/2024 
+# Date: 5/7/2024 
 
 ## Purpose: To load in transcriptions of the listener responses,
 ## determine phrase recognition accuracy, and merge with the pupil data
@@ -81,12 +81,10 @@ reliability <- transcriptions |>
 ## Set working directory to location of cleaned pupil data
 setwd("~/Documents/Listening-Effort-in-Dysarthria/Manuscript Analysis/Cleaned Data")
 
-pupil <- rio::import("cleaned_pupil_data.csv")
-
-pupil_normed <- rio::import("cleaned_pupil_data_normalized.csv")
+ple <- rio::import("cleaned_ple_data.csv")
 
 ## Getting phrase targets
-targets <- pupil |>
+targets <- ple |>
   dplyr::rename(id = subject,
                 target = targetphrase) |>
   dplyr::select(id, trial, target) |>
@@ -162,6 +160,8 @@ phrase_acc <- phrase_acc_initial |>
                 targetphrase = target)
 
 # Export csv file of cleaned data
+
+
 
 rio::export(phrase_acc, "repetition_accuracy.csv")
 

@@ -2,7 +2,7 @@
 
 # Author: Micah E. Hirsch, mhirsch@fsu.edu
 
-## Data: 4/15/2024
+## Data: 5/13/2024
 
 ## Purpose: To prepare the pupil dilation data for analysis.
 
@@ -88,6 +88,29 @@ pupil_data <- do.call(rbind, data_list)
 ## Removing unneeded items from the environment
 rm(data, data_list, file, file_list)
 
+# Creating a separate df for perceived listening effort ratings 
+## (will be exported later)
+ple_data <- pupil_data |>
+  dplyr::select(subject, trial, code, speaker, targetphrase, counterbalance, effort_rating) |>
+  dplyr::distinct() |>
+  ## Removing Practice Trials
+  dplyr::filter(speaker != "Practice") |>
+  ## I noted some erroneous trials, so I am removing them
+  dplyr::filter(speaker != "UNDEFINED") |>
+  ## Adjusting trial order labels since the erroneous trials were extra trials
+  dplyr::mutate(trial = case_when(subject == "LE31" & trial >= 24 ~ trial - 1,
+                                  subject == "LE34" ~ trial -1,
+                                  TRUE ~ trial))
+
+## Need to make the same adjustments to the pupil dilation df
+pupil_data <- pupil_data |>
+  dplyr::select(!effort_rating) |>
+  dplyr::filter(speaker != "UNDEFINED") |>
+  dplyr::mutate(trial = case_when(subject == "LE31" & trial >= 24 ~ trial - 1,
+                                  subject == "LE34" ~ trial -1,
+                                  TRUE ~ trial))
+
+
 # Filtering out rows before the trial start and after the response cue
 
 ## Extracting trial start times
@@ -137,7 +160,40 @@ trimmed_pupil_data <- pupil_data |>
 
 rm(pupil_data)
 
-trimmed_pupil_data <- gazer::count_missing_pupil(trimmed_pupil_data, missingthresh = 0.2)
+# Detect amount of missing data per trial due to blinks
+
+## Calculating Percent of Missing Data
+missing_pupil <- trimmed_pupil_data |>
+  dplyr::group_by(subject, trial) |>
+  ## Restricting this to the eventual analysis region of interest
+  dplyr::filter(time >= -500) |>
+  dplyr::filter(time < max(time) - 2000) |>
+  dplyr::ungroup() |>
+  # Counting number of blink/no blink rows per trial
+  dplyr::group_by(subject, trial, blink) |>
+  dplyr::summarize(blinks = n()) |>
+  dplyr::ungroup() |>
+  dplyr::mutate(blink = ifelse(blink == 0, "no_blink", "blink")) |>
+  tidyr::pivot_wider(names_from = blink, values_from = blinks) |>
+  dplyr::mutate(percent_missing = (blink/(no_blink + blink))*100) |>
+  dplyr::select(subject, trial, percent_missing)
+
+## Merging with main df
+trimmed_pupil_data <- trimmed_pupil_data |>
+  dplyr::left_join(missing_pupil, by = c("subject", "trial"))
+
+## Finding out how many trials are removed due to blinks (6 trials)
+missing <- trimmed_pupil_data |>
+  filter(percent_missing >= 50) |>
+  dplyr::select(subject, trial) |>
+  dplyr::distinct()
+
+## Filtering out trials with greater than 50% of missing data
+trimmed_pupil_data <- trimmed_pupil_data |>
+  dplyr::mutate(percent_missing = ifelse(is.na(percent_missing), 0, percent_missing)) |>
+  dplyr::filter(percent_missing < 50)
+
+rm(missing, missing_pupil)
 
 # Fill in missing data from blinks
 
@@ -159,14 +215,15 @@ interp <- interpolate_pupil(pupil_extend,
 smoothed <- interp |>
   dplyr::mutate(smoothed_pupil = moving_average_pupil(interp, n = 5)) |>
   ## Selecting relevant variables
-  dplyr::select(c(subject, trial, sample_message, time, effort_rating, 
-                  code, speaker, targetphrase, counterbalance,smoothed_pupil)) |>
+  dplyr::select(c(subject, trial, sample_message, time, 
+                  code, speaker, targetphrase, counterbalance,
+                  smoothed_pupil)) |>
   dplyr::relocate(smoothed_pupil, .after = time)
 
 # Baseline Pupil Correction
 
 baseline_pupil <- baseline_correction_pupil(smoothed, pupil_colname = "smoothed_pupil",
-                                            baseline_window = c(-500, 0))   
+                                            baseline_window = c(-500, 0))
 
 # Artifact Rejection
 
@@ -177,10 +234,10 @@ mad_removal <- baseline_pupil |>
   dplyr::mutate(MAD = calc_mad(speed, n=16)) |>
   dplyr::filter(speed < MAD)
 
-## Proportion of rows removed (as of 4/15/2024: 1.45%)
+## Proportion of rows removed (as of 5/9/2024: 1.44%)
 ((nrow(baseline_pupil) - nrow(mad_removal)) / nrow(baseline_pupil)) * 100
 
-## Checking to see if whole trials were removed from any of the participants (No Trials Removed)
+## Checking to see if whole trials were removed from any of the participants (No Additional Trials Removed)
 trial_check <- mad_removal |>
   select(subject, trial) |>
   distinct() |>
@@ -190,13 +247,141 @@ trial_check <- mad_removal |>
 ## Removing unneeded items from the environment
 rm(baseline_pupil, interp, pupil_extend, smoothed, trimmed_pupil_data, trial_check)
 
+# Outlier Flags
+
+## Baseline Deviation
+baseline_dev <- mad_removal |>
+  dplyr::group_by(subject) |>
+  dplyr::summarize(mean_base = mean(baseline, na.rm = T),
+                   sd_base = sd(baseline, na.rm = T)) |>
+  dplyr::ungroup() |>
+  dplyr::mutate(base_max = mean_base + (2*sd_base),
+                base_min = mean_base - (2*sd_base))
+
+## Peak Pupil Value Deviation
+peak_pupil_dev <- mad_removal |>
+  dplyr::group_by(subject, trial) |>
+  dplyr::summarize(peak_pupil = max(baselinecorrectedp)) |>
+  dplyr::ungroup() |>
+  dplyr::group_by(subject) |>
+  dplyr::summarize(mean_peak = mean(peak_pupil, na.rm = T),
+                   sd_peak = sd(peak_pupil, na.rm = T)) |>
+  dplyr::ungroup() |>
+  dplyr::mutate(peak_max = mean_peak + (2*sd_peak),
+                peak_min = mean_peak - (2*sd_peak))
+
+## Trial-by-trial Baseline Deviation
+baseline_flags <- mad_removal |>
+  dplyr::select(subject, trial, baseline) |>
+  dplyr::distinct() |>
+  dplyr::group_by(subject) |>
+  dplyr::mutate(speed = speed_pupil(baseline, trial),
+                MAD = calc_mad(speed, n=16)) |>
+  dplyr::ungroup()
+
+## Odd Pupil Slope Detection
+
+slope_df <- mad_removal |>
+  ### Limiting range to first 500 ms after stimulus onset
+  dplyr::filter(time >= 0 & time <= 500) |>
+  group_by(subject, trial) |>
+  ### Calculating change in pupil dilation (i.e. slope) in the first 500 ms
+  dplyr::mutate(pupil_slope = (last(baselinecorrectedp) - first(baselinecorrectedp))/ (last(time) - first(time))) |>
+  dplyr::ungroup()
+
+
+### Visually determining a cutoff point for steep downward slope by plotting the histogram
+### Based on this visualization, pupil slope change greater than -.55 will be the cutoff
+slope_df |>
+  dplyr::select(subject, trial, speaker, pupil_slope) |>
+  distinct() |>
+  ggplot() +
+  aes(x = pupil_slope,
+      fill = speaker,
+      color = speaker) +
+  geom_histogram() +
+  geom_vline(xintercept = -.55)
+
+### Calculating mean and sd of pupil slopes (M = .0194, sd = .271)
+slope_df |>
+  distinct() |>
+  dplyr::summarize(mean = mean(pupil_slope,),
+                   sd = sd(pupil_slope))
+
+### Flagging Trials with Steep Negative Pupil Dilation Slopes
+slope_df <- slope_df |>
+  dplyr::mutate(steep_slope = ifelse(pupil_slope <= -.55, TRUE, FALSE))
+
+## Creating Flag Variables and merging with original df
+
+### Baseline Deviation
+
+baseline_dev <- baseline_dev |>
+  dplyr::select(subject, base_min, base_max) 
+
+mad_removal <- mad_removal |>
+  dplyr::left_join(baseline_dev, by = "subject") |>
+  dplyr::mutate(base_dev = ifelse(baseline < base_min | baseline > base_max, TRUE, FALSE)) 
+
+### Peak Pupil Deviation
+  
+peak_pupil_dev <- peak_pupil_dev |>
+  dplyr::select(subject, peak_min, peak_max) 
+
+mad_removal <- mad_removal |>
+  dplyr::left_join(peak_pupil_dev, by = "subject") |>
+  dplyr::group_by(subject, trial) |>
+  dplyr::mutate(peak_dev = ifelse(max(baselinecorrectedp) < peak_min | max(baselinecorrectedp) > peak_max, TRUE, FALSE)) |>
+  dplyr::ungroup()
+
+### Trial by Trial Baseline Deviation
+
+baseline_flags <- baseline_flags |>
+  mutate(trial_base_dev = ifelse(speed >= MAD, TRUE, FALSE)) |>
+  dplyr::select(subject, trial, trial_base_dev)
+
+mad_removal <- mad_removal |>
+  dplyr::left_join(baseline_flags, by = c("subject", "trial"))
+
+### Steep Pupil Slope
+
+slope_df <- slope_df |>
+  dplyr::select(subject, trial, steep_slope) |>
+  dplyr::distinct()
+
+mad_removal <- mad_removal |>
+  dplyr::left_join(slope_df, by = c("subject", "trial"))
+
+### Removing Extra Variables
+
+mad_removal <- mad_removal |>
+  dplyr::select(!c(base_min, base_max, peak_min, peak_max))
+
+### Identifying outlier trials that will be removed (21 trials)
+removed_df <- mad_removal |>
+  group_by(subject, trial) |>
+  dplyr::filter(rowSums(across(base_dev:steep_slope)) >= 2)
+
+removed_df <- removed_df |>
+  dplyr::select(subject, trial, speaker) |>
+  dplyr::distinct()
+
+### Filtering out those responses 
+
+filtered_df <- mad_removal |>
+  group_by(subject, trial) |>
+  dplyr::filter(rowSums(across(base_dev:steep_slope)) < 2)
+
+# Removing unneeded objects from the environment
+rm(baseline_dev, baseline_flags, mad_removal, peak_pupil_dev, removed_df, slope_df)
+
 # Downsampling
 
 bin.length <- 20
 
-data.binned <- mad_removal |>
+data.binned <- filtered_df |>
   mutate(timebins = round(time/bin.length)*bin.length) |>
-  dplyr::group_by(subject, trial, speaker, timebins, effort_rating,
+  dplyr::group_by(subject, trial, speaker, timebins,
                   code, targetphrase, counterbalance) |>
   dplyr::summarize(pupil.binned = mean(baselinecorrectedp)) |>
   dplyr::ungroup()
@@ -206,8 +391,11 @@ data.binned <- mad_removal |>
 ## Set working directory
 setwd("~/Documents/Listening-Effort-in-Dysarthria/Manuscript Analysis/Cleaned Data")
 
-## Export
+## Export Pupil Dilation DF
 rio::export(data.binned, "cleaned_pupil_data.csv")
+
+## Export PLE Ratings
+rio::export(ple_data, "cleaned_ple_data.csv")
 
 # Downsampling ALS speaker trials
 ## Based on findings from the 2023 ASHA Convention data analysis,the trials from the ALS speaker are much longer than the control talker.
@@ -218,7 +406,7 @@ bin.length <- 26.23
 ALS_trials <- data.binned |>
   dplyr::filter(speaker == "ALS") |>
   dplyr::mutate(time_n = round(timebins/bin.length)*bin.length) |>
-  dplyr::group_by(subject, trial, speaker, time_n, effort_rating, code, targetphrase, counterbalance) |>
+  dplyr::group_by(subject, trial, speaker, time_n, code, targetphrase, counterbalance) |>
   dplyr::summarize(normed_pupil = mean(pupil.binned)) |>
   dplyr::ungroup()
 

@@ -1,0 +1,819 @@
+---
+title: 'Exploratory Analyses: Adaptation'
+author: "Micah E. Hirsch"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Purpose
+
+This document contains the code and results for an exploratory analysis done with the data collected from this study. Specifically, this document reports findings about change in listening effort (measured by perceived listening effort ratings and pupil dilation) across the study trials. 
+
+```{r, echo = F, warning = F, message = F}
+
+library(rio) # install.packages("rio")
+library(tidyverse) # install.packages("tidyverse")
+library(mgcv) # install.packages("mgcv")
+library(itsadug) # install.packages("itsadug")
+library(ggpubr) # installl.packages("ggpubr")
+library(gt) # install.packages("gt")
+library(gtsummary) # install.packages("gtsummary")
+library(glmmTMB) # install.packages("glmmTMB")
+library(performance) # install.packages("performance")
+library(sjPlot) # install.packages("sjPlot")
+library(viridis) # install.packages("viridis")
+
+```
+
+
+# Proportion of Correct Responses per Trial
+
+```{r, warning = F, message = F}
+
+# Loading in Phrase Repetition Accuracy Data
+phrase_acc <- rio::import("Cleaned Data/repetition_accuracy.csv") |>
+  dplyr::select(subject, trial, targetphrase, initial_response, target_number, correct_words_initial, rep_acc) |>
+  dplyr::mutate(rep_acc = ifelse(initial_response == "missing data", NA, 
+                                 ifelse(target_number == correct_words_initial, "accurate", "inaccurate"))) |>
+  dplyr::select(!c(targetphrase, initial_response))
+
+# Loading in PLE data and merging transcription accuracy with it
+ple_data <- rio::import("Cleaned Data/cleaned_ple_data.csv") |>
+  dplyr::left_join(phrase_acc, by = c("subject", "trial")) |>
+  dplyr::mutate(speaker = factor(speaker, levels = c("Control", "ALS")),
+                trial_c = trial - 6,
+                rep_acc = factor(rep_acc, levels = c("accurate", "inaccurate"))) |>
+  dplyr::filter(!is.na(rep_acc)) |>
+  dplyr::filter(effort_rating > 0)
+
+my_pal <- c("#4E4187", "#3083DC", "#F8FFE5", "#7DDE92", "#2EBFA5")
+
+rep_acc_df <- ple_data |>
+  dplyr::select(subject, trial_c, speaker, rep_acc) 
+
+rep_acc_df |>
+  dplyr::mutate(trial_c = trial_c + 1) |>
+  dplyr::group_by(speaker, trial_c, rep_acc) |>
+  dplyr::summarize(n = n()) |>
+  dplyr::ungroup() |>
+  tidyr::pivot_wider(names_from = "rep_acc",
+                     values_from = "n") |>
+  dplyr::mutate(accurate = ifelse(is.na(accurate), 0, accurate),
+                inaccurate = ifelse(is.na(inaccurate), 0, inaccurate),
+                prop_accurate = accurate/(accurate + inaccurate)) |>
+  ggplot() +
+  aes(x = trial_c,
+      y = prop_accurate,
+      group = speaker,
+      color = speaker,
+      fill = speaker, 
+      linetype = speaker,
+      shape = speaker) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(y = "Proportion of Accurate Responses",
+       x = "Trial Number",
+       color = "Speaker", fill = "Speaker", 
+       linetype = "Speaker", shape = "Speaker") +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        aspect.ratio = 1) +
+  scale_color_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS")) +
+  scale_fill_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS")) +
+  scale_shape_manual(values = c(1, 16), labels = c("Neurotypical", "ALS")) +
+  scale_linetype_manual(values = c("solid", "dashed"), labels = c("Neurotypical", "ALS"))
+
+ggsave("Figures/acc_response_plot.png", plot = last_plot())
+
+```
+
+### Logistic Mixed-Effects Model
+
+```{r, warning = F, message = F}
+
+rep_acc_df <- rep_acc_df |>
+  dplyr::mutate(accurate = ifelse(rep_acc == "accurate", 1, 0))
+
+rep_acc_mod <- glmmTMB(accurate ~ trial_c*speaker + (trial_c|subject), family = "binomial", data = rep_acc_df)
+
+sjPlot::tab_model(rep_acc_mod, transform = NULL, show.est = TRUE, show.se = TRUE,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", 
+                                  "Trial Order * Speaker [ALS]"),
+                  dv.labels = "Accurately Recognized Phrases",
+                  file = "Tables/rep_acc_model.html")
+
+```
+
+
+# Perceived Listening Effort
+
+## PLE Models
+
+### Model 5
+
+```{r, message = F, warning = F}
+
+
+m5_ple <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + speaker*rep_acc + (trial_c|subject) + (trial_c|code), data = ple_data)
+sjPlot::tab_model(m5_ple,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
+                                  "Speaker [ALS] * Repetition Accuracy [Inaccurate]"),
+                  dv.labels = "Perceived Listening Effort")
+
+```
+
+
+### Model 6
+
+```{r, message = F, warning = F}
+
+m6_ple <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + speaker*rep_acc + 
+                    speaker*trial_c + (trial_c|subject) + (trial_c|code), data = ple_data)
+sjPlot::tab_model(m6_ple,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
+                                  "Speaker [ALS] * Repetition Accuracy [Inaccurate]", "Trial Order * Speaker [ALS]"),
+                  dv.labels = "Perceived Listening Effort")
+
+performance::test_performance(m5_ple, m6_ple)
+
+```
+
+### Model 7
+
+```{r, message = F, warning = F}
+
+m7_ple <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + speaker*rep_acc + 
+                    speaker*trial_c + rep_acc*trial_c + (trial_c|subject) + (trial_c|code), data = ple_data)
+sjPlot::tab_model(m7_ple,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
+                                  "Speaker [ALS] * Repetition Accuracy [Inaccurate]", "Trial Order * Speaker [ALS]",
+                                  "Trial Order * Repetition Accuracy [Inaccurate]"),
+                  dv.labels = "Perceived Listening Effort")
+
+performance::test_performance(m5_ple, m7_ple)
+
+```
+
+### Model 8
+
+```{r, message = F, warning = F}
+
+m8_ple <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + speaker*rep_acc + 
+                    speaker*trial_c + rep_acc*trial_c +  speaker*rep_acc*trial_c + (trial_c|subject) + (trial_c|code), data = ple_data)
+sjPlot::tab_model(m8_ple,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
+                                  "Speaker [ALS] * Repetition Accuracy [Inaccurate]", "Trial Order * Speaker [ALS]",
+                                  "Trial Order * Repetition Accuracy [Inaccurate]", "Trial Order * Speaker * Repetition Accuracy"),
+                  dv.labels = "Perceived Listening Effort")
+
+performance::test_performance(m5_ple, m8_ple)
+
+```
+
+
+
+```{r, eval = F, message = F, warning = F}
+
+sjPlot::tab_model(m5_ple, m6_ple, m7_ple, m8_ple, show.ci = F,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
+                                  "Speaker [ALS] * Repetition Accuracy [Inaccurate]", "Trial Order * Speaker [ALS]",
+                                  "Trial Order * Repetition Accuracy [Inaccurate]", "Trial Order * Speaker * Repetition Accuracy"),
+                  dv.labels = c("Model 5", "Model 6", "Model 7", "Model 8"),
+                 file = "Tables/ple_adaptation_models.html")
+
+```
+
+
+## Plot
+
+```{r, warning = F, message = F}
+
+ple_data |>
+  dplyr::mutate(trial_c = trial_c + 1) |>
+  dplyr::group_by(speaker, rep_acc, trial_c) |>
+  dplyr::summarize(per_effort = mean(effort_rating, na.rm = T), 
+                   sd = sd(effort_rating, na.rm = T),
+                   se = sd/sqrt(n())) |>
+  ggplot() +
+   aes(x = trial_c,
+       y = per_effort,
+       group = speaker,
+       color = speaker,
+       fill = speaker,
+       shape = speaker,
+       linetype = speaker) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(x = "Trial", y = "Perceived Listening Effort Rating",
+       color = "Speaker", fill = "Speaker",
+       shape = "Speaker", linetype = "Speaker") +
+  facet_wrap("rep_acc") +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        aspect.ratio = 1) +
+  scale_color_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS")) +
+  scale_fill_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS")) +
+  scale_shape_manual(values = c(1, 16), labels = c("Neurotypical", "ALS")) +
+  scale_linetype_manual(values = c("solid", "dashed"), labels = c("Neurotypical", "ALS"))
+
+ggsave("Figures/ple_trial_plot.png", plot = last_plot())
+
+```
+
+
+```{r, echo = F, warning = F, message = F}
+
+rm(m5_ple, m6_ple, m7_ple, m8_ple, rep_acc_df, rep_acc_mod)
+
+```
+
+
+# Pupil Dilation
+
+## Plot
+
+```{r, warning = F, message = F}
+
+pupil_df <- rio::import("Cleaned Data/cleaned_pupil_data_normalized.csv") |>
+  # Merging phrase accuracy information with df
+  dplyr::left_join(phrase_acc, by = c("subject", "trial")) |>
+  # Filter out trials with missing phrase repetition data 
+  dplyr::filter(!is.na(rep_acc))
+
+pupil_df <- pupil_df |>
+  dplyr::mutate(speaker = factor(speaker, levels = c("Control", "ALS")),
+                rep_acc = factor(rep_acc, levels = c("accurate", "inaccurate")),
+                phrase = as.factor(code),
+                listener = as.factor(subject),
+                condition = case_when(speaker == "Control" & rep_acc == "accurate" ~ "Control Accurate",
+                                      speaker == "Control" & rep_acc == "inaccurate" ~ "Control Inaccurate",
+                                      speaker == "ALS" & rep_acc == "accurate" ~ "ALS Accurate",
+                                      TRUE ~ "ALS Inaccurate"),
+                condition = factor(condition, 
+                                   levels = c("Control Accurate", "Control Inaccurate", "ALS Accurate", "ALS Inaccurate")),
+                trial_c = trial - 6) |>
+  dplyr::group_by(listener, speaker) |>
+  dplyr::mutate(num_points = n()) |>
+  dplyr::mutate(start_event = c(TRUE, rep(FALSE, each = (num_points - 1)))) |>
+  ungroup()
+
+
+# Extracting max pupil dilation
+max_pupil <- pupil_df |>  
+  dplyr::filter(time_norm >= 500) |>
+  dplyr::group_by(subject, trial) |>
+  # filtering out timebins 1000 ms after phrase offset
+  dplyr::filter(time_norm<= max(time_norm) - 2000) |>
+  dplyr::ungroup() |>
+  # Getting Peak Pupil Dilation Value
+  dplyr::group_by(subject, trial, speaker, code, rep_acc) |>
+  dplyr::summarize(peak_pupil = max(normed_pupil)) |>
+  dplyr::ungroup() |>
+  dplyr::mutate(trial_c = trial - 6)
+
+max_pupil |>
+  dplyr::mutate(trial_c = trial_c + 1) |>
+  dplyr::group_by(speaker, rep_acc, trial_c) |>
+  dplyr::summarize(peak = mean(peak_pupil, na.rm = T), 
+                   se = sd(peak_pupil, na.rm = T)/sqrt(n())) |>
+  ggplot() +
+  aes(x = trial_c,
+      y = peak,
+      color = speaker,
+      fill = speaker,
+      linetype = speaker,
+      shape = speaker) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(x = "Trial", y = "Peak Pupil Dilation (Arbitrary Units)",
+       color = "Speaker", fill = "Speaker", linetype = "Speaker", shape = "Speaker") +
+  facet_wrap("rep_acc") +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        aspect.ratio = 1) +
+  scale_color_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS")) +
+  scale_fill_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS")) +
+  scale_shape_manual(values = c(1, 16), labels = c("Neurotypical", "ALS")) +
+  scale_linetype_manual(values = c("solid", "dashed"), labels = c("Neurotypical", "ALS"))
+
+
+ggsave("Figures/peak_pupil_trial_plot.png", plot = last_plot())  
+  
+```
+
+## LME Model: Peak Pupil
+
+### Fully Unconditional Model
+
+Tried running with random intercept for phrase too, but ran into singular fit issues. So it was removed. ICC = .331
+
+```{r, warning = F, message = F}
+
+m0_pupil <- glmmTMB(peak_pupil ~ 1 + (1|subject), data = max_pupil)
+sjPlot::tab_model(m0_pupil,
+                  pred.labels = c("Intercept"),
+                  dv.labels = "Peak Pupil Dilation")
+performance::icc(m0_pupil)
+
+```
+
+### Model 1
+
+Adding trial random slope
+
+```{r, warning = F, message = F}
+
+m1_pupil <- glmmTMB(peak_pupil ~ 1 + (trial_c|subject), data = max_pupil)
+sjPlot::tab_model(m1_pupil, 
+                  pred.labels = c("Intercept"),
+                  dv.labels = "Peak Pupil Dilation")
+performance::test_performance(m0_pupil, m1_pupil)
+
+```
+
+### Model 2
+
+```{r, warning = F, message = F}
+
+m2_pupil <- glmmTMB(peak_pupil ~ trial_c + (trial_c|subject), data = max_pupil)
+sjPlot::tab_model(m2_pupil, 
+                  pred.labels = c("Intercept", "Trial Order"),
+                  dv.labels = "Peak Pupil Dilation")
+performance::test_performance(m1_pupil, m2_pupil)
+
+```
+
+### Model 3
+
+```{r, warning = F, message = F}
+
+m3_pupil <- glmmTMB(peak_pupil ~ trial_c + speaker + (trial_c|subject), data = max_pupil)
+sjPlot::tab_model(m3_pupil,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]"),
+                  dv.labels = "Peak Pupil Dilation")
+performance::test_performance(m2_pupil, m3_pupil)
+
+```
+
+### Model 4
+
+```{r, warning = F, message = F}
+
+m4_pupil <- glmmTMB(peak_pupil ~ trial_c + speaker + rep_acc + (trial_c|subject), data = max_pupil)
+sjPlot::tab_model(m4_pupil,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]"),
+                  dv.labels = "Peak Pupil Dilation")
+performance::test_performance(m3_pupil, m4_pupil)
+
+```
+
+### Model 5 
+
+```{r, warning = F, message = F}
+
+m5_pupil <- glmmTMB(peak_pupil ~ trial_c + speaker + rep_acc + speaker*rep_acc + (trial_c|subject), data = max_pupil)
+sjPlot::tab_model(m5_pupil,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
+                                  "Speaker [ALS] * Repetition Accuracy [Inaccurate]"),
+                  dv.labels = "Peak Pupil Dilation")
+performance::test_performance(m4_pupil, m5_pupil)
+
+```
+
+### Model 5b
+
+```{r, warning = F, message = F}
+
+m5b_pupil <- glmmTMB(peak_pupil ~ speaker + rep_acc + speaker*rep_acc + (trial_c|subject), data = max_pupil)
+sjPlot::tab_model(m5b_pupil,
+                  pred.labels = c("Intercept", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
+                                  "Speaker [ALS] * Repetition Accuracy [Inaccurate]"),
+                  dv.labels = "Peak Pupil Dilation")
+performance::test_performance(m5_pupil, m5b_pupil)
+
+```
+
+
+### Model 6
+
+```{r, warning = F, message = F}
+
+m6_pupil <- glmmTMB(peak_pupil ~ trial_c + speaker + rep_acc + 
+                      speaker*rep_acc + trial_c*speaker +(trial_c|subject), data = max_pupil)
+sjPlot::tab_model(m6_pupil, 
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
+                                  "Speaker [ALS] * Repetition Accuracy [Inaccurate]", "Trial Order * Speaker [ALS]"),
+                  dv.labels = "Peak Pupil Dilation")
+performance::test_performance(m4_pupil, m6_pupil)
+
+```
+
+### Model 7
+
+```{r, warning = F, message = F}
+
+m7_pupil <- glmmTMB(peak_pupil ~ trial_c + speaker + rep_acc + 
+                      speaker*rep_acc + trial_c*speaker + trial_c*rep_acc + (trial_c|subject), data = max_pupil)
+sjPlot::tab_model(m7_pupil,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
+                                  "Speaker [ALS] * Repetition Accuracy [Inaccurate]", "Trial Order * Speaker [ALS]",
+                                  "Trial Order * Repetition Accuracy [Inaccurate]"),
+                  dv.labels = "Peak Pupil Dilation")
+performance::test_performance(m6_pupil, m7_pupil)
+
+```
+
+### Model 8
+
+```{r, warning = F, message = F}
+
+m8_pupil <- glmmTMB(peak_pupil ~ trial_c + speaker + rep_acc + 
+                      speaker*rep_acc + trial_c*speaker + trial_c*rep_acc + 
+                      trial_c*speaker*rep_acc + (trial_c|subject), data = max_pupil)
+sjPlot::tab_model(m8_pupil,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
+                                  "Speaker [ALS] * Repetition Accuracy [Inaccurate]", "Trial Order * Speaker [ALS]",
+                                  "Trial Order * Repetition Accuracy [Inaccurate]",
+                                  "Trial Order * Speaker * Repetition Accuracy"),
+                  dv.labels = "Peak Pupil Dilation")
+performance::test_performance(m7_pupil, m8_pupil)
+
+```
+
+### Final Model with Unstandardized Estimates
+
+```{r, warning = F, message = F}
+
+sjPlot::tab_model(m7_pupil,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
+                                  "Speaker [ALS] * Repetition Accuracy [Inaccurate]", "Trial Order * Speaker [ALS]",
+                                  "Trial Order * Repetition Accuracy [Inaccurate]"),
+                  dv.labels = "Peak Pupil Dilation",
+                  file = "Tables/peak_pupil_adapt_unstd.html")
+
+```
+
+
+
+### Final Model with Standardized Estimates
+
+```{r, warning = F, message = F}
+
+m7_pupil_std <- glmmTMB(scale(peak_pupil) ~ scale(trial_c) + speaker + rep_acc + 
+                      speaker*rep_acc + scale(trial_c)*speaker + scale(trial_c)*rep_acc + (trial_c|subject), data = max_pupil)
+sjPlot::tab_model(m7_pupil_std,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
+                                  "Speaker [ALS] * Repetition Accuracy [Inaccurate]", "Trial Order * Speaker [ALS]",
+                                  "Trial Order * Repetition Accuracy [Inaccurate]"),
+                  dv.labels = "Peak Pupil Dilation",
+                  file = "Tables/peak_pupil_adapt_std.html")
+
+```
+
+
+```{r, eval = F, warning = F, message = F}
+
+sjPlot::tab_model(m1_pupil, m2_pupil, m3_pupil, m4_pupil, show.ci = F,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]"),
+                  dv.labels = c("Model 1", "Model 2", "Model 3", "Model 4"),
+                  file = "Tables/peak_pupil_adapt_models1.html")
+
+sjPlot::tab_model(m5_pupil, m6_pupil, m7_pupil, m8_pupil, show.ci = F,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
+                                  "Speaker [ALS] * Repetition Accuracy [Inaccurate]", "Trial Order * Speaker [ALS]",
+                                  "Trial Order * Repetition Accuracy [Inaccurate]", 
+                                  "Trial Order * Speaker * Repetition Accuracy"),
+                  dv.labels = c("Model 5", "Model 6", "Model 7", "Model 8"),
+                  file = "Tables/peak_pupil_adapt_models2.html")
+
+```
+
+
+```{r, echo = F, warning = F, message = F}
+
+rm(m0_pupil, m1_pupil, m2_pupil, m3_pupil, m4_pupil, m5_pupil, m6_pupil, m7_pupil, m7_pupil_std, m8_pupil, m5b_pupil, max_pupil)
+
+```
+
+
+## GAMM Analysis
+
+### Main Model
+
+```{r, warning = F, message = F}
+
+m2_pupil <- bam(normed_pupil ~ condition +
+                  s(time_norm, by = condition, k = 25) +
+                  # Random Smooth for listener
+                  s(time_norm, listener, bs = 'fs', m = 1),
+                discrete = T,
+                AR.start = start_event,
+                rho = .9341941,
+                family = "scat",
+                data = pupil_df)
+
+```
+
+
+### Adaptation Model
+
+```{r, warning = F, message = F}
+
+adapt_pupil <- bam(normed_pupil ~ condition +
+                  s(time_norm, by = condition, k = 35) +
+                  te(time_norm, trial_c, k = 35) +
+                  # Random Smooth for listener
+                  s(time_norm, listener, bs = 'fs', m =1),
+                discrete = T,
+                family = "scat",
+                AR.start = start_event,
+                rho = .9341941,
+                data = pupil_df)
+
+summary.gam(adapt_pupil)
+
+plot_smooth(adapt_pupil,
+            view = "time_norm",
+            plot_all = "condition",
+            rug = F, se = 1, rm.ranef = T)
+
+```
+
+#### Model Check
+
+```{r, eval = F}
+
+gam.check(adapt_pupil)
+
+acf_resid(adapt_pupil)
+
+```
+
+#### Model Comparison
+
+```{r, warning = F}
+
+compareML(m2_pupil, adapt_pupil, signif.stars = T, suggest.report = T)
+
+```
+#### By Trial Contours
+
+```{r, warning = F, message = F}
+
+vis.gam(adapt_pupil, view = c("time_norm", "trial_c"), 
+        cond = list(condition = "Control Accurate"), 
+        theta = -45, phi = 55, color = "topo")
+
+vis.gam(adapt_pupil, view = c("time_norm", "trial_c"), 
+        cond = list(condition = "Control Inaccurate"), 
+        theta = -45, phi = 55, color = "topo")
+
+vis.gam(adapt_pupil, view = c("time_norm", "trial_c"), 
+        cond = list(condition = "ALS Accurate"), 
+        theta = -45, phi = 55, color = "topo")
+
+vis.gam(adapt_pupil, view = c("time_norm", "trial_c"), 
+        cond = list(condition = "ALS Inaccurate"), 
+        theta = -45, phi = 55, color = "topo")
+```
+
+
+```{r, warning = F, message = F}
+
+df_pred <- expand_grid(
+  time_norm = seq(from=min(pupil_df$time_norm), 
+              to=max(pupil_df$time_norm), 
+              length.out = 100),
+  trial_c = seq(from=min(pupil_df$trial_c), 
+              to=max(pupil_df$trial_c), 
+              length.out = 100),
+  condition = c("Control Accurate", "Control Inaccurate", "ALS Accurate", "ALS Inaccurate"),
+  listener = c("LE01", "LE02", "LE04", "LE05", "LE06", "LE07", "LE08", "LE09", "LE10", "LE11",
+               "LE12", "LE13", "LE15", "LE16", "LE18", "LE19", "LE20", "LE21", "LE22", "LE23",
+               "LE24", "LE25", "LE26", "LE27", "LE28", "LE29", "LE30", "LE31", "LE32", "LE33", 
+               "LE34", "LE35", "LE36", "LE38")
+)
+
+df_pred <- predict(adapt_pupil, newdata = df_pred, 
+                      se.fit = TRUE) |> 
+  as_tibble() |>
+  cbind(df_pred)
+
+df_pred |>
+  dplyr::mutate(condition = factor(condition, levels = c("Control Accurate", "Control Inaccurate",
+                                                         "ALS Accurate", "ALS Inaccurate"),
+                                   labels = c("Neurotypical Accurate", "Neurotypical Inaccurate",
+                                                         "ALS Accurate", "ALS Inaccurate"))) |>
+  dplyr::filter(time_norm >= 0 & time_norm <= 5000) |>
+  ggplot() +
+  aes(x = time_norm,
+      y = trial_c,
+      group = condition) +
+  geom_tile(aes(fill = fit)) +
+  geom_contour(aes(z = fit), colour = "white") +
+  facet_wrap("condition") +
+  theme_classic() +
+  labs(fill = "Pupil Dilation Estimate",
+       x = "Normed Time (ms)",
+       y = "Trial Number") +
+  scale_fill_viridis(option = "D") +
+  theme(aspect.ratio = 1,
+        legend.position = "bottom",
+        axis.line = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust=1))
+
+ggsave("Figures/pupil_heatmap.png", plot = last_plot(), scale = 1.8)
+
+```
+
+
+### Curve Differences
+
+#### Control vs ALS 
+
+```{r, warning = F, message = F}
+
+add_limits_etc <- function(mod){
+  mod <- mod |>
+    dplyr::mutate(lower = est - CI,
+                  upper = est + CI,
+                  is_signif = ifelse(sign(upper) == sign(lower), "yes", "no"))
+  
+  return(mod)
+  }
+
+speaker_diff_df <- plot_diff(adapt_pupil, view = "time_norm",
+          comp = list(condition = c("ALS Accurate", "Control Accurate")), plot = F) |>
+  mutate(speaker_1 = "ALS", speaker_2 = "Control", rep_acc = "Accurate", Type = " ALS vs Control") |>
+  add_limits_etc()
+
+speaker_diff_df$signif_chunk <- 1
+
+for (row_index in 2:nrow(speaker_diff_df)) {
+  speaker_diff_df$signif_chunk[row_index] <- 
+    ifelse(speaker_diff_df$is_signif[row_index] != speaker_diff_df$is_signif[row_index - 1],
+           speaker_diff_df$signif_chunk[row_index - 1] + 1,
+           speaker_diff_df$signif_chunk[row_index - 1])
+  
+}
+
+diff_color <- c(my_pal[4])
+
+diff_fill <- c( my_pal[4])
+
+diff_plot_1 <- speaker_diff_df |>
+  ggplot() +
+  aes(x = time_norm,
+      y = est,
+      ymin = lower,
+      ymax = upper) +
+  geom_ribbon(fill = "white", alpha = 1) +
+  geom_ribbon(fill = "grey60", alpha = .5) +
+  geom_line() +
+  scale_color_manual(values = diff_color) +
+  scale_fill_manual(values = diff_fill) +
+  geom_hline(yintercept = 0) +
+  annotate("rect", xmin = 500, xmax = 2910, ymin = -20, ymax = 200, alpha = 0.15) +
+  geom_vline(xintercept = 0, size = 0.35) +
+  geom_vline(xintercept = 1910, linetype = 2) +
+  labs(x = "Normed Time (ms)",
+       y = "Estimated Difference in Pupil Dilation",
+       title = "ALS vs Control for Accurately \nRecognized Phrases") +
+  coord_cartesian(ylim = c(-10, 150), xlim = c(0, 4910)) +
+  theme_bw() +
+  geom_ribbon(data = {speaker_diff_df |>
+                dplyr::filter(is_signif != "no")},
+              aes(group = signif_chunk, fill = is_signif), alpha = .4, show.legend = F) +
+  geom_line(data = {speaker_diff_df |>
+                dplyr::filter(is_signif != "no")},
+              aes(group = signif_chunk, color = is_signif), alpha = .8, show.legend = F) +
+  theme(aspect.ratio = 1,
+        plot.title = element_text(hjust = 0.5))
+
+diff_plot_1
+
+```
+
+
+#### Control Accurate vs Inaccurate
+
+```{r, warning = F, message = F}
+
+control_diff_df <- plot_diff(adapt_pupil, view = "time_norm",
+          comp = list(condition = c("Control Inaccurate", "Control Accurate")), plot = F) |>
+  mutate(rep_1 = "Inaccurate", rep_2 = "Accurate", speaker = "Control", Type = "Control Inaccurate vs Accurate") |>
+  add_limits_etc()
+
+control_diff_df$signif_chunk <- 1
+
+for (row_index in 2:nrow(control_diff_df)) {
+  control_diff_df$signif_chunk[row_index] <- 
+    ifelse(control_diff_df$is_signif[row_index] != control_diff_df$is_signif[row_index - 1],
+           control_diff_df$signif_chunk[row_index - 1] + 1,
+           control_diff_df$signif_chunk[row_index - 1])
+  
+}
+
+diff_color <- c(my_pal[1])
+
+diff_fill <- c( my_pal[1])
+
+diff_plot_2 <- control_diff_df |>
+  ggplot() +
+  aes(x = time_norm,
+      y = est,
+      ymin = lower,
+      ymax = upper) +
+  geom_ribbon(fill = "white", alpha = 1) +
+  geom_ribbon(fill = "grey60", alpha = .5) +
+  geom_line() +
+  scale_color_manual(values = diff_color) +
+  scale_fill_manual(values = diff_fill) +
+  geom_hline(yintercept = 0) +
+  annotate("rect", xmin = 500, xmax = 2910, ymin = -20, ymax = 200, alpha = 0.15) +
+  geom_vline(xintercept = 0, size = 0.35) +
+  geom_vline(xintercept = 1910, linetype = 2) +
+  labs(x = "Normed Time (ms)",
+       y = "Estimated Difference in Pupil Dilation",
+       title = "Inaccurately vs Accurately Recognized \nPhrases For the Control Speaker") +
+  coord_cartesian(ylim = c(-10, 150), xlim = c(0, 4910)) +
+  theme_bw() +
+  geom_ribbon(data = {control_diff_df |>
+                dplyr::filter(is_signif != "no")},
+              aes(group = signif_chunk, fill = is_signif), alpha = .4, show.legend = F) +
+  geom_line(data = {control_diff_df |>
+                dplyr::filter(is_signif != "no")},
+              aes(group = signif_chunk, color = is_signif), alpha = .8, show.legend = F) +
+  theme(aspect.ratio = 1,
+        plot.title = element_text(hjust = 0.5))
+
+diff_plot_2
+
+```
+
+#### ALS Accurate vs Inaccurate
+
+```{r, warning = F, message = F}
+
+als_diff_df <- plot_diff(adapt_pupil, view = "time_norm",
+          comp = list(condition = c("ALS Inaccurate", "ALS Accurate")), plot = F) |>
+  mutate(rep_1 = "Inaccurate", rep_2 = "Accurate", speaker = "ALS", Type = "ALS Inaccurate vs Accurate") |>
+  add_limits_etc()
+
+als_diff_df$signif_chunk <- 1
+
+for (row_index in 2:nrow(als_diff_df)) {
+  als_diff_df$signif_chunk[row_index] <- 
+    ifelse(als_diff_df$is_signif[row_index] != als_diff_df$is_signif[row_index - 1],
+           als_diff_df$signif_chunk[row_index - 1] + 1,
+           als_diff_df$signif_chunk[row_index - 1])
+  
+}
+
+diff_color <- c(my_pal[5])
+
+diff_fill <- c( my_pal[5])
+
+diff_plot_3 <- als_diff_df |>
+  ggplot() +
+  aes(x = time_norm,
+      y = est,
+      ymin = lower,
+      ymax = upper) +
+  geom_ribbon(fill = "white", alpha = 1) +
+  geom_ribbon(fill = "grey60", alpha = .5) +
+  geom_line() +
+  scale_color_manual(values = diff_color) +
+  scale_fill_manual(values = diff_fill) +
+  geom_hline(yintercept = 0) +
+  annotate("rect", xmin = 500, xmax = 2910, ymin = -20, ymax = 200, alpha = 0.15) +
+  geom_vline(xintercept = 0, size = 0.35) +
+  geom_vline(xintercept = 1910, linetype = 2) +
+  labs(x = "Normed Time (ms)",
+       y = "Estimated Difference in Pupil Dilation",
+       title = "Inaccurately vs Accurately Recognized \nPhrases for the ALS Speaker") +
+  coord_cartesian(ylim = c(-10, 150), xlim = c(0, 4910)) +
+  theme_bw() +
+  geom_ribbon(data = {als_diff_df |>
+                dplyr::filter(is_signif != "no")},
+              aes(group = signif_chunk, fill = is_signif), alpha = .4, show.legend = F) +
+  geom_line(data = {als_diff_df |>
+                dplyr::filter(is_signif != "no")},
+              aes(group = signif_chunk, color = is_signif), alpha = .8, show.legend = F) +
+  theme(aspect.ratio = 1,
+        plot.title = element_text(hjust = 0.5))
+
+diff_plot_3
+
+```
+
+
+
