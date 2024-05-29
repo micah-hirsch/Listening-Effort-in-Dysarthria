@@ -338,11 +338,11 @@ ple_data |>
        fill = speaker) +
   geom_bar(stat = "identity", alpha = 0.6, position = position_dodge()) +
   geom_errorbar(aes(ymin = per_effort - se, ymax = per_effort + se), width = 0.4, position = position_dodge(.9)) +
-  labs(x = "Accuracy", y = "Perceived Listening Effort Rating") +
+  labs(x = "Accuracy", y = "Perceived Listening Effort Rating", color = "Speaker", fill = "Speaker") +
   theme_bw() +
   theme(aspect.ratio = 1) +
-  scale_color_manual(values = c(my_pal[1], my_pal[5])) +
-  scale_fill_manual(values = c(my_pal[1], my_pal[5]))
+  scale_color_manual(values = c(my_pal[1], my_pal[5]), labels =  c("Neurotypical", "ALS")) +
+  scale_fill_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS"))
 
 ggsave("Figures/ple_plot.png", plot = last_plot())
 
@@ -590,10 +590,13 @@ m2_predicted_values |>
   theme(aspect.ratio = 1,
         legend.position = "bottom") +
   labs(x = "Normalized Time (ms)",
-       y = "Pupil Dilation (Arbitrary Units)") +
-  scale_color_manual(values = c(my_pal[1], my_pal[5])) +
-  scale_fill_manual(values = c(my_pal[1], my_pal[5])) +
-  scale_linetype_manual(values = c("solid", "dashed"))
+       y = "Pupil Dilation (Arbitrary Units)",
+       color = "Speaker",
+       fill = "Speaker",
+       linetype = "Speaker") +
+  scale_color_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS")) +
+  scale_fill_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS")) +
+  scale_linetype_manual(values = c("solid", "dashed"), labels = c("Neurotypical", "ALS"))
 
 ggsave("Figures/pupil_plot.png", plot = last_plot())
 
@@ -790,7 +793,7 @@ diff_plot_3
 
 ```{r, eval = F}
 
-ggsave("Figures/difference_plots_speakers.png", plot = diff_plot_1)
+ggsave("Figures/difference_plots_speakers.png", plot = diff_plot_1, scale = 1.8)
 
 library(patchwork)
 

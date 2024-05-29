@@ -80,14 +80,16 @@ rep_acc_df |>
   geom_point() +
   geom_smooth(method = "lm") +
   labs(y = "Proportion of Accurate Responses",
-       x = "Trial Number") +
+       x = "Trial Number",
+       color = "Speaker", fill = "Speaker", 
+       linetype = "Speaker", shape = "Speaker") +
   theme_bw() +
   theme(legend.position = "bottom",
         aspect.ratio = 1) +
-  scale_color_manual(values = c(my_pal[1], my_pal[5])) +
-  scale_fill_manual(values = c(my_pal[1], my_pal[5])) +
-  scale_shape_manual(values = c(1, 16)) +
-  scale_linetype_manual(values = c("solid", "dashed"))
+  scale_color_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS")) +
+  scale_fill_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS")) +
+  scale_shape_manual(values = c(1, 16), labels = c("Neurotypical", "ALS")) +
+  scale_linetype_manual(values = c("solid", "dashed"), labels = c("Neurotypical", "ALS"))
 
 ggsave("Figures/acc_response_plot.png", plot = last_plot())
 
@@ -210,15 +212,17 @@ ple_data |>
        linetype = speaker) +
   geom_point() +
   geom_smooth(method = "lm") +
-  labs(x = "Trial", y = "Perceived Listening Effort Rating") +
+  labs(x = "Trial", y = "Perceived Listening Effort Rating",
+       color = "Speaker", fill = "Speaker",
+       shape = "Speaker", linetype = "Speaker") +
   facet_wrap("rep_acc") +
   theme_bw() +
   theme(legend.position = "bottom",
         aspect.ratio = 1) +
-  scale_color_manual(values = c(my_pal[1], my_pal[5])) +
-  scale_fill_manual(values = c(my_pal[1], my_pal[5])) +
-  scale_shape_manual(values = c(1, 16)) +
-  scale_linetype_manual(values = c("solid", "dashed"))
+  scale_color_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS")) +
+  scale_fill_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS")) +
+  scale_shape_manual(values = c(1, 16), labels = c("Neurotypical", "ALS")) +
+  scale_linetype_manual(values = c("solid", "dashed"), labels = c("Neurotypical", "ALS"))
 
 ggsave("Figures/ple_trial_plot.png", plot = last_plot())
 
@@ -289,15 +293,16 @@ max_pupil |>
       shape = speaker) +
   geom_point() +
   geom_smooth(method = "lm") +
-  labs(x = "Trial", y = "Peak Pupil Dilation (Arbitrary Units)") +
+  labs(x = "Trial", y = "Peak Pupil Dilation (Arbitrary Units)",
+       color = "Speaker", fill = "Speaker", linetype = "Speaker", shape = "Speaker") +
   facet_wrap("rep_acc") +
   theme_bw() +
   theme(legend.position = "bottom",
         aspect.ratio = 1) +
-  scale_color_manual(values = c(my_pal[1], my_pal[5])) +
-  scale_fill_manual(values = c(my_pal[1], my_pal[5])) +
-  scale_shape_manual(values = c(1, 16)) +
-  scale_linetype_manual(values = c("solid", "dashed"))
+  scale_color_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS")) +
+  scale_fill_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS")) +
+  scale_shape_manual(values = c(1, 16), labels = c("Neurotypical", "ALS")) +
+  scale_linetype_manual(values = c("solid", "dashed"), labels = c("Neurotypical", "ALS"))
 
 
 ggsave("Figures/peak_pupil_trial_plot.png", plot = last_plot())  
@@ -604,6 +609,8 @@ df_pred <- predict(adapt_pupil, newdata = df_pred,
 
 df_pred |>
   dplyr::mutate(condition = factor(condition, levels = c("Control Accurate", "Control Inaccurate",
+                                                         "ALS Accurate", "ALS Inaccurate"),
+                                   labels = c("Neurotypical Accurate", "Neurotypical Inaccurate",
                                                          "ALS Accurate", "ALS Inaccurate"))) |>
   dplyr::filter(time_norm >= 0 & time_norm <= 5000) |>
   ggplot() +
@@ -614,7 +621,7 @@ df_pred |>
   geom_contour(aes(z = fit), colour = "white") +
   facet_wrap("condition") +
   theme_classic() +
-  labs(fill = "Model Estimate",
+  labs(fill = "Pupil Dilation Estimate",
        x = "Normed Time (ms)",
        y = "Trial Number") +
   scale_fill_viridis(option = "D") +
@@ -623,7 +630,7 @@ df_pred |>
         axis.line = element_blank(),
         axis.text.x = element_text(angle = 45, hjust=1))
 
-ggsave("Figures/pupil_heatmap.png", plot = last_plot())
+ggsave("Figures/pupil_heatmap.png", plot = last_plot(), scale = 1.8)
 
 ```
 
