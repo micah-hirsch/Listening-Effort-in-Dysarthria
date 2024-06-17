@@ -630,7 +630,7 @@ df_pred |>
         axis.line = element_blank(),
         axis.text.x = element_text(angle = 45, hjust=1))
 
-ggsave("Figures/pupil_heatmap.png", plot = last_plot(), scale = 1.8)
+ggsave("Figures/pupil_heatmap.png", plot = last_plot())
 
 ```
 
