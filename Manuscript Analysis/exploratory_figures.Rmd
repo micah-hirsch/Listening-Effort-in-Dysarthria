@@ -131,15 +131,113 @@ ggsave("Figures/intel_heatmap.png", plot = last_plot())
 
 ```
 
+## Peak Pupil Dilation
 
-## Perceived Listening Effort (PLE) Ratings
+### LME Model
 
 ```{r}
 
+peak_pupil <- pupil_df |>  
+  dplyr::filter(time_norm >= 500) |>
+  dplyr::group_by(subject, trial) |>
+  # filtering out timebins 1000 ms after phrase offset
+  dplyr::filter(time_norm<= max(time_norm) - 2000) |>
+  dplyr::ungroup() |>
+  # Getting Peak Pupil Dilation Value
+  dplyr::group_by(subject, trial, speaker, code, intel) |>
+  dplyr::summarize(peak_pupil = max(normed_pupil)) |>
+  dplyr::ungroup() |>
+  dplyr::mutate(trial_c = trial - 6)
 
+peak_pupil_model <- glmmTMB(peak_pupil ~ intel*speaker + (1|subject), data = peak_pupil)
+#summary(peak_pupil_model)
+
+peak_pupil_model_2 <- glmmTMB(peak_pupil ~ poly(intel, degree = 2)*speaker + (1|subject), data = peak_pupil)
+#summary(peak_pupil_model_2)
+
+anova(peak_pupil_model, peak_pupil_model_2)
+
+sjPlot::tab_model(peak_pupil_model, peak_pupil_model_2,
+                  file = "Tables/peak_pupil_intel_model.html")
 
 ```
 
+### Plot
+
+```{r}
+
+peak_pupil |>
+  dplyr::mutate(speaker = factor(speaker, levels = c("Control", "ALS"),
+                                   labels = c("Neurotypical", "ALS")),
+                color = ifelse(speaker == "ALS", my_pal[5], my_pal[1])) |>
+  ggplot() +
+  aes(x = intel,
+      y = peak_pupil,
+      color = speaker) +
+  geom_line(method = "lm", stat = "smooth", aes(group = subject), alpha = .3) +
+  geom_line(stat = "smooth", method = "lm", size = 2) +
+  labs(x = "Intelligibility (% Words Correct)", 
+       y = "Peak Pupil Dilation (Arbitrary Units",
+       color = "Speaker", fill = "Speaker", linetype = "Speaker", shape = "Speaker") +
+  facet_wrap("speaker") +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        aspect.ratio = 1) +
+  coord_cartesian(ylim = c(0, 850)) +
+  scale_color_manual(values = c(my_pal[1], my_pal[5]))
+
+ggsave("Figures/pupil_intel.png", plot = last_plot())
+
+```
+
+
+## Perceived Listening Effort (PLE) Ratings
+
+### LME Model
+
+```{r}
+
+ple_data <- rio::import("Cleaned Data/cleaned_ple_data.csv") |>
+  dplyr::left_join(phrase_acc, by = c("subject", "trial")) |>
+  dplyr::mutate(speaker = factor(speaker, levels = c("Control", "ALS")),
+                trial_c = trial - 6,
+                rep_acc = factor(rep_acc, levels = c("accurate", "inaccurate"))) |>
+  dplyr::filter(!is.na(rep_acc)) |>
+  dplyr::filter(effort_rating > 0)
+
+ple_model <- glmmTMB(effort_rating ~ intel*speaker +
+                       (trial_c|subject) + (trial_c|code), data = ple_data)
+summary(ple_model)
+
+```
+
+### Plot
+
+```{r}
+
+ple_data |>
+  dplyr::mutate(speaker = factor(speaker, levels = c("Control", "ALS"),
+                                   labels = c("Neurotypical", "ALS")),
+                color = ifelse(speaker == "ALS", my_pal[5], my_pal[1])) |>
+  ggplot() +
+  aes(x = intel,
+      y = effort_rating,
+      color = speaker) +
+  geom_line(method = "lm", stat = "smooth", aes(group = subject), alpha = .3) +
+  geom_line(stat = "smooth", method = "lm", size = 2) +
+  labs(x = "Intelligibility (% Words Correct)", 
+       y = "Peak Pupil Dilation (Arbitrary Units",
+       color = "Speaker", fill = "Speaker", linetype = "Speaker", shape = "Speaker") +
+  facet_wrap("speaker") +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        aspect.ratio = 1) +
+  coord_cartesian(ylim = c(0, 7)) +
+  scale_color_manual(values = c(my_pal[1], my_pal[5]))
+
+ggsave("Figures/ple_intel.png", plot = last_plot())
+
+```
 
 # Correlations between Peak Pupil Dilaiton and PLE Ratings
 
