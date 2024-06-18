@@ -203,7 +203,8 @@ ple_data <- rio::import("Cleaned Data/cleaned_ple_data.csv") |>
                 trial_c = trial - 6,
                 rep_acc = factor(rep_acc, levels = c("accurate", "inaccurate"))) |>
   dplyr::filter(!is.na(rep_acc)) |>
-  dplyr::filter(effort_rating > 0)
+  dplyr::filter(effort_rating > 0) |>
+  dplyr::filter(effort_rating <= 7)
 
 ple_model <- glmmTMB(effort_rating ~ intel*speaker +
                        (trial_c|subject) + (trial_c|code), data = ple_data)
@@ -241,9 +242,71 @@ ggsave("Figures/ple_intel.png", plot = last_plot())
 
 # Correlations between Peak Pupil Dilaiton and PLE Ratings
 
+## Repeated Measures Correlation
+
+### Overall Correlation
+
 ```{r}
 
+peak_pupil <- peak_pupil |>
+  dplyr::select(subject, trial_c, speaker, peak_pupil, intel)
 
+ple_data <- ple_data |>
+  dplyr::select(subject, trial_c, speaker, effort_rating, intel)
+
+corr_df <- dplyr::left_join(peak_pupil, ple_data, by = c("subject", "trial_c", "speaker", "intel"))
+
+rmcorr::rmcorr(subject, peak_pupil, effort_rating, corr_df)
+
+```
+
+
+#### Plot
+
+```{r}
+
+corr_df |>
+  dplyr::mutate(speaker = factor(speaker, levels = c("Control", "ALS"),
+                                   labels = c("Neurotypical", "ALS")),
+                color = ifelse(speaker == "ALS", my_pal[5], my_pal[1])) |>
+  ggplot() +
+  aes(x = effort_rating,
+      y = peak_pupil) +
+  geom_line(method = "lm", stat = "smooth", aes(group = subject), alpha = .3) +
+  geom_line(stat = "smooth", method = "lm", size = 2) +
+  labs(x = "Perceived Listening Effort Rating", 
+       y = "Peak Pupil Dilation (Arbitrary Units)") +
+  coord_cartesian(xlim = c(1, 7)) +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        aspect.ratio = 1)
+
+ggsave("Figures/effort_corr.png", plot = last_plot())
+
+```
+
+```{r}
+
+corr_df |>
+  dplyr::mutate(speaker = factor(speaker, levels = c("Control", "ALS"),
+                                   labels = c("Neurotypical", "ALS")),
+                color = ifelse(speaker == "ALS", my_pal[5], my_pal[1])) |>
+  ggplot() +
+  aes(x = effort_rating,
+      y = peak_pupil,
+      color = speaker) +
+  geom_line(method = "lm", stat = "smooth", aes(group = subject), alpha = .3) +
+  geom_line(stat = "smooth", method = "lm", size = 2) +
+  labs(x = "Perceived Listening Effort Rating", 
+       y = "Peak Pupil Dilation (Arbitrary Units)") +
+  facet_wrap("speaker") +
+  coord_cartesian(xlim = c(1, 7)) +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        aspect.ratio = 1) +
+  scale_color_manual(values = c(my_pal[1], my_pal[5]))
+
+ggsave("Figures/effort_corr_speaker.png", plot = last_plot())
 
 ```
 
