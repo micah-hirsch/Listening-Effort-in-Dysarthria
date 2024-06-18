@@ -602,6 +602,7 @@ ggsave("Figures/pupil_plot.png", plot = last_plot())
 
 ```
 
+
 ### Curve Differences
 
 #### Control vs ALS 
@@ -670,6 +671,39 @@ diff_plot_1 <- speaker_diff_df |>
 diff_plot_1
 
 ```
+```{r}
+
+m2_predicted_values |>
+  dplyr::filter(rep_acc == "accurate") |>
+  ggplot() +
+  aes(x = time_norm,
+      y = fit,
+      color = speaker,
+      fill = speaker,
+      linetype = speaker) +
+  geom_ribbon(aes(ymin = ul, ymax = ll), alpha = .5, color = NA) +
+  geom_line() +
+  geom_vline(xintercept = 0, size = 0.35) +
+  geom_vline(xintercept = 1910, linetype = 2) +
+  annotate("rect", xmin = 500, xmax = 2910, ymin = 0, ymax = 200, alpha = 0.15) +
+  coord_cartesian(ylim = c(-10, 250), xlim = c(0, 4910)) +
+  theme_bw() +
+  theme(aspect.ratio = 1,
+        legend.position = "bottom",
+        plot.title = element_text(hjust = 0.5)) +
+  labs(x = "Normalized Time (ms)",
+       y = "Pupil Dilation (Arbitrary Units)",
+       title = "ALS vs Neurotypical Speaker",
+       color = "Speaker",
+       fill = "Speaker",
+       linetype = "Speaker") +
+  scale_color_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS")) +
+  scale_fill_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS")) +
+  scale_linetype_manual(values = c("solid", "dashed"), labels = c("Neurotypical", "ALS"))
+
+ggsave("Figures/pupil_model_speakers.png", plot = last_plot())
+
+```
 
 
 #### Control Accurate vs Inaccurate
@@ -730,6 +764,35 @@ diff_plot_2
 
 ```
 
+```{r}
+
+m2_predicted_values |>
+  dplyr::filter(speaker == "Control") |>
+  ggplot() +
+  aes(x = time_norm,
+      y = fit,
+      linetype = rep_acc) +
+  geom_ribbon(aes(ymin = ul, ymax = ll), alpha = .5, fill = my_pal[1], color = NA) +
+  geom_line(color = my_pal[1]) +
+  geom_vline(xintercept = 0, size = 0.35) +
+  geom_vline(xintercept = 1910, linetype = 2) +
+  annotate("rect", xmin = 500, xmax = 2910, ymin = 0, ymax = 200, alpha = 0.15) +
+  coord_cartesian(ylim = c(-10, 250), xlim = c(0, 4910)) +
+  theme_bw() +
+  theme(aspect.ratio = 1,
+        legend.position = "bottom",
+        plot.title = element_text(hjust = 0.5)) +
+  labs(x = "Normalized Time (ms)",
+       y = "Pupil Dilation (Arbitrary Units)",
+       title = "Neurotypical Speaker",
+       linetype = "Repetition Accuracy") +
+  scale_linetype_manual(values = c("solid", "twodash"))
+
+ggsave("Figures/pupil_model_control.png", plot = last_plot())
+
+```
+
+
 #### ALS Accurate vs Inaccurate
 
 The difference in pupil dilation for accurately and inaccurately recognized phrases for the ALS speaker are shown below. A significant difference is indicated by the aqua highlight. Positive values mean that inaccurately recognized phrases had larger pupil dilation at that time point. The grey box indicates the analysis region of interest. The dotted line represents the average phrase offset time.
@@ -788,12 +851,46 @@ diff_plot_3
 
 ```
 
+```{r}
+
+m2_predicted_values |>
+  dplyr::filter(speaker == "ALS") |>
+  ggplot() +
+  aes(x = time_norm,
+      y = fit,
+      linetype = rep_acc) +
+  geom_ribbon(aes(ymin = ul, ymax = ll), alpha = .5, fill = my_pal[5], color = NA) +
+  geom_line(color = my_pal[5]) +
+  geom_vline(xintercept = 0, size = 0.35) +
+  geom_vline(xintercept = 1910, linetype = 2) +
+  annotate("rect", xmin = 500, xmax = 2910, ymin = 0, ymax = 200, alpha = 0.15) +
+  coord_cartesian(ylim = c(-10, 250), xlim = c(0, 4910)) +
+  theme_bw() +
+  theme(aspect.ratio = 1,
+        legend.position = "bottom",
+        plot.title = element_text(hjust = 0.5)) +
+  labs(x = "Normalized Time (ms)",
+       y = "Pupil Dilation (Arbitrary Units)",
+       title = "ALS Speaker",
+       linetype = "Repetition Accuracy") +
+  scale_linetype_manual(values = c("solid", "twodash"))
+
+
+
+ggsave("Figures/pupil_model_ALS.png", plot = last_plot())
+
+```
 
 
 
 ```{r, eval = F}
 
-ggsave("Figures/difference_plots_speakers.png", plot = diff_plot_1, scale = 1.8)
+
+ggsave("Figures/difference_plots_speakers.png", plot = diff_plot_1, scale = .8)
+
+ggsave("Figures/difference_plots_control.png", plot = diff_plot_2, scale = .8)
+
+ggsave("Figures/difference_plots_ALS.png", plot = diff_plot_3, scale = .8)
 
 library(patchwork)
 
@@ -804,4 +901,3 @@ ggsave("Figures/difference_plots_accuracy.png", plot = last_plot(), width = 4, h
 
 
 ```
-
