@@ -166,6 +166,8 @@ sjPlot::tab_model(peak_pupil_model, peak_pupil_model_2,
 
 ```{r}
 
+my_pal <- c("#4E4187", "#3083DC", "#F8FFE5", "#7DDE92", "#2EBFA5")
+
 peak_pupil |>
   dplyr::mutate(speaker = factor(speaker, levels = c("Control", "ALS"),
                                    labels = c("Neurotypical", "ALS")),
@@ -177,7 +179,7 @@ peak_pupil |>
   geom_line(method = "lm", stat = "smooth", aes(group = subject), alpha = .3) +
   geom_line(stat = "smooth", method = "lm", size = 2) +
   labs(x = "Intelligibility (% Words Correct)", 
-       y = "Peak Pupil Dilation (Arbitrary Units",
+       y = "Peak Pupil Dilation (Arbitrary Units)",
        color = "Speaker", fill = "Speaker", linetype = "Speaker", shape = "Speaker") +
   facet_wrap("speaker") +
   theme_bw() +
@@ -227,7 +229,7 @@ ple_data |>
   geom_line(method = "lm", stat = "smooth", aes(group = subject), alpha = .3) +
   geom_line(stat = "smooth", method = "lm", size = 2) +
   labs(x = "Intelligibility (% Words Correct)", 
-       y = "Peak Pupil Dilation (Arbitrary Units",
+       y = "Perceived Listening Effort Rating",
        color = "Speaker", fill = "Speaker", linetype = "Speaker", shape = "Speaker") +
   facet_wrap("speaker") +
   theme_bw() +

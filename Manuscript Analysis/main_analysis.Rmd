@@ -170,6 +170,7 @@ ple_data |>
   dplyr::filter(!is.na(rep_acc)) |>
   # filtering out trials with missing effort ratings (5 trials missing, 4 additionally removed)
   dplyr::filter(effort_rating > 0) |>
+  dplyr::filter(effort_rating <= 7) |>
   tbl_strata(
     strata = rep_acc,
     ~.x |>
@@ -194,7 +195,8 @@ Linear mixed effects (LME) models were used to test the influence of speaker (Co
 
 ple_data <- ple_data |>
   dplyr::filter(!is.na(rep_acc)) |>
-  dplyr::filter(effort_rating > 0)
+  dplyr::filter(effort_rating > 0) |>
+  dplyr::filter(effort_rating <= 7)
 
 m0_ple <- glmmTMB(effort_rating ~ 1 + (1|subject) + (1|code), data = ple_data)
 sjPlot::tab_model(m0_ple, pred.labels = "Intercept",
