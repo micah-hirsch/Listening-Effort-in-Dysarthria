@@ -51,8 +51,7 @@ ple_data <- rio::import("Cleaned Data/cleaned_ple_data.csv") |>
   dplyr::mutate(speaker = factor(speaker, levels = c("Control", "ALS")),
                 trial_c = trial - 6,
                 rep_acc = factor(rep_acc, levels = c("accurate", "inaccurate"))) |>
-  dplyr::filter(!is.na(rep_acc)) |>
-  dplyr::filter(effort_rating > 0)
+  dplyr::filter(!is.na(rep_acc)) 
 
 my_pal <- c("#4E4187", "#3083DC", "#F8FFE5", "#7DDE92", "#2EBFA5")
 
@@ -121,6 +120,9 @@ sjPlot::tab_model(rep_acc_mod, transform = NULL, show.est = TRUE, show.se = TRUE
 
 ```{r, message = F, warning = F}
 
+ple_data <- ple_data |>
+  dplyr::filter(effort_rating > 0) |>
+  dplyr::filter(effort_rating <= 7)
 
 m5_ple <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + speaker*rep_acc + (trial_c|subject) + (trial_c|code), data = ple_data)
 sjPlot::tab_model(m5_ple,
@@ -164,10 +166,12 @@ performance::test_performance(m5_ple, m7_ple)
 
 ### Model 8
 
-```{r, message = F, warning = F}
+There was a convergence issue, so the random slope of trial order was removed from the phrase random intercept. Therefore, the significant model comparison below is likely due to the change in random effects.
+
+```{r}
 
 m8_ple <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + speaker*rep_acc + 
-                    speaker*trial_c + rep_acc*trial_c +  speaker*rep_acc*trial_c + (trial_c|subject) + (trial_c|code), data = ple_data)
+                    speaker*trial_c + rep_acc*trial_c +  speaker*rep_acc*trial_c + (trial_c|subject) + (1|code), data = ple_data)
 sjPlot::tab_model(m8_ple,
                   pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
                                   "Speaker [ALS] * Repetition Accuracy [Inaccurate]", "Trial Order * Speaker [ALS]",
@@ -175,6 +179,26 @@ sjPlot::tab_model(m8_ple,
                   dv.labels = "Perceived Listening Effort")
 
 performance::test_performance(m5_ple, m8_ple)
+
+```
+
+### Model 8b
+
+To determine whether the three-way interaction really does improve model fit, we reran model 7 without the random slope on phrase and compared this model to model 8 above (we are calling this model 8b). The addition of the three-way model did not significantly improve model fit. Therefore, the significant comparison between model 7 and model 8 is likely due to the differences in the random effects.
+
+Therefore, PLE ratings are not changing across trials for either speaker or accuracy level.
+
+```{r}
+
+m8b_ple <- glmmTMB(effort_rating ~ trial_c + speaker + rep_acc + speaker*rep_acc + 
+                    speaker*trial_c + rep_acc*trial_c + (trial_c|subject) + (1|code), data = ple_data)
+sjPlot::tab_model(m8b_ple,
+                  pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]",
+                                  "Speaker [ALS] * Repetition Accuracy [Inaccurate]", "Trial Order * Speaker [ALS]",
+                                  "Trial Order * Repetition Accuracy [Inaccurate]"),
+                  dv.labels = "Perceived Listening Effort")
+
+performance::test_performance(m8_ple, m8b_ple)
 
 ```
 
@@ -630,7 +654,7 @@ df_pred |>
         axis.line = element_blank(),
         axis.text.x = element_text(angle = 45, hjust=1))
 
-ggsave("Figures/pupil_heatmap.png", plot = last_plot(), scale = 1.8)
+ggsave("Figures/pupil_heatmap.png", plot = last_plot(), scale = .9)
 
 ```
 
