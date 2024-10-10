@@ -2,7 +2,7 @@
 
 # Author: Micah E. Hirsch, mhirsch@fsu.edu
 
-## Data: 5/13/2024
+## Date: 10/10/2024
 
 ## Purpose: To prepare the pupil dilation data for analysis.
 
@@ -19,7 +19,7 @@ library(knitr) # install.packages("knitr")
 
 # Set the working directory to load data
 
-setwd("~/Documents/Listening-Effort-in-Dysarthria/Raw Data")
+setwd("D:\\Listening Effort Study\\Raw Data\\Extracted Pupil and PLE Ratings")
 
 # Load raw pupil files
 
@@ -386,30 +386,32 @@ data.binned <- filtered_df |>
   dplyr::summarize(pupil.binned = mean(baselinecorrectedp)) |>
   dplyr::ungroup()
 
-# Export Cleaned Data
+normed_data |>
+  # Selecting relevant parameters
+  dplyr::select(subject, trial, speaker, time_n, code) |>
+  dplyr::group_by(speaker, trial) |>
+  dplyr::filter(time_n >= 0 & time_n <= max(time_n) - 3000) |>
+  dplyr::group_by(speaker) |>
+  summarize(count = n())
+  
 
-## Set working directory
-setwd("~/Documents/Listening-Effort-in-Dysarthria/Manuscript Analysis/Cleaned Data")
-
-## Export Pupil Dilation DF
-rio::export(data.binned, "cleaned_pupil_data.csv")
-
-## Export PLE Ratings
-rio::export(ple_data, "cleaned_ple_data.csv")
 
 # Downsampling ALS speaker trials
 ## Based on findings from the 2023 ASHA Convention data analysis,the trials from the ALS speaker are much longer than the control talker.
 ## Therefore we are creating a separate df that downsamples the ALS speaker's trials.
 
-bin.length <- 26.23
+bin.length <- 48.5
 
 ALS_trials <- data.binned |>
   dplyr::filter(speaker == "ALS") |>
-  dplyr::mutate(time_n = round(timebins/bin.length)*bin.length) |>
+  dplyr::group_by(subject, trial) |>
+  dplyr::mutate(time_n = case_when(timebins >= 0 & timebins <= max(timebins) - 3000 ~ round(timebins/bin.length)*bin.length,
+                TRUE ~ timebins)) |>
+  dplyr::ungroup() |>
   dplyr::group_by(subject, trial, speaker, time_n, code, targetphrase, counterbalance) |>
   dplyr::summarize(normed_pupil = mean(pupil.binned)) |>
   dplyr::ungroup()
-
+    
 control_trials <- data.binned |>
   dplyr::filter(speaker == "Control") |>
   dplyr::rename(time_n = timebins,
@@ -418,9 +420,8 @@ control_trials <- data.binned |>
 normed_data <- rbind(ALS_trials, control_trials)
 
 normed_data <- normed_data |>
-  dplyr::mutate(time_norm = case_when(speaker == "ALS" ~ time_n/1.5,
+  dplyr::mutate(time_norm = case_when(speaker == "ALS" & time_n > 0 ~ time_n/1.5,
                                       TRUE ~ time_n))
-
 normed_data |>
   dplyr::filter(time_norm >= 0) %>%
   dplyr::group_by(speaker, code) %>%
@@ -430,6 +431,16 @@ normed_data |>
                    av_phrase = av_length - 3000,
                    av_end_roi = av_length - 2000)
 
-# Export Normalized dataset
+# Export data
 
+## Set working directory
+setwd("D:\\Listening Effort Study\\Cleaned Data")
+
+## Export Pupil Dilation DF
+rio::export(data.binned, "cleaned_pupil_data.csv")
 rio::export(normed_data, "cleaned_pupil_data_normalized.csv")
+
+## Export PLE Ratings
+rio::export(ple_data, "cleaned_ple_data.csv")
+
+
