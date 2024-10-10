@@ -577,15 +577,13 @@ m2_predicted_values |>
   aes(x = time_norm,
       y = fit,
       color = speaker,
-      fill = speaker,
-      linetype = speaker) +
-  geom_ribbon(aes(ymin = ul, ymax = ll), alpha = .5, color = NA) +
-  geom_line() +
+      linetype = rep_acc) +
+  #geom_ribbon(aes(ymin = ul, ymax = ll), alpha = .5, color = NA) +
+  geom_line(size = .8) +
   geom_vline(xintercept = 0, size = 0.35) +
   geom_vline(xintercept = 1910, linetype = 2) +
   annotate("rect", xmin = 500, xmax = 2910, ymin = 0, ymax = 200, alpha = 0.15) +
   coord_cartesian(ylim = c(-10, 250), xlim = c(0, 4910)) +
-  facet_wrap("rep_acc") +
   theme_bw() +
   theme(aspect.ratio = 1,
         legend.position = "bottom") +
@@ -593,10 +591,9 @@ m2_predicted_values |>
        y = "Pupil Dilation (Arbitrary Units)",
        color = "Speaker",
        fill = "Speaker",
-       linetype = "Speaker") +
+       linetype = "Repetition Accuracy") +
   scale_color_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS")) +
-  scale_fill_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS")) +
-  scale_linetype_manual(values = c("solid", "dashed"), labels = c("Neurotypical", "ALS"))
+  scale_linetype_manual(values = c("solid", "dashed"))
 
 ggsave("Figures/pupil_plot.png", plot = last_plot())
 
