@@ -1,8 +1,8 @@
 # Transcription Data Preprocessing
 
-# Author: Micah E. Hirsch, M.S., mhirsch@fsu.edu
+# Author: Micah E. Hirsch, Ph.D., mehirsch@bu.edu
 
-# Date: 5/7/2024 
+# Date: 10/15/2024 
 
 ## Purpose: To load in transcriptions of the listener responses,
 ## determine phrase recognition accuracy, and merge with the pupil data
@@ -19,7 +19,7 @@ library(SnowballC) # install.packages("SnowballC")
 
 # Set working directory to load data
 
-setwd("~/Documents/Listening-Effort-in-Dysarthria/Raw Data")
+setwd("D:\\Listening Effort Study\\Raw Data\\Participant Info and Transcriptions")
 
 # Loading in raw transcriptions
 
@@ -79,7 +79,7 @@ reliability <- transcriptions |>
 # Calculating phrase accuracy 
 
 ## Set working directory to location of cleaned pupil data
-setwd("~/Documents/Listening-Effort-in-Dysarthria/Manuscript Analysis/Cleaned Data")
+setwd("C:\\Users\\mehirsch\\Documents\\GitHub\\Listening-Effort-in-Dysarthria\\Manuscript Analysis\\Cleaned Data")
 
 ple <- rio::import("cleaned_ple_data.csv")
 
@@ -160,8 +160,6 @@ phrase_acc <- phrase_acc_initial |>
                 targetphrase = target)
 
 # Export csv file of cleaned data
-
-
 
 rio::export(phrase_acc, "repetition_accuracy.csv")
 

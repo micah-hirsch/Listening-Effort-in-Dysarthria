@@ -1,6 +1,6 @@
 # Participant Demographic Data Prep
 
-# Author: Micah Hirsch, mhirsch@fsu.edu
+# Author: Micah Hirsch, Ph.D., mehirsch@bu.edu
 
 # Date: 10/15/2024
 
