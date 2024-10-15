@@ -1,0 +1,29 @@
+item,label,class,summary,value
+"","","",Rows in dataset,1224074
+"","","",Columns in dataset,8
+subject,Participant ID,character,unique responses,34
+"","","",missing,0
+trial,Trial Number,numeric,mean,46
+"","","",median,46
+"","","",min,6
+"","","",max,85
+"","","",missing,0
+speaker,Speaker (Control or ALS),factor,Control (1),531882
+"","","",ALS (2),692192
+"","","",missing,0
+timebins,Trial Time (ms),numeric,mean,1655
+"","","",median,1560
+"","","",min,-3020
+"","","",max,9480
+"","","",missing,0
+code,Stimulus Code,character,unique responses,80
+"","","",missing,0
+targetphrase,Target Phrase,character,unique responses,81
+"","","",missing,0
+counterbalance,Counterbalanced Condition,character,unique responses,2
+"","","",missing,0
+pupil.binned,Processed Pupil Dilation (Arbitrary Units),numeric,mean,49
+"","","",median,28
+"","","",min,-2490.19
+"","","",max,1189.32
+"","","",missing,0
