@@ -1,0 +1,57 @@
+item,label,class,summary,value
+"","","",Rows in dataset,38
+"","","",Columns in dataset,14
+id,Participant ID,character,unique responses,38
+"","","",missing,0
+age,Age,integer,mean,24
+"","","",median,22
+"","","",min,18
+"","","",max,39
+"","","",missing,0
+gender,Gender,factor,Man (1),7
+"","","",Woman (2),27
+"","","",Nonbinary (3),4
+"","","",Questioning (4),0
+"","","",Prefer not to answer (5),0
+"","","",missing,0
+clarified_gender,Gender (Fill-In Option),character,unique responses,4
+"","","",missing,0
+ethnicity,Ethnicity,factor,Hispanic/Latino(a/e) (1),12
+"","","",Not Hispanic/Latino(a/e) (2),26
+"","","",Prefer not to answer (3),0
+"","","",missing,0
+race,Race,factor,white/Caucasian (1),31
+"","","",Black/African American (2),2
+"","","",Asian/Asian American (3),0
+"","","",Native Hawaiian or Other Pacific Islander (4),0
+"","","",Native American or Alaska Native (5),0
+"","","",Biracial or Multiracial (6),4
+"","","",Prefer not to answer (7),0
+"","","",Race not listed (8),1
+"","","",missing,0
+native_lang,Native Language,factor,American English (1),36
+"","","",Not American English (2),2
+"","","",missing,0
+native_lang_clarified,Native Language (Fill-In Option),character,unique responses,3
+"","","",missing,0
+commdis_hx,History of Communication Disorders,character,unique responses,1
+"","","",missing,0
+commdis_hx_explain,Explanation of Comm Disorders History,logical,missing,38
+fam_commdis,Familiar with Communication Disorders,factor,no (1),28
+"","","",yes (2),10
+"","","",missing,0
+fam_comdis_2,How Participant is Familiar with Comm Dis,factor,no experience (1),15
+"","","",healthcare worker (2),6
+"","","",family member (3),3
+"","","",friend (4),2
+"","","",teacher (5),0
+"","","",missing,12
+freq_commdis,Frequency of Interaction with Someone with a Communication Disorder,factor,never (1),12
+"","","",once (2),3
+"","","",yearly (3),2
+"","","",monthly (4),3
+"","","",weekly (5),5
+"","","",daily (6),1
+"","","",missing,12
+pupil_complete,Completed Speech Perception Task,character,unique responses,2
+"","","",missing,0
