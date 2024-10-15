@@ -433,5 +433,3 @@ rio::export(normed_data, "cleaned_pupil_data_normalized.csv")
 
 ## Export PLE Ratings
 rio::export(ple_data, "cleaned_ple_data.csv")
-
-
