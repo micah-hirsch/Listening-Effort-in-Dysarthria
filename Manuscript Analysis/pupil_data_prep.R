@@ -386,17 +386,8 @@ data.binned <- filtered_df |>
   dplyr::summarize(pupil.binned = mean(baselinecorrectedp)) |>
   dplyr::ungroup()
 
-normed_data |>
-  # Selecting relevant parameters
-  dplyr::select(subject, trial, speaker, time_n, code) |>
-  dplyr::group_by(speaker, trial) |>
-  dplyr::filter(time_n >= 0 & time_n <= max(time_n) - 3000) |>
-  dplyr::group_by(speaker) |>
-  summarize(count = n())
-  
-
-
 # Downsampling ALS speaker trials
+
 ## Based on findings from the 2023 ASHA Convention data analysis,the trials from the ALS speaker are much longer than the control talker.
 ## Therefore we are creating a separate df that downsamples the ALS speaker's trials.
 
@@ -434,7 +425,7 @@ normed_data |>
 # Export data
 
 ## Set working directory
-setwd("D:\\Listening Effort Study\\Cleaned Data")
+setwd("C:\\Users\\mehirsch\\Documents\\GitHub\\Listening-Effort-in-Dysarthria\\Manuscript Analysis\\Cleaned Data")
 
 ## Export Pupil Dilation DF
 rio::export(data.binned, "cleaned_pupil_data.csv")
