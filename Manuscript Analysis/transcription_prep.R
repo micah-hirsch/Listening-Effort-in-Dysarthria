@@ -157,9 +157,32 @@ phrase_acc <- phrase_acc_initial |>
                 rep_acc_rel = ifelse(rel_response == "missing data", NA, 
                                  ifelse(target_number == correct_words_rel, "accurate", "inaccurate"))) |>
   dplyr::rename(subject = id,
-                targetphrase = target)
+                targetphrase = target) |>
+  dplyr::mutate(rep_acc = factor(rep_acc, c("accurate", "inaccurate")),
+                rep_acc_rel = factor(rep_acc_rel, c("accurate", "inaccurate")))
+
 
 # Export csv file of cleaned data
 
 rio::export(phrase_acc, "repetition_accuracy.csv")
 
+# Create Data Dictionary
+
+library(datadictionary)
+
+labels <- c(
+  subject = "Pariticipant ID",
+  targetphrase = "Target Phrase",
+  initial_response = "First Transcription of Listener Response",
+  correct_words_initial = "Number of Correct Words Transcribed (Initial)",
+  trial = "Trial Number",
+  target_number = "Target Number of Words in Phrase",
+  rel_response = "Reliability Transcription of Listener Response",
+  correct_words_rel = "Number of Correct Words Transcribed (Reliability)",
+  rep_acc = "Repetition Accuracy",
+  rep_acc_rel = "Repetition Accuracy (Reliability)"
+)
+
+data_dict <- create_dictionary(phrase_acc, var_labels = labels)
+
+rio::export(data_dict, "repetition_accuracy_dictionary.csv")
