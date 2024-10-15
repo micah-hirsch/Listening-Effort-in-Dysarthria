@@ -2,7 +2,7 @@
 
 # Author: Micah Hirsch, mhirsch@fsu.edu
 
-# Date: 5/7/2024
+# Date: 10/15/2024
 
 ## Purpose: To clean exported listener demographic data from RedCap and to
 ## prepare it for analysis.
@@ -13,7 +13,7 @@ library(tidyverse) # install.packages("tidyverse")
 # Load in listener demographic data from RedCap
 
 ## Set working directory
-setwd("~/Documents/Listening-Effort-in-Dysarthria/Raw Data")
+setwd("D:\\Listening Effort Study\\Raw Data\\Participant Info and Transcriptions")
 
 demo <- rio::import("participant_demo_raw.csv")
 
@@ -77,7 +77,7 @@ demo1 <- demo1 |>
 # Exporting cleaned demographic df
 
 ## Set working directory
-setwd("~/Documents/Listening-Effort-in-Dysarthria/Manuscript Analysis/Cleaned Data")
+setwd("C:\\Users\\mehirsch\\Documents\\GitHub\\Listening-Effort-in-Dysarthria\\Manuscript Analysis\\Cleaned Data")
 
 ## Export
 rio::export(demo1, "cleaned_listener_demo.csv")
