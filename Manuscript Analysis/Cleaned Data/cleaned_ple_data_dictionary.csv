@@ -1,0 +1,21 @@
+item,label,class,summary,value
+"","","",Rows in dataset,2720
+"","","",Columns in dataset,7
+subject,Participant ID,character,unique responses,34
+"","","",missing,0
+trial,Trial Number,numeric,mean,46
+"","","",median,46
+"","","",min,6
+"","","",max,85
+"","","",missing,0
+code,Stimulus Code,character,unique responses,80
+"","","",missing,0
+speaker,Speaker (Control or ALS),factor,Control (1),1360
+"","","",ALS (2),1360
+"","","",missing,0
+targetphrase,Target Phrase,character,unique responses,81
+"","","",missing,0
+counterbalance,Counterbalanced Condition,character,unique responses,2
+"","","",missing,0
+effort_rating,Perceived Listening Effort Rating,character,unique responses,9
+"","","",missing,0

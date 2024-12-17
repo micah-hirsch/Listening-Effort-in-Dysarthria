@@ -559,6 +559,16 @@ LE08,to sort but fear inside,to sort but fear inside,5,82,5,,,accurate,
 LE08,push her equal culture,push her equal culture,4,83,4,,,accurate,
 LE08,commit such used advice,commit such use advice,4,84,4,,,accurate,
 LE08,advance but sat appeal,advance but sat appeal,4,85,4,,,accurate,
+LE09,attack became concerned,and i became concerned,2,6,3,,,inaccurate,
+LE09,avoid or beat command,avoid or me command,3,7,4,,,inaccurate,
+LE09,pain can follow agents,pain can follow agents,4,8,4,,,accurate,
+LE09,define respect instead,define respect instead,3,9,3,,,accurate,
+LE09,for coke a great defeat,fur coke great defeat,3,10,5,,,inaccurate,
+LE09,had eaten junk and train,had eaten junk and train,5,11,5,,,accurate,
+LE09,support with dock and cheer,support what dock and cheer,4,12,5,,,inaccurate,
+LE09,or spent sincere aside,spent sincere assign,2,13,4,,,inaccurate,
+LE09,vital seats with wonder,vital seats with wonder,4,14,4,,,accurate,
+LE09,darker painted baskets,darker painted baskets,3,15,3,,,accurate,
 LE09,appear to wait then turn,a pair to wait then turn,4,16,5,,,inaccurate,
 LE09,beside a sunken bat,beside a sunken bat,4,17,4,,,accurate,
 LE09,forget the joke below,forget the joke below,4,18,4,,,accurate,
@@ -629,16 +639,6 @@ LE09,to sort but fear inside,to sort but fear inside,5,82,5,,,accurate,
 LE09,push her equal culture,push her equal culture,4,83,4,,,accurate,
 LE09,commit such used advice,commit such use advice,4,84,4,,,accurate,
 LE09,advance but sat appeal,advance but sat appeal,4,85,4,,,accurate,
-LE09,attack became concerned,and i became concerned,2,6,3,,,inaccurate,
-LE09,avoid or beat command,avoid or me command,3,7,4,,,inaccurate,
-LE09,pain can follow agents,pain can follow agents,4,8,4,,,accurate,
-LE09,define respect instead,define respect instead,3,9,3,,,accurate,
-LE09,for coke a great defeat,fur coke great defeat,3,10,5,,,inaccurate,
-LE09,had eaten junk and train,had eaten junk and train,5,11,5,,,accurate,
-LE09,support with dock and cheer,support what dock and cheer,4,12,5,,,inaccurate,
-LE09,or spent sincere aside,spent sincere assign,2,13,4,,,inaccurate,
-LE09,vital seats with wonder,vital seats with wonder,4,14,4,,,accurate,
-LE09,darker painted baskets,darker painted baskets,3,15,3,,,accurate,
 LE10,connect the beer device,connect appear device,2,6,4,,,inaccurate,
 LE10,award his drain away,award his drain away,4,7,4,,,accurate,
 LE10,mistake delight for heat,mistake the light for heat,3,8,4,,,inaccurate,
@@ -1119,6 +1119,16 @@ LE16,hold a page of fortune,hold a page a fortune,4,82,5,hold a page of fortune,
 LE16,afraid beneath demand,afraid beneath demand,3,83,3,afraid beneath demand,3,accurate,accurate
 LE16,mate denotes a judgement,mate denotes a judgement,4,84,4,mate denotes a judgement,4,accurate,accurate
 LE16,measure fame with legal,measure fame with legal,4,85,4,measure fame with legal,4,accurate,accurate
+LE18,connect the beer device,connect the pier device,3,6,4,connect the peer device,3,inaccurate,inaccurate
+LE18,award his drain away,award his drain away,4,7,4,award his drain away,4,accurate,accurate
+LE18,mistake delight for heat,mistake the light for heat,3,8,4,mistake the light for heat,3,inaccurate,inaccurate
+LE18,rowing farther matters,rowing farther matters,3,9,3,rowing farther matters,3,accurate,accurate
+LE18,indeed a tax ascent,indeed attacks ascent,2,10,4,indeed a tax ascent,4,inaccurate,accurate
+LE18,or spent sincere aside,or spent sincere aside,4,11,4,or spent sincere aside,4,accurate,accurate
+LE18,submit his cash report,submit his cash report,4,12,4,submit his cash report,4,accurate,accurate
+LE18,assume to catch control,assume the catch control,3,13,4,assume the catch control,3,inaccurate,inaccurate
+LE18,butcher in the middle,butcher in the middle,4,14,4,butcher in the middle,4,accurate,accurate
+LE18,avoid or beat command,missing data,0,15,4,x,0,,inaccurate
 LE18,admit the gear beyond,admit the gear beyond,4,16,4,admit the gear beyond,4,accurate,accurate
 LE18,may the same pursued it,may the same pursuit dare,3,17,5,may the same pursuit there,3,inaccurate,inaccurate
 LE18,rampant boasting captain,rampant boasting captain,3,18,3,rampit boasting captain,2,accurate,inaccurate
@@ -1189,16 +1199,6 @@ LE18,hold a page of fortune,hold a page of fortune,5,82,5,hold a page of fortune
 LE18,afraid beneath demand,afraid beneath demand,3,83,3,afraid beneath demand,3,accurate,accurate
 LE18,mate denotes a judgement,may denote judgement,2,84,4,may denote judgement,2,inaccurate,inaccurate
 LE18,measure fame with legal,measure fame with legal,4,85,4,measure fame with legal,4,accurate,accurate
-LE18,connect the beer device,connect the pier device,3,6,4,connect the peer device,3,inaccurate,inaccurate
-LE18,award his drain away,award his drain away,4,7,4,award his drain away,4,accurate,accurate
-LE18,mistake delight for heat,mistake the light for heat,3,8,4,mistake the light for heat,3,inaccurate,inaccurate
-LE18,rowing farther matters,rowing farther matters,3,9,3,rowing farther matters,3,accurate,accurate
-LE18,indeed a tax ascent,indeed attacks ascent,2,10,4,indeed a tax ascent,4,inaccurate,accurate
-LE18,or spent sincere aside,or spent sincere aside,4,11,4,or spent sincere aside,4,accurate,accurate
-LE18,submit his cash report,submit his cash report,4,12,4,submit his cash report,4,accurate,accurate
-LE18,assume to catch control,assume the catch control,3,13,4,assume the catch control,3,inaccurate,inaccurate
-LE18,butcher in the middle,butcher in the middle,4,14,4,butcher in the middle,4,accurate,accurate
-LE18,avoid or beat command,missing data,0,15,4,x,0,,inaccurate
 LE19,connect the beer device,connective pier device,1,6,4,,,inaccurate,
 LE19,award his drain away,award has drained away,3,7,4,,,inaccurate,
 LE19,mistake delight for heat,misty delight for heat,3,8,4,,,inaccurate,

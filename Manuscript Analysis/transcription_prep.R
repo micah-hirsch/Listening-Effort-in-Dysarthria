@@ -1,8 +1,8 @@
 # Transcription Data Preprocessing
 
-# Author: Micah E. Hirsch, M.S., mhirsch@fsu.edu
+# Author: Micah E. Hirsch, Ph.D., mehirsch@bu.edu
 
-# Date: 5/7/2024 
+# Date: 10/15/2024 
 
 ## Purpose: To load in transcriptions of the listener responses,
 ## determine phrase recognition accuracy, and merge with the pupil data
@@ -19,7 +19,7 @@ library(SnowballC) # install.packages("SnowballC")
 
 # Set working directory to load data
 
-setwd("~/Documents/Listening-Effort-in-Dysarthria/Raw Data")
+setwd("D:\\Listening Effort Study\\Raw Data\\Participant Info and Transcriptions")
 
 # Loading in raw transcriptions
 
@@ -79,7 +79,7 @@ reliability <- transcriptions |>
 # Calculating phrase accuracy 
 
 ## Set working directory to location of cleaned pupil data
-setwd("~/Documents/Listening-Effort-in-Dysarthria/Manuscript Analysis/Cleaned Data")
+setwd("C:\\Users\\mehirsch\\Documents\\GitHub\\Listening-Effort-in-Dysarthria\\Manuscript Analysis\\Cleaned Data")
 
 ple <- rio::import("cleaned_ple_data.csv")
 
@@ -157,11 +157,32 @@ phrase_acc <- phrase_acc_initial |>
                 rep_acc_rel = ifelse(rel_response == "missing data", NA, 
                                  ifelse(target_number == correct_words_rel, "accurate", "inaccurate"))) |>
   dplyr::rename(subject = id,
-                targetphrase = target)
+                targetphrase = target) |>
+  dplyr::mutate(rep_acc = factor(rep_acc, c("accurate", "inaccurate")),
+                rep_acc_rel = factor(rep_acc_rel, c("accurate", "inaccurate")))
+
 
 # Export csv file of cleaned data
 
-
-
 rio::export(phrase_acc, "repetition_accuracy.csv")
 
+# Create Data Dictionary
+
+library(datadictionary)
+
+labels <- c(
+  subject = "Pariticipant ID",
+  targetphrase = "Target Phrase",
+  initial_response = "First Transcription of Listener Response",
+  correct_words_initial = "Number of Correct Words Transcribed (Initial)",
+  trial = "Trial Number",
+  target_number = "Target Number of Words in Phrase",
+  rel_response = "Reliability Transcription of Listener Response",
+  correct_words_rel = "Number of Correct Words Transcribed (Reliability)",
+  rep_acc = "Repetition Accuracy",
+  rep_acc_rel = "Repetition Accuracy (Reliability)"
+)
+
+data_dict <- create_dictionary(phrase_acc, var_labels = labels)
+
+rio::export(data_dict, "repetition_accuracy_dictionary.csv")

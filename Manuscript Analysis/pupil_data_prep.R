@@ -2,7 +2,7 @@
 
 # Author: Micah E. Hirsch, mhirsch@fsu.edu
 
-## Data: 5/13/2024
+## Date: 10/15/2024
 
 ## Purpose: To prepare the pupil dilation data for analysis.
 
@@ -19,7 +19,7 @@ library(knitr) # install.packages("knitr")
 
 # Set the working directory to load data
 
-setwd("~/Documents/Listening-Effort-in-Dysarthria/Raw Data")
+setwd("D:\\Listening Effort Study\\Raw Data\\Extracted Pupil and PLE Ratings")
 
 # Load raw pupil files
 
@@ -386,30 +386,23 @@ data.binned <- filtered_df |>
   dplyr::summarize(pupil.binned = mean(baselinecorrectedp)) |>
   dplyr::ungroup()
 
-# Export Cleaned Data
-
-## Set working directory
-setwd("~/Documents/Listening-Effort-in-Dysarthria/Manuscript Analysis/Cleaned Data")
-
-## Export Pupil Dilation DF
-rio::export(data.binned, "cleaned_pupil_data.csv")
-
-## Export PLE Ratings
-rio::export(ple_data, "cleaned_ple_data.csv")
-
 # Downsampling ALS speaker trials
+
 ## Based on findings from the 2023 ASHA Convention data analysis,the trials from the ALS speaker are much longer than the control talker.
 ## Therefore we are creating a separate df that downsamples the ALS speaker's trials.
 
-bin.length <- 26.23
+bin.length <- 48.5
 
 ALS_trials <- data.binned |>
   dplyr::filter(speaker == "ALS") |>
-  dplyr::mutate(time_n = round(timebins/bin.length)*bin.length) |>
+  dplyr::group_by(subject, trial) |>
+  dplyr::mutate(time_n = case_when(timebins >= 0 & timebins <= max(timebins) - 3000 ~ round(timebins/bin.length)*bin.length,
+                TRUE ~ timebins)) |>
+  dplyr::ungroup() |>
   dplyr::group_by(subject, trial, speaker, time_n, code, targetphrase, counterbalance) |>
   dplyr::summarize(normed_pupil = mean(pupil.binned)) |>
   dplyr::ungroup()
-
+    
 control_trials <- data.binned |>
   dplyr::filter(speaker == "Control") |>
   dplyr::rename(time_n = timebins,
@@ -418,9 +411,8 @@ control_trials <- data.binned |>
 normed_data <- rbind(ALS_trials, control_trials)
 
 normed_data <- normed_data |>
-  dplyr::mutate(time_norm = case_when(speaker == "ALS" ~ time_n/1.5,
+  dplyr::mutate(time_norm = case_when(speaker == "ALS" & time_n > 0 ~ time_n/1.5,
                                       TRUE ~ time_n))
-
 normed_data |>
   dplyr::filter(time_norm >= 0) %>%
   dplyr::group_by(speaker, code) %>%
@@ -430,6 +422,69 @@ normed_data |>
                    av_phrase = av_length - 3000,
                    av_end_roi = av_length - 2000)
 
-# Export Normalized dataset
 
+rm(ALS_trials, control_trials, filtered_df, bin.length)
+
+normed_data <- normed_data |>
+  dplyr::select(-time_n) |>
+  dplyr::mutate(speaker = factor(speaker, levels = c("Control", "ALS")))
+                
+data.binned <- data.binned |>
+  dplyr::mutate(speaker = factor(speaker, levels = c("Control", "ALS")))
+
+ple_data <- ple_data |>
+  dplyr::mutate(speaker = factor(speaker, levels = c("Control", "ALS")))
+
+# Export data
+
+## Set working directory
+setwd("C:\\Users\\mehirsch\\Documents\\GitHub\\Listening-Effort-in-Dysarthria\\Manuscript Analysis\\Cleaned Data")
+
+## Export Pupil Dilation DF
+rio::export(data.binned, "cleaned_pupil_data.csv")
 rio::export(normed_data, "cleaned_pupil_data_normalized.csv")
+
+## Export PLE Ratings
+rio::export(ple_data, "cleaned_ple_data.csv")
+
+# Creating Data Dictionaries for Pupil Dilation and PLE datasets
+
+library(datadictionary)
+
+labels_normed <- c(subject = "Participant ID",
+                   trial = "Trial Number",
+                   speaker = "Speaker (Control or ALS)",
+                   code = "Stimulus Code",
+                   targetphrase = "Target Phrase",
+                   counterbalance = "Counterbalanced Condition",
+                   normed_pupil = "Processed Pupil Dilation (Arbitrary Units)",
+                   time_norm = "Normalized Trial Time (ms)")
+
+labels_data <- c(subject = "Participant ID",
+                 trial = "Trial Number",
+                 speaker = "Speaker (Control or ALS)",
+                 time_norm = "Trial Time (ms)",
+                 code = "Stimulus Code",
+                 targetphrase = "Target Phrase",
+                 counterbalance = "Counterbalanced Condition",
+                 pupil.binned = "Processed Pupil Dilation (Arbitrary Units)")
+
+labels_ple <- c(subject = "Participant ID",
+                trial = "Trial Number",
+                code = "Stimulus Code",
+                speaker = "Speaker (Control or ALS)",
+                targetphrase = "Target Phrase",
+                counterbalance = "Counterbalanced Condition",
+                effort_rating = "Perceived Listening Effort Rating")
+
+data_dict <- create_dictionary(data.binned, var_labels = labels_data)
+
+data_dict_normed <- create_dictionary(normed_data, var_labels = labels_normed)
+
+data_dict_ple <- create_dictionary(ple_data, var_labels = labels_ple)
+
+rio::export(data_dict, "cleaned_pupil_data_dictionary.csv")
+
+rio::export(data_dict_normed, "cleaned_pupil_data_normalized_dictionary.csv")
+
+rio::export(data_dict_ple, "cleaned_ple_data_dictionary.csv")
