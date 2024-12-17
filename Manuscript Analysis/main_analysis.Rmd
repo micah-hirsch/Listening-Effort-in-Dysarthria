@@ -16,7 +16,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Purpose
 
-The purpose of this document is to analyze and report findings related to M. Hirsch's dissertation project. The data preparation and analysis was conducted using R Version 4.3.3.
+The purpose of this document is to analyze and report findings related to M. Hirsch's dissertation project. The results from this analysis were also used to prepare for publication.
+
+The data preparation and analysis was conducted using R Version 4.4.1.
 
 ```{r, echo = F, warning = F, message = F}
 
@@ -340,7 +342,8 @@ ple_data |>
   geom_errorbar(aes(ymin = per_effort - se, ymax = per_effort + se), width = 0.4, position = position_dodge(.9)) +
   labs(x = "Accuracy", y = "Perceived Listening Effort Rating", color = "Speaker", fill = "Speaker") +
   theme_bw() +
-  theme(aspect.ratio = 1) +
+  theme(aspect.ratio = 1,
+        legend.position = "bottom") +
   scale_color_manual(values = c(my_pal[1], my_pal[5]), labels =  c("Neurotypical", "ALS")) +
   scale_fill_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS"))
 
@@ -427,7 +430,7 @@ acf_resid(m0_pupil)
 
 ### Model 1
 
-Adding in AR(1) structure to address autocorrelation concerns. Bumped up knots to 25.
+Adding in AR(1) structure to address autocorrelation concerns.
 
 ```{r, warning = F, message = F}
 
