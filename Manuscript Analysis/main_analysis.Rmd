@@ -292,7 +292,6 @@ sjPlot::tab_model(final_ple,
                   pred.labels = c("Intercept", "Trial Order", "Speaker [ALS]", "Repetition Accuracy [Inaccurate]"),
                   dv.labels = "Perceived Listening Effort",
                   file = "Tables/ple_mod_unstd.html")
-
 ```
 
 
@@ -604,7 +603,6 @@ ggsave("Figures/pupil_plot.png", plot = last_plot())
 
 ```
 
-
 ### Curve Differences
 
 #### Control vs ALS 
@@ -673,7 +671,32 @@ diff_plot_1 <- speaker_diff_df |>
 diff_plot_1
 
 ```
-```{r}
+
+##### Estimated Peak Differences
+
+```{r, warning = F, message = F}
+
+max_1 <- speaker_diff_df |>
+  dplyr::filter(time_norm >= 950 & time_norm <=1200 ) |>
+  dplyr::slice_max(est,n=1)
+
+max_2 <- speaker_diff_df |>
+  dplyr::filter(time_norm >= 2500 & time_norm <=3500 ) |>
+  dplyr::slice_max(est,n=1)
+
+max_values <- rbind(max_1, max_2) |>
+  dplyr::select(time_norm, est, Type) 
+
+max_values |>
+  dplyr::rename("Normed Time" = time_norm,
+                "Estimated Difference" = est,
+                "Contrast" = Type) |>
+  gt::gt()
+
+```
+
+
+```{r, warning = F, message = F}
 
 m2_predicted_values |>
   dplyr::filter(rep_acc == "accurate") |>
@@ -766,7 +789,9 @@ diff_plot_2
 
 ```
 
-```{r}
+
+
+```{r, warning = F, message = F}
 
 m2_predicted_values |>
   dplyr::filter(speaker == "Control") |>
@@ -853,7 +878,7 @@ diff_plot_3
 
 ```
 
-```{r}
+```{r, warning = F, message = F}
 
 m2_predicted_values |>
   dplyr::filter(speaker == "ALS") |>
@@ -883,6 +908,28 @@ ggsave("Figures/pupil_model_ALS.png", plot = last_plot())
 
 ```
 
+##### Estimated Peak Differences
+
+```{r, warning = F, message = F}
+
+max_1 <- als_diff_df |>
+  dplyr::filter(time_norm >= 1300 & time_norm <=1700 ) |>
+  dplyr::slice_max(est,n=1)
+
+max_2 <- als_diff_df |>
+  dplyr::filter(time_norm >= 3500 & time_norm <=4000 ) |>
+  dplyr::slice_max(est,n=1)
+
+max_values <- rbind(max_1, max_2) |>
+  dplyr::select(time_norm, est, Type) 
+
+max_values |>
+  dplyr::rename("Normed Time" = time_norm,
+                "Estimated Difference" = est,
+                "Contrast" = Type) |>
+  gt::gt()
+
+```
 
 
 ```{r, eval = F}
@@ -900,6 +947,5 @@ diff_plot_2 + diff_plot_3
 
 ggsave("Figures/difference_plots_accuracy.png", plot = last_plot(), width = 4, height = 2.5, units = "in", scale = 1.8)
 
-
-
 ```
+

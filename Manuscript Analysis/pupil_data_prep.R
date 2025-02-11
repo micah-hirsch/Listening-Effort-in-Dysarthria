@@ -110,6 +110,13 @@ pupil_data <- pupil_data |>
                                   subject == "LE34" ~ trial -1,
                                   TRUE ~ trial))
 
+# Finding number of people who had the left eye tracked (Left eye tracked: n = 9; 
+# LE18 had both eyes tracked because the eye was switched in the middle of the experiment)
+pupil_data |>
+  dplyr::select(subject, eye_tracked) |>
+  dplyr::distinct() |>
+  dplyr::group_by(eye_tracked) |>
+  dplyr::summarize(n = n()) 
 
 # Filtering out rows before the trial start and after the response cue
 
