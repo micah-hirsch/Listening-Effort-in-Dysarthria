@@ -569,6 +569,8 @@ compareML(m2_pupil, m3_pupil, signif.stars = T, suggest.report = T)
 
 ### Overall Model Plot
 
+#### Control vs ALS Accurate
+
 ```{r, warning = F, message = F}
 
 m2_predicted_values <- m2_prediction[[1]][c("condition", "time_norm", "fit", "ul", "ll")] |>
@@ -576,13 +578,12 @@ m2_predicted_values <- m2_prediction[[1]][c("condition", "time_norm", "fit", "ul
                 speaker = ifelse(grepl("Control", condition, ignore.case = T), "Control", "ALS"),
                 speaker = factor(speaker, levels = c("Control", "ALS")))
 
-m2_predicted_values |>
+p1 <- m2_predicted_values |>
+  dplyr::filter(condition == "Control Accurate" | condition == "ALS Accurate") |>
   ggplot() +
   aes(x = time_norm,
       y = fit,
-      color = speaker,
-      linetype = rep_acc) +
-  #geom_ribbon(aes(ymin = ul, ymax = ll), alpha = .5, color = NA) +
+      color = speaker) +
   geom_line(size = .8) +
   geom_vline(xintercept = 0, size = 0.35) +
   geom_vline(xintercept = 1910, linetype = 2) +
@@ -595,13 +596,77 @@ m2_predicted_values |>
        y = "Pupil Dilation (Arbitrary Units)",
        color = "Speaker",
        fill = "Speaker",
-       linetype = "Repetition Accuracy") +
-  scale_color_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS")) +
-  scale_linetype_manual(values = c("solid", "dashed"))
+       linetype = "Repetition Accuracy",
+       title = "A. Speaker with ALS vs \nNeurotypical Speaker") +
+  scale_color_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS"))
 
-ggsave("Figures/pupil_plot.png", plot = last_plot())
+p1
+
 
 ```
+#### Control Accurate vs Inaccurate
+
+```{r}
+
+p2 <- m2_predicted_values |>
+  dplyr::filter(condition == "Control Accurate" | condition == "Control Inaccurate") |>
+  ggplot() +
+  aes(x = time_norm,
+      y = fit,
+      color = speaker,
+      linetype = rep_acc) +
+  geom_line(size = .8) +
+  geom_vline(xintercept = 0, size = 0.35) +
+  geom_vline(xintercept = 1910, linetype = 2) +
+  annotate("rect", xmin = 500, xmax = 2910, ymin = 0, ymax = 200, alpha = 0.15) +
+  coord_cartesian(ylim = c(-10, 250), xlim = c(0, 4910)) +
+  theme_bw() +
+  theme(aspect.ratio = 1,
+        legend.position = "bottom") +
+  labs(x = "Normalized Time (ms)",
+       y = "Pupil Dilation (Arbitrary Units)",
+       color = "Speaker",
+       fill = "Speaker",
+       linetype = "Repetition Accuracy",
+       title = "B. Neurotypical Speaker: \nAccurate vs Inaccurate Trials") +
+  scale_color_manual(values = c(my_pal[1]), guide = "none") +
+  scale_linetype_manual(values = c("solid", "dashed"))
+
+p2
+
+```
+#### ALS Accurate vs Inaccurate
+
+```{r}
+
+p3 <- m2_predicted_values |>
+  dplyr::filter(condition == "ALS Accurate" | condition == "ALS Inaccurate") |>
+  ggplot() +
+  aes(x = time_norm,
+      y = fit,
+      color = speaker,
+      linetype = rep_acc) +
+  geom_line(size = .8) +
+  geom_vline(xintercept = 0, size = 0.35) +
+  geom_vline(xintercept = 1910, linetype = 2) +
+  annotate("rect", xmin = 500, xmax = 2910, ymin = 0, ymax = 200, alpha = 0.15) +
+  coord_cartesian(ylim = c(-10, 250), xlim = c(0, 4910)) +
+  theme_bw() +
+  theme(aspect.ratio = 1,
+        legend.position = "bottom") +
+  labs(x = "Normalized Time (ms)",
+       y = "Pupil Dilation (Arbitrary Units)",
+       color = "Speaker",
+       fill = "Speaker",
+       linetype = "Repetition Accuracy",
+       title = "C. Speaker with ALS: \nAccurate vs Inaccurate Trials") +
+  scale_color_manual(values = c(my_pal[5]), guide = "none") +
+  scale_linetype_manual(values = c("solid", "dashed"))
+
+p3
+
+```
+
 
 ### Curve Differences
 
@@ -655,8 +720,7 @@ diff_plot_1 <- speaker_diff_df |>
   geom_vline(xintercept = 0, size = 0.35) +
   geom_vline(xintercept = 1910, linetype = 2) +
   labs(x = "Normed Time (ms)",
-       y = "Estimated Difference in Pupil Dilation",
-       title = "ALS vs Neurotypical Speaker") +
+       y = "Estimated Difference in Pupil Dilation") +
   coord_cartesian(ylim = c(-10, 150), xlim = c(0, 4910)) +
   theme_bw() +
   geom_ribbon(data = {speaker_diff_df |>
@@ -694,42 +758,6 @@ max_values |>
   gt::gt()
 
 ```
-
-
-```{r, warning = F, message = F}
-
-m2_predicted_values |>
-  dplyr::filter(rep_acc == "accurate") |>
-  ggplot() +
-  aes(x = time_norm,
-      y = fit,
-      color = speaker,
-      fill = speaker,
-      linetype = speaker) +
-  geom_ribbon(aes(ymin = ul, ymax = ll), alpha = .5, color = NA) +
-  geom_line() +
-  geom_vline(xintercept = 0, size = 0.35) +
-  geom_vline(xintercept = 1910, linetype = 2) +
-  annotate("rect", xmin = 500, xmax = 2910, ymin = 0, ymax = 200, alpha = 0.15) +
-  coord_cartesian(ylim = c(-10, 250), xlim = c(0, 4910)) +
-  theme_bw() +
-  theme(aspect.ratio = 1,
-        legend.position = "bottom",
-        plot.title = element_text(hjust = 0.5)) +
-  labs(x = "Normalized Time (ms)",
-       y = "Pupil Dilation (Arbitrary Units)",
-       title = "ALS vs Neurotypical Speaker",
-       color = "Speaker",
-       fill = "Speaker",
-       linetype = "Speaker") +
-  scale_color_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS")) +
-  scale_fill_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS")) +
-  scale_linetype_manual(values = c("solid", "dashed"), labels = c("Neurotypical", "ALS"))
-
-ggsave("Figures/pupil_model_speakers.png", plot = last_plot())
-
-```
-
 
 #### Control Accurate vs Inaccurate
 
@@ -772,8 +800,7 @@ diff_plot_2 <- control_diff_df |>
   geom_vline(xintercept = 0, size = 0.35) +
   geom_vline(xintercept = 1910, linetype = 2) +
   labs(x = "Normed Time (ms)",
-       y = "Estimated Difference in Pupil Dilation",
-       title = "Neurotypical Speaker") +
+       y = "Estimated Difference in Pupil Dilation") +
   coord_cartesian(ylim = c(-10, 150), xlim = c(0, 4910)) +
   theme_bw() +
   geom_ribbon(data = {control_diff_df |>
@@ -788,37 +815,6 @@ diff_plot_2 <- control_diff_df |>
 diff_plot_2
 
 ```
-
-
-
-```{r, warning = F, message = F}
-
-m2_predicted_values |>
-  dplyr::filter(speaker == "Control") |>
-  ggplot() +
-  aes(x = time_norm,
-      y = fit,
-      linetype = rep_acc) +
-  geom_ribbon(aes(ymin = ul, ymax = ll), alpha = .5, fill = my_pal[1], color = NA) +
-  geom_line(color = my_pal[1]) +
-  geom_vline(xintercept = 0, size = 0.35) +
-  geom_vline(xintercept = 1910, linetype = 2) +
-  annotate("rect", xmin = 500, xmax = 2910, ymin = 0, ymax = 200, alpha = 0.15) +
-  coord_cartesian(ylim = c(-10, 250), xlim = c(0, 4910)) +
-  theme_bw() +
-  theme(aspect.ratio = 1,
-        legend.position = "bottom",
-        plot.title = element_text(hjust = 0.5)) +
-  labs(x = "Normalized Time (ms)",
-       y = "Pupil Dilation (Arbitrary Units)",
-       title = "Neurotypical Speaker",
-       linetype = "Repetition Accuracy") +
-  scale_linetype_manual(values = c("solid", "twodash"))
-
-ggsave("Figures/pupil_model_control.png", plot = last_plot())
-
-```
-
 
 #### ALS Accurate vs Inaccurate
 
@@ -861,8 +857,7 @@ diff_plot_3 <- als_diff_df |>
   geom_vline(xintercept = 0, size = 0.35) +
   geom_vline(xintercept = 1910, linetype = 2) +
   labs(x = "Normed Time (ms)",
-       y = "Estimated Difference in Pupil Dilation",
-       title = "ALS Speaker") +
+       y = "Estimated Difference in Pupil Dilation") +
   coord_cartesian(ylim = c(-10, 150), xlim = c(0, 4910)) +
   theme_bw() +
   geom_ribbon(data = {als_diff_df |>
@@ -877,37 +872,6 @@ diff_plot_3 <- als_diff_df |>
 diff_plot_3
 
 ```
-
-```{r, warning = F, message = F}
-
-m2_predicted_values |>
-  dplyr::filter(speaker == "ALS") |>
-  ggplot() +
-  aes(x = time_norm,
-      y = fit,
-      linetype = rep_acc) +
-  geom_ribbon(aes(ymin = ul, ymax = ll), alpha = .5, fill = my_pal[5], color = NA) +
-  geom_line(color = my_pal[5]) +
-  geom_vline(xintercept = 0, size = 0.35) +
-  geom_vline(xintercept = 1910, linetype = 2) +
-  annotate("rect", xmin = 500, xmax = 2910, ymin = 0, ymax = 200, alpha = 0.15) +
-  coord_cartesian(ylim = c(-10, 250), xlim = c(0, 4910)) +
-  theme_bw() +
-  theme(aspect.ratio = 1,
-        legend.position = "bottom",
-        plot.title = element_text(hjust = 0.5)) +
-  labs(x = "Normalized Time (ms)",
-       y = "Pupil Dilation (Arbitrary Units)",
-       title = "ALS Speaker",
-       linetype = "Repetition Accuracy") +
-  scale_linetype_manual(values = c("solid", "twodash"))
-
-
-
-ggsave("Figures/pupil_model_ALS.png", plot = last_plot())
-
-```
-
 ##### Estimated Peak Differences
 
 ```{r, warning = F, message = F}
@@ -934,18 +898,15 @@ max_values |>
 
 ```{r, eval = F}
 
-
-ggsave("Figures/difference_plots_speakers.png", plot = diff_plot_1, scale = .8)
-
-ggsave("Figures/difference_plots_control.png", plot = diff_plot_2, scale = .8)
-
-ggsave("Figures/difference_plots_ALS.png", plot = diff_plot_3, scale = .8)
-
 library(patchwork)
 
-diff_plot_2 + diff_plot_3
+full_plot <- (p1 | p2 | p3) /
+             (diff_plot_1 | diff_plot_2 | diff_plot_3) +
+             plot_layout(guides = "collect") & theme(legend.position = "bottom")
 
-ggsave("Figures/difference_plots_accuracy.png", plot = last_plot(), width = 4, height = 2.5, units = "in", scale = 1.8)
+full_plot
+
+ggsave("Figures\\full_pupil_plot.png", full_plot, height = 7, width = 12, units = "in")
 
 ```
 
