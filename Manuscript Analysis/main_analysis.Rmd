@@ -504,7 +504,7 @@ m2_prediction <- plot_smooth(m2_pupil,
 
 #### Model Check
 
-Model residuals look better in model 2. Adjusted R-squared = 0.173
+Model residuals look better in model 2. Adjusted R-squared = 0.16
 
 ```{r, warning = F, message = F}
 
@@ -543,7 +543,7 @@ m3_prediction <- plot_smooth(m3_pupil,
 
 #### Model Check
 
-The model residuals look similar. The adjusted R-squared value is .192.
+The model residuals look similar. The adjusted R-squared value is .177.
 
 ```{r, warning = F, message = F}
 
@@ -583,7 +583,12 @@ p1 <- m2_predicted_values |>
   ggplot() +
   aes(x = time_norm,
       y = fit,
-      color = speaker) +
+      color = speaker,
+      fill = speaker) +
+  geom_ribbon(aes(ymin = ll,
+                  ymax = ul),
+              alpha = 0.2,
+              color = NA) +
   geom_line(size = .8) +
   geom_vline(xintercept = 0, size = 0.35) +
   geom_vline(xintercept = 1910, linetype = 2) +
@@ -596,17 +601,18 @@ p1 <- m2_predicted_values |>
        y = "Pupil Dilation (Arbitrary Units)",
        color = "Speaker",
        fill = "Speaker",
-       linetype = "Repetition Accuracy",
-       title = "A. Speaker with ALS vs \nNeurotypical Speaker") +
-  scale_color_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS"))
+       linetype = "Repetition Accuracy") +
+  scale_color_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS")) +
+  scale_fill_manual(values = c(my_pal[1], my_pal[5]), labels = c("Neurotypical", "ALS"))
 
 p1
 
 
 ```
+
 #### Control Accurate vs Inaccurate
 
-```{r}
+```{r, warning = F, message = F}
 
 p2 <- m2_predicted_values |>
   dplyr::filter(condition == "Control Accurate" | condition == "Control Inaccurate") |>
@@ -614,7 +620,12 @@ p2 <- m2_predicted_values |>
   aes(x = time_norm,
       y = fit,
       color = speaker,
+      fill = rep_acc,
       linetype = rep_acc) +
+  geom_ribbon(aes(ymin = ll,
+                  ymax = ul),
+              alpha = 0.2,
+              color = NA) +
   geom_line(size = .8) +
   geom_vline(xintercept = 0, size = 0.35) +
   geom_vline(xintercept = 1910, linetype = 2) +
@@ -626,10 +637,10 @@ p2 <- m2_predicted_values |>
   labs(x = "Normalized Time (ms)",
        y = "Pupil Dilation (Arbitrary Units)",
        color = "Speaker",
-       fill = "Speaker",
-       linetype = "Repetition Accuracy",
-       title = "B. Neurotypical Speaker: \nAccurate vs Inaccurate Trials") +
+       fill = "Repetition Accuracy",
+       linetype = "Repetition Accuracy") +
   scale_color_manual(values = c(my_pal[1]), guide = "none") +
+  scale_fill_manual(values = c("#302853", "#7668B6")) +
   scale_linetype_manual(values = c("solid", "dashed"))
 
 p2
@@ -637,7 +648,7 @@ p2
 ```
 #### ALS Accurate vs Inaccurate
 
-```{r}
+```{r, warning = F, message = F}
 
 p3 <- m2_predicted_values |>
   dplyr::filter(condition == "ALS Accurate" | condition == "ALS Inaccurate") |>
@@ -645,7 +656,12 @@ p3 <- m2_predicted_values |>
   aes(x = time_norm,
       y = fit,
       color = speaker,
+      fill = rep_acc,
       linetype = rep_acc) +
+  geom_ribbon(aes(ymin = ll,
+                  ymax = ul),
+              alpha = 0.2,
+              color = NA) +
   geom_line(size = .8) +
   geom_vline(xintercept = 0, size = 0.35) +
   geom_vline(xintercept = 1910, linetype = 2) +
@@ -657,10 +673,10 @@ p3 <- m2_predicted_values |>
   labs(x = "Normalized Time (ms)",
        y = "Pupil Dilation (Arbitrary Units)",
        color = "Speaker",
-       fill = "Speaker",
-       linetype = "Repetition Accuracy",
-       title = "C. Speaker with ALS: \nAccurate vs Inaccurate Trials") +
+       fill = "Repetition Accuracy",
+       linetype = "Repetition Accuracy") +
   scale_color_manual(values = c(my_pal[5]), guide = "none") +
+  scale_fill_manual(values = c("#208371", "#4AD3BA")) +
   scale_linetype_manual(values = c("solid", "dashed"))
 
 p3
@@ -900,13 +916,62 @@ max_values |>
 
 library(patchwork)
 
-full_plot <- (p1 | p2 | p3) /
-             (diff_plot_1 | diff_plot_2 | diff_plot_3) +
-             plot_layout(guides = "collect") & theme(legend.position = "bottom")
+speaker_plot <- (p1 | diff_plot_1 ) + 
+  plot_layout(guides = "collect") & 
+  theme(legend.position = "bottom") 
 
-full_plot
+speaker_plot <- speaker_plot +
+  plot_annotation(title = "Speaker with ALS vs Neurotypical Speaker",
+                  subtitle = "Controlling for Perceptual Accuracy \n(Accurate Trials Only)",
+                  tag_levels = "A",
+                  theme = theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+                                plot.subtitle = element_text(hjust = 0.5, size = 11)))
 
-ggsave("Figures\\full_pupil_plot.png", full_plot, height = 7, width = 12, units = "in")
+
+speaker_plot
+
+ggsave("Figures\\speaker_plot.png", speaker_plot, height = 7, width = 10, units = "in")
+
+```
+
+
+
+```{r, eval = F}
+
+acc_plot <- (p2 | diff_plot_2 ) + 
+  plot_layout(guides = "collect") & 
+  theme(legend.position = "bottom") 
+
+acc_plot <- acc_plot +
+  plot_annotation(title = "Accurate Trials vs Inaccurate Trials",
+                  subtitle = "Controlling for Speaker \n(Neurotypical Speaker Only)",
+                  tag_levels = "A",
+                  theme = theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+                                plot.subtitle = element_text(hjust = 0.5, size = 11)))
+
+acc_plot
+
+ggsave("Figures\\accuracy_plot.png", acc_plot, height = 7, width = 10, units = "in")
+
+```
+
+
+
+```{r, eval = F}
+
+interaction_plot <- ((p2 | diff_plot_2) /
+                      ( p3 | diff_plot_3)) + 
+  plot_layout(guides = "collect") & 
+  theme(legend.position = "none")
+
+interaction_plot <- interaction_plot +
+  plot_annotation(title = "Interaction between Speaker and Perceptual Accuracy",
+                  tag_levels = "A",
+                  theme = theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold")))
+
+interaction_plot
+
+ggsave("Figures\\interaction_plot.png", interaction_plot, height = 7, width = 7, units = "in")
 
 ```
 
