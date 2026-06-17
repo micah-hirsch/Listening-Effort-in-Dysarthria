@@ -16,6 +16,8 @@ library(gazer) # remotes::install_github("dmirman/gazer")
 library(saccades) # remotes::install_github("tmalsburg/saccades/saccades")
 library(zoo) # install.packages("zoo")
 library(knitr) # install.packages("knitr")
+library(dtw) # install.packages("dtw")
+library(gsignal) # install.packages("gsignal")
 
 # Set the working directory to load data
 
@@ -382,21 +384,14 @@ filtered_df <- mad_removal |>
 # Removing unneeded objects from the environment
 rm(baseline_dev, baseline_flags, mad_removal, peak_pupil_dev, removed_df, slope_df)
 
-# Downsampling
+# Downsampling using fraction resampling
 
-bin.length <- 20
 
-data.binned <- filtered_df |>
-  mutate(timebins = round(time/bin.length)*bin.length) |>
-  dplyr::group_by(subject, trial, speaker, timebins,
-                  code, targetphrase, counterbalance) |>
-  dplyr::summarize(pupil.binned = mean(baselinecorrectedp)) |>
-  dplyr::ungroup()
 
-# Downsampling ALS speaker trials
+# Dynamic Time Warping
 
-## Based on findings from the 2023 ASHA Convention data analysis,the trials from the ALS speaker are much longer than the control talker.
-## Therefore we are creating a separate df that downsamples the ALS speaker's trials.
+## The ALS files are longer compared to the controls due to slower speech rate. So DTW was used to
+## rescale these trials.
 
 bin.length <- 48.5
 
