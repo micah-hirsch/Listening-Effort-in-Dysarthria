@@ -2,7 +2,7 @@
 
 # Author: Micah E. Hirsch, mhirsch@fsu.edu
 
-## Date: 10/15/2024
+## Date: 6/17/2026
 
 ## Purpose: To prepare the pupil dilation data for analysis.
 
@@ -193,7 +193,7 @@ trimmed_pupil_data <- trimmed_pupil_data |>
 
 ## Finding out how many trials are removed due to blinks (6 trials)
 missing <- trimmed_pupil_data |>
-  filter(percent_missing >= 50) |>
+  dplyr::filter(percent_missing >= 50) |>
   dplyr::select(subject, trial) |>
   dplyr::distinct()
 
@@ -243,7 +243,7 @@ mad_removal <- baseline_pupil |>
   dplyr::mutate(MAD = calc_mad(speed, n=16)) |>
   dplyr::filter(speed < MAD)
 
-## Proportion of rows removed (as of 5/9/2024: 1.44%)
+## Proportion of rows removed (as of 6/17/2026: 1.44%)
 ((nrow(baseline_pupil) - nrow(mad_removal)) / nrow(baseline_pupil)) * 100
 
 ## Checking to see if whole trials were removed from any of the participants (No Additional Trials Removed)
@@ -386,7 +386,20 @@ rm(baseline_dev, baseline_flags, mad_removal, peak_pupil_dev, removed_df, slope_
 
 # Downsampling using fraction resampling
 
+downsampled <- filtered_df |>
+  group_by(subject, trial) |>
+  dplyr::reframe(
+    pupil = gsignal::resample(baselinecorrectedp, 1, 2),
+    time_ms = -3000 + (seq_along(pupil) - 1) * 2
+  ) |>
+  ungroup()
 
+filtered_df <- filtered_df |>
+  dplyr::select(subject, trial, code, speaker, targetphrase, counterbalance) |>
+  dplyr::distinct() 
+
+downsampled <- filtered_df |>
+  dplyr::full_join(downsampled, by = c("subject", "trial"))
 
 # Dynamic Time Warping
 
