@@ -403,6 +403,63 @@ downsampled <- filtered_df |>
 
 # Dynamic Time Warping
 
+control_templates <- downsampled |>
+  dplyr::filter(speaker == "Control") |>
+  group_by(targetphrase, time_ms) |>
+  summarize(mean_pupil = mean(pupil), .groups = "drop") |>
+  group_by(targetphrase) |>
+  nest(template_data = c(time_ms, mean_pupil))
+
+dtw_speakers <- function(als_time, als_pupil, current_phrase, templates) {
+  
+  template_df <- templates |>
+    dplyr::filter(targetphrase == current_phrase) |>
+    unnest(template_data)
+  
+  ref_pupil <- template_df$mean_pupil
+  ref_time <- template_df$time_ms
+  
+  if(length(als_pupil) < 2 || length(ref_pupil) < 2) {
+    return(tibble(time_ms = NA_real_, warped_pupil = NA_real_))
+  }
+  
+  alignment <- dtw(x = als_pupil,
+                   y = ref_pupil,
+                   keep.internals = TRUE,
+                   step.pattern = symmetric2)
+  
+  warped_pupil <- warp(alignment, index.reference = F)
+  
+  return(tibble(
+    time_ms = ref_time,
+    warped_pupil = warped_pupil
+  ))
+  
+}
+
+als_nested <- downsampled |>
+  dplyr::filter(speaker == "ALS") |>
+  dplyr::group_by(subject, trial, targetphrase) |>
+  nest(trial_data = c(time_ms, pupil))
+
+als_wraped <- als_nested |>
+  dplyr::mutate(
+    warped = map2(
+      trial_data, targetphrase,
+      ~ dtw_speakers(
+        als_time = .x$time_ms,
+        als_pupil = .x$pupil,
+        current_phrase = .y,
+        templates = control_templates
+      )
+    )
+  ) |>
+  select(-trial_data) |>
+  unnest(warped_data) |>
+  ungroup()
+
+
+
 ## The ALS files are longer compared to the controls due to slower speech rate. So DTW was used to
 ## rescale these trials.
 
