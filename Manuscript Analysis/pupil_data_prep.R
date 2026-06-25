@@ -162,12 +162,36 @@ trimmed_pupil_data <- pupil_data |>
   dplyr::filter(practicetrial != 'Practice') |>
   dplyr::select(!practicetrial) |>
   ## Aligning data to onset of phrase presentation
-  dplyr::mutate(time = timestamp - phrase_start) |>
+  dplyr::mutate(time = timestamp - phrase_start,
+                pupil = dplyr::na_if(pupil, "."),
+                pupil = as.numeric(pupil)) |>
   ## Removing unneeded variables
   dplyr::select(!c(timestamp, start_time:end_time)) |>
-  dplyr::relocate(time, .after = pupil)
+  dplyr::relocate(time, .after = pupil) |>
+  dplyr::group_by(subject, targetphrase) |>
+  dplyr::mutate(
+    is_na_samp = is.na(pupil),
+    local_trend = zoo::rollapply(pupil, width = 101, FUN = "median", na.rm = T, fill = "extend", align = "center"),
+    dev_below = local_trend - pupil,
+    is_blink = is_na_samp | (dev_below) > 25,
+    is_blink = dplyr::if_else(is.na(is_blink), FALSE, is_blink)
+  ) |>
+  dplyr::ungroup()
 
 rm(pupil_data)
+
+ALS_trial_raw <- trimmed_pupil_data |>
+  dplyr::filter(subject == "LE01") |>
+  dplyr::filter(targetphrase == "account for who could knock") 
+
+ALS_trial_raw|>
+  ggplot() +
+  aes(x = time,
+      y = pupil) +
+  geom_line() +
+  coord_cartesian(xlim = c(4000, 7000)) +
+  theme_bw()
+
 
 # Detect amount of missing data per trial due to blinks
 
@@ -408,7 +432,8 @@ control_templates <- downsampled |>
   group_by(targetphrase, time_ms) |>
   summarize(mean_pupil = mean(pupil), .groups = "drop") |>
   group_by(targetphrase) |>
-  nest(template_data = c(time_ms, mean_pupil))
+  mutate(mean_pupil_smooth = gsignal::sgolayfilt(mean_pupil, p = 3, n = 501)) |>
+  nest(template_data = c(time_ms, mean_pupil_smooth))
 
 dtw_speakers <- function(als_time, als_pupil, current_phrase, templates) {
   
@@ -416,7 +441,7 @@ dtw_speakers <- function(als_time, als_pupil, current_phrase, templates) {
     dplyr::filter(targetphrase == current_phrase) |>
     unnest(template_data)
   
-  ref_pupil <- template_df$mean_pupil
+  ref_pupil <- template_df$mean_pupil_smooth
   ref_time <- template_df$time_ms
   
   if(length(als_pupil) < 2 || length(ref_pupil) < 2) {
@@ -428,11 +453,13 @@ dtw_speakers <- function(als_time, als_pupil, current_phrase, templates) {
                    keep.internals = TRUE,
                    step.pattern = symmetric2)
   
-  warped_pupil <- warp(alignment, index.reference = F)
+  warped_indicies <- warp(alignment, index.reference = FALSE)
+  
+  warped_pupil_values <- als_pupil[warped_indicies]
   
   return(tibble(
     time_ms = ref_time,
-    warped_pupil = warped_pupil
+    warped_pupil = warped_pupil_values
   ))
   
 }
@@ -442,7 +469,14 @@ als_nested <- downsampled |>
   dplyr::group_by(subject, trial, targetphrase) |>
   nest(trial_data = c(time_ms, pupil))
 
-als_wraped <- als_nested |>
+als_nested_1 <- als_nested |>
+  dplyr::filter(subject == "LE01") |>
+  dplyr::filter(targetphrase == "account for who could knock")
+
+control_templates_1 <- control_templates |>
+  dplyr::filter(targetphrase == "account for who could knock")
+
+als_wraped <- als_nested_1 |>
   dplyr::mutate(
     warped = map2(
       trial_data, targetphrase,
@@ -450,14 +484,37 @@ als_wraped <- als_nested |>
         als_time = .x$time_ms,
         als_pupil = .x$pupil,
         current_phrase = .y,
-        templates = control_templates
+        templates = control_templates_1
       )
     )
   ) |>
   select(-trial_data) |>
-  unnest(warped_data) |>
+  unnest(warped) |>
   ungroup()
 
+als_wraped |>
+  ggplot() +
+  aes(x = time_ms,
+      y = warped_pupil) +
+  geom_line()
+
+trial  <- als_nested_1 |>
+  unnest()
+
+trial |>
+  ggplot() +
+  aes(x = time_ms,
+      y = pupil) +
+  geom_line()
+
+template <- control_templates_1 |>
+  unnest()
+
+template |>
+  ggplot() +
+  aes(x = time_ms,
+      y = mean_pupil) +
+  geom_line()
 
 
 ## The ALS files are longer compared to the controls due to slower speech rate. So DTW was used to
