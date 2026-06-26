@@ -169,29 +169,66 @@ trimmed_pupil_data <- pupil_data |>
   dplyr::select(!c(timestamp, start_time:end_time)) |>
   dplyr::relocate(time, .after = pupil) |>
   dplyr::group_by(subject, targetphrase) |>
-  dplyr::mutate(
-    is_na_samp = is.na(pupil),
-    local_trend = zoo::rollapply(pupil, width = 101, FUN = "median", na.rm = T, fill = "extend", align = "center"),
-    dev_below = local_trend - pupil,
-    is_blink = is_na_samp | (dev_below) > 25,
-    is_blink = dplyr::if_else(is.na(is_blink), FALSE, is_blink)
-  ) |>
   dplyr::ungroup()
 
 rm(pupil_data)
 
-ALS_trial_raw <- trimmed_pupil_data |>
-  dplyr::filter(subject == "LE01") |>
-  dplyr::filter(targetphrase == "account for who could knock") 
+trial_plots_raw <- pupil_extend |>
+  tidyr::pivot_longer(
+    cols = c(pupil, extendpupil),
+    names_to = "pupil_type",
+    values_to = "pupil_val"
+  ) |>
+  dplyr::group_by(subject, speaker, targetphrase) |>
+  tidyr::nest() |>
+  dplyr::ungroup() |>
+  dplyr::mutate(
+    plot = purrr::pmap(list(subject, speaker, targetphrase, data), 
+                      function(sub, spk, phrase, df) {
+                        ggplot(df, aes(x = time, y = pupil_val, color = pupil_type)) +
+                          geom_line() +
+                          theme_bw() +
+                          coord_cartesian(ylim = c(0, 3000)) +
+                          facet_wrap("pupil_type") +
+                          labs(
+                            title = paste0("Subject: ", sub, " | Speaker: ", spk),
+                            subtitle = paste0("Phrase: ", phrase),
+                            x = "Time (ms)",
+                            y = "Pupil Dilation"
+                          ) +
+                          theme(plot.subtitle = element_text(face = "italic"))
+                      })
+  )
 
-ALS_trial_raw|>
+dir.create("trial_plots_raw", showWarnings=F)
+
+purrr::walk2(
+  .x = trial_plots_raw$plot,
+  .y = paste0("trial_plots_raw/", 
+              trial_plots_raw$subject, "_", 
+              trial_plots_raw$speaker, "_", 
+              # Using stringr to clean up the phrase for the filename
+              stringr::str_replace_all(tolower(trial_plots_raw$targetphrase), "[^a-z0-9]", "_"), 
+              ".png"),
+  .f = function(current_plot, filename) {
+    ggsave(
+      filename = filename,
+      plot = current_plot,
+      width = 9,
+      height = 4.5,
+      dpi = 150
+    )
+  }
+)
+
+  
+trial |>
   ggplot() +
   aes(x = time,
       y = pupil) +
   geom_line() +
-  coord_cartesian(xlim = c(4000, 7000)) +
+  #coord_cartesian(xlim = c(0, 1000)) +
   theme_bw()
-
 
 # Detect amount of missing data per trial due to blinks
 
@@ -470,11 +507,11 @@ als_nested <- downsampled |>
   nest(trial_data = c(time_ms, pupil))
 
 als_nested_1 <- als_nested |>
-  dplyr::filter(subject == "LE01") |>
-  dplyr::filter(targetphrase == "account for who could knock")
+  dplyr::filter(subject == "LE10") |>
+  dplyr::filter(targetphrase == "divide across retreat")
 
 control_templates_1 <- control_templates |>
-  dplyr::filter(targetphrase == "account for who could knock")
+  dplyr::filter(targetphrase == "divide across retreat")
 
 als_wraped <- als_nested_1 |>
   dplyr::mutate(
