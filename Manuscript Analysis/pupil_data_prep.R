@@ -173,6 +173,79 @@ trimmed_pupil_data <- pupil_data |>
 
 rm(pupil_data)
 
+rm(missing, missing_pupil)
+
+# Smooth Data
+
+## 10 Hz moving average filter
+pupil_smoothed <- trimmed_pupil_data |>
+  dplyr::mutate(smoothed_pupil = moving_average_pupil(pupil, n = 50)) |>
+  ## Selecting relevant variables
+  dplyr::select(c(subject, trial, sample_message, time, 
+                  code, speaker, targetphrase, counterbalance, pupil,
+                  smoothed_pupil)) |>
+  dplyr::relocate(smoothed_pupil, .after = time)
+
+pupil_blinks <- pupil_smoothed |>
+  dplyr::group_by(subject, targetphrase) |>
+  dplyr::mutate(
+    is_na_samp = is.na(pupil),
+    dt = time - dplyr::lag(time),
+    dilation_vel = (smoothed_pupil - dplyr::lag(smoothed_pupil)) / dt,
+    v_mad = median(abs(dilation_vel - median(dilation_vel, na.rm = TRUE)), na.rm = TRUE),
+    is_blink = is_na_samp | (abs(dilation_vel) > (4 * v_mad)),
+    smoothed_pupil = ifelse(is_blink, NA, smoothed_pupil)
+  )
+
+
+## Deblinking
+pupil_extend <- pupil_blinks |>
+  dplyr::group_by(subject, trial) |>
+  dplyr::mutate(extendpupil = extend_blinks(smoothed_pupil, 
+                                            fillback = 50, 
+                                            fillforward = 160, 
+                                            hz = 1000))
+
+# Detect amount of missing data per trial due to blinks
+
+## Calculating Percent of Missing Data
+missing_pupil <- pupil_extend |>
+  dplyr::group_by(subject, trial) |>
+  ## Restricting this to the eventual analysis region of interest
+  dplyr::filter(time >= -500) |>
+  dplyr::filter(time < max(time) - 2000) |>
+  dplyr::ungroup() |>
+  # Counting number of blink/no blink rows per trial
+  dplyr::group_by(subject, trial, is_blink) |>
+  dplyr::summarize(blinks = n()) |>
+  dplyr::ungroup() |>
+  dplyr::mutate(blink = ifelse(is_blink, "blink", "no_blink")) |>
+  dplyr::select(-is_blink) |>
+  tidyr::pivot_wider(names_from = blink, values_from = blinks) |>
+  dplyr::mutate(percent_missing = (blink/(no_blink + blink))*100) |>
+  dplyr::select(subject, trial, percent_missing)
+
+## Merging with main df
+pupil_extend <- pupil_extend |>
+  dplyr::left_join(missing_pupil, by = c("subject", "trial"))
+
+## Finding out how many trials are removed due to blinks (6 trials)
+missing <- pupil_extend |>
+  dplyr::filter(percent_missing >= 50) |>
+  dplyr::select(subject, trial) |>
+  dplyr::distinct()
+
+## Filtering out trials with greater than 50% of missing data
+pupil_extend <- pupil_extend |>
+  dplyr::mutate(percent_missing = ifelse(is.na(percent_missing), 0, percent_missing)) |>
+  dplyr::filter(percent_missing < 50)
+
+## Linear interpolation
+interp <- interpolate_pupil(pupil_extend,
+                            extendblinks = T, 
+                            type = "linear", 
+                            hz = 1000)
+
 trial_plots_raw <- pupil_extend |>
   tidyr::pivot_longer(
     cols = c(pupil, extendpupil),
@@ -184,20 +257,20 @@ trial_plots_raw <- pupil_extend |>
   dplyr::ungroup() |>
   dplyr::mutate(
     plot = purrr::pmap(list(subject, speaker, targetphrase, data), 
-                      function(sub, spk, phrase, df) {
-                        ggplot(df, aes(x = time, y = pupil_val, color = pupil_type)) +
-                          geom_line() +
-                          theme_bw() +
-                          coord_cartesian(ylim = c(0, 3000)) +
-                          facet_wrap("pupil_type") +
-                          labs(
-                            title = paste0("Subject: ", sub, " | Speaker: ", spk),
-                            subtitle = paste0("Phrase: ", phrase),
-                            x = "Time (ms)",
-                            y = "Pupil Dilation"
-                          ) +
-                          theme(plot.subtitle = element_text(face = "italic"))
-                      })
+                       function(sub, spk, phrase, df) {
+                         ggplot(df, aes(x = time, y = pupil_val, color = pupil_type)) +
+                           geom_line() +
+                           theme_bw() +
+                           coord_cartesian(ylim = c(0, 3000)) +
+                           facet_wrap("pupil_type") +
+                           labs(
+                             title = paste0("Subject: ", sub, " | Speaker: ", spk),
+                             subtitle = paste0("Phrase: ", phrase),
+                             x = "Time (ms)",
+                             y = "Pupil Dilation"
+                           ) +
+                           theme(plot.subtitle = element_text(face = "italic"))
+                       })
   )
 
 dir.create("trial_plots_raw", showWarnings=F)
@@ -220,75 +293,6 @@ purrr::walk2(
     )
   }
 )
-
-  
-trial |>
-  ggplot() +
-  aes(x = time,
-      y = pupil) +
-  geom_line() +
-  #coord_cartesian(xlim = c(0, 1000)) +
-  theme_bw()
-
-# Detect amount of missing data per trial due to blinks
-
-## Calculating Percent of Missing Data
-missing_pupil <- trimmed_pupil_data |>
-  dplyr::group_by(subject, trial) |>
-  ## Restricting this to the eventual analysis region of interest
-  dplyr::filter(time >= -500) |>
-  dplyr::filter(time < max(time) - 2000) |>
-  dplyr::ungroup() |>
-  # Counting number of blink/no blink rows per trial
-  dplyr::group_by(subject, trial, blink) |>
-  dplyr::summarize(blinks = n()) |>
-  dplyr::ungroup() |>
-  dplyr::mutate(blink = ifelse(blink == 0, "no_blink", "blink")) |>
-  tidyr::pivot_wider(names_from = blink, values_from = blinks) |>
-  dplyr::mutate(percent_missing = (blink/(no_blink + blink))*100) |>
-  dplyr::select(subject, trial, percent_missing)
-
-## Merging with main df
-trimmed_pupil_data <- trimmed_pupil_data |>
-  dplyr::left_join(missing_pupil, by = c("subject", "trial"))
-
-## Finding out how many trials are removed due to blinks (6 trials)
-missing <- trimmed_pupil_data |>
-  dplyr::filter(percent_missing >= 50) |>
-  dplyr::select(subject, trial) |>
-  dplyr::distinct()
-
-## Filtering out trials with greater than 50% of missing data
-trimmed_pupil_data <- trimmed_pupil_data |>
-  dplyr::mutate(percent_missing = ifelse(is.na(percent_missing), 0, percent_missing)) |>
-  dplyr::filter(percent_missing < 50)
-
-rm(missing, missing_pupil)
-
-# Fill in missing data from blinks
-
-## Deblinking
-pupil_extend <- trimmed_pupil_data |>
-  dplyr::group_by(subject, trial) |>
-  dplyr::mutate(extendpupil = extend_blinks(pupil, 
-                                            fillback = 50, 
-                                            fillforward = 160, 
-                                            hz = 1000))
-
-## Linear interpolation
-interp <- interpolate_pupil(pupil_extend,
-                            extendblinks = T, 
-                            type = "linear", 
-                            hz = 1000)
-
-## 10 Hz 5-point moving average filter
-smoothed <- interp |>
-  dplyr::mutate(smoothed_pupil = moving_average_pupil(interp, n = 5)) |>
-  ## Selecting relevant variables
-  dplyr::select(c(subject, trial, sample_message, time, 
-                  code, speaker, targetphrase, counterbalance,
-                  smoothed_pupil)) |>
-  dplyr::relocate(smoothed_pupil, .after = time)
 
 # Baseline Pupil Correction
 
