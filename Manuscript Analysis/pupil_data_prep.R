@@ -152,6 +152,23 @@ rm(trial_start, trial_end, phrase_start, phrase_end)
 
 pupil_data <- dplyr::left_join(pupil_data, time_landmarks, by = c("subject", "trial"))
 
+samples <- pupil_data |>
+  dplyr::filter(speaker == "Control") |>
+  dplyr::filter(targetphrase == "account for who could knock") |>
+  dplyr::mutate(pupil = dplyr::na_if(pupil, "."),
+                pupil = as.numeric(pupil)) |>
+  dplyr::group_by(subject) |>
+  summarize(n = n())
+  
+  ggplot() +
+  aes(x = timestamp,
+      y = pupil) +
+  geom_line(aes(group = subject), color = "black", alpha = 0.6) +
+  #geom_line(data = control_templates, aes(x = time_ms, y = mean_pupil), color = "red", linewidth = 2) +
+  #scale_x_continuous(breaks = seq(from = -3000, to = 8000, by = 500)) +
+  #coord_cartesian(xlim = c(4700, 5000)) +
+  theme_bw()
+
 rm(time_landmarks)
 
 ## Filter out unneeded rows and trials
@@ -171,11 +188,28 @@ trimmed_pupil_data <- pupil_data |>
   dplyr::group_by(subject, targetphrase) |>
   dplyr::ungroup()
 
+samps <- trimmed_pupil_data |>
+  dplyr::filter(speaker == "Control") |>
+  dplyr::filter(targetphrase == "account for who could knock") |>
+  dplyr::group_by(subject) |>
+  summarize(n = n())
+
+  
 rm(pupil_data)
 
-rm(missing, missing_pupil)
+trimmed_pupil_data |>
+  dplyr::filter(speaker == "Control") |>
+  dplyr::filter(targetphrase == "account for who could knock") |>
+  ggplot() +
+  aes(x = time,
+      y = pupil) +
+  geom_line(aes(group = subject), color = "black", alpha = 0.6) +
+  #geom_line(data = control_templates, aes(x = time_ms, y = mean_pupil), color = "red", linewidth = 2) +
+  scale_x_continuous(breaks = seq(from = -3000, to = 8000, by = 500)) +
+  coord_cartesian(xlim = c(-3000, -2000)) +
+  theme_bw()
 
-# Smooth Data
+ # Smooth Data
 
 ## 10 Hz moving average filter
 pupil_smoothed <- trimmed_pupil_data |>
@@ -193,7 +227,8 @@ pupil_blinks <- pupil_smoothed |>
     dt = time - dplyr::lag(time),
     dilation_vel = (smoothed_pupil - dplyr::lag(smoothed_pupil)) / dt,
     v_mad = median(abs(dilation_vel - median(dilation_vel, na.rm = TRUE)), na.rm = TRUE),
-    is_blink = is_na_samp | (abs(dilation_vel) > (4 * v_mad)),
+    dil_neg = ifelse(dilation_vel >= 0, 0, dilation_vel),
+    is_blink = is_na_samp | (abs(dil_neg) > (8 * v_mad)),
     smoothed_pupil = ifelse(is_blink, NA, smoothed_pupil)
   )
 
@@ -232,7 +267,7 @@ pupil_extend <- pupil_extend |>
 ## Finding out how many trials are removed due to blinks (6 trials)
 missing <- pupil_extend |>
   dplyr::filter(percent_missing >= 50) |>
-  dplyr::select(subject, trial) |>
+  dplyr::select(subject, trial, percent_missing) |>
   dplyr::distinct()
 
 ## Filtering out trials with greater than 50% of missing data
@@ -296,7 +331,7 @@ purrr::walk2(
 
 # Baseline Pupil Correction
 
-baseline_pupil <- baseline_correction_pupil(smoothed, pupil_colname = "smoothed_pupil",
+baseline_pupil <- baseline_correction_pupil(interp, pupil_colname = "interp",
                                             baseline_window = c(-500, 0))
 
 # Artifact Rejection
@@ -308,15 +343,8 @@ mad_removal <- baseline_pupil |>
   dplyr::mutate(MAD = calc_mad(speed, n=16)) |>
   dplyr::filter(speed < MAD)
 
-## Proportion of rows removed (as of 6/17/2026: 1.44%)
+## Proportion of rows removed (as of 6/17/2026: 1.01%)
 ((nrow(baseline_pupil) - nrow(mad_removal)) / nrow(baseline_pupil)) * 100
-
-## Checking to see if whole trials were removed from any of the participants (No Additional Trials Removed)
-trial_check <- mad_removal |>
-  select(subject, trial) |>
-  distinct() |>
-  group_by(subject) |>
-  summarize(n = n())
 
 ## Removing unneeded items from the environment
 rm(baseline_pupil, interp, pupil_extend, smoothed, trimmed_pupil_data, trial_check)
@@ -376,7 +404,7 @@ slope_df |>
   geom_histogram() +
   geom_vline(xintercept = -.55)
 
-### Calculating mean and sd of pupil slopes (M = .0194, sd = .271)
+### Calculating mean and sd of pupil slopes (M = .0178, sd = .167)
 slope_df |>
   distinct() |>
   dplyr::summarize(mean = mean(pupil_slope,),
@@ -431,7 +459,7 @@ mad_removal <- mad_removal |>
 mad_removal <- mad_removal |>
   dplyr::select(!c(base_min, base_max, peak_min, peak_max))
 
-### Identifying outlier trials that will be removed (21 trials)
+### Identifying outlier trials that will be removed (18 trials)
 removed_df <- mad_removal |>
   group_by(subject, trial) |>
   dplyr::filter(rowSums(across(base_dev:steep_slope)) >= 2)
@@ -472,9 +500,35 @@ control_templates <- downsampled |>
   dplyr::filter(speaker == "Control") |>
   group_by(targetphrase, time_ms) |>
   summarize(mean_pupil = mean(pupil), .groups = "drop") |>
-  group_by(targetphrase) |>
-  mutate(mean_pupil_smooth = gsignal::sgolayfilt(mean_pupil, p = 3, n = 501)) |>
-  nest(template_data = c(time_ms, mean_pupil_smooth))
+  nest(template_data = c(time_ms, mean_pupil)) |>
+  dplyr::filter(targetphrase == "account for who could knock") |>
+  unnest(template_data)
+
+control_traj <- downsampled |>
+  dplyr::filter(speaker == "Control") |>
+  dplyr::filter(targetphrase == "account for who could knock") |>
+  ggplot() +
+  aes(x = time_ms,
+      y = pupil) +
+  geom_line(aes(group = subject), color = "grey", alpha = 0.4) +
+  geom_line(data = control_templates, aes(x = time_ms, y = mean_pupil), color = "red", linewidth = 2) +
+  scale_x_continuous(breaks = seq(from = -3000, to = 8000, by = 500)) +
+  coord_cartesian(xlim = c(4700, 5000)) +
+  theme_bw()
+
+control_traj
+
+templates <- control_templates |>
+  unnest(template_data) |>
+  ggplot() +
+  aes(x = time_ms,
+      y = mean_pupil,
+      color = targetphrase) +
+  geom_line(linewidth = 1) +
+  scale_x_continuous(breaks = seq(from = -3000, to = 8000, by = 500)) +
+  theme_bw()
+
+templates
 
 dtw_speakers <- function(als_time, als_pupil, current_phrase, templates) {
   
@@ -482,7 +536,7 @@ dtw_speakers <- function(als_time, als_pupil, current_phrase, templates) {
     dplyr::filter(targetphrase == current_phrase) |>
     unnest(template_data)
   
-  ref_pupil <- template_df$mean_pupil_smooth
+  ref_pupil <- template_df$mean_pupil
   ref_time <- template_df$time_ms
   
   if(length(als_pupil) < 2 || length(ref_pupil) < 2) {
@@ -512,10 +566,10 @@ als_nested <- downsampled |>
 
 als_nested_1 <- als_nested |>
   dplyr::filter(subject == "LE10") |>
-  dplyr::filter(targetphrase == "divide across retreat")
+  dplyr::filter(targetphrase == "account for who could knock")
 
 control_templates_1 <- control_templates |>
-  dplyr::filter(targetphrase == "divide across retreat")
+  dplyr::filter(targetphrase == "account for who could knock")
 
 als_wraped <- als_nested_1 |>
   dplyr::mutate(
@@ -556,44 +610,6 @@ template |>
   aes(x = time_ms,
       y = mean_pupil) +
   geom_line()
-
-
-## The ALS files are longer compared to the controls due to slower speech rate. So DTW was used to
-## rescale these trials.
-
-bin.length <- 48.5
-
-ALS_trials <- data.binned |>
-  dplyr::filter(speaker == "ALS") |>
-  dplyr::group_by(subject, trial) |>
-  dplyr::mutate(time_n = case_when(timebins >= 0 & timebins <= max(timebins) - 3000 ~ round(timebins/bin.length)*bin.length,
-                TRUE ~ timebins)) |>
-  dplyr::ungroup() |>
-  dplyr::group_by(subject, trial, speaker, time_n, code, targetphrase, counterbalance) |>
-  dplyr::summarize(normed_pupil = mean(pupil.binned)) |>
-  dplyr::ungroup()
-    
-control_trials <- data.binned |>
-  dplyr::filter(speaker == "Control") |>
-  dplyr::rename(time_n = timebins,
-                normed_pupil = pupil.binned)
-
-normed_data <- rbind(ALS_trials, control_trials)
-
-normed_data <- normed_data |>
-  dplyr::mutate(time_norm = case_when(speaker == "ALS" & time_n > 0 ~ time_n/1.5,
-                                      TRUE ~ time_n))
-normed_data |>
-  dplyr::filter(time_norm >= 0) %>%
-  dplyr::group_by(speaker, code) %>%
-  dplyr::summarize(length = max(time_norm) - min(time_norm)) %>%
-  dplyr::group_by(speaker) %>%
-  dplyr::summarize(av_length = mean(length),
-                   av_phrase = av_length - 3000,
-                   av_end_roi = av_length - 2000)
-
-
-rm(ALS_trials, control_trials, filtered_df, bin.length)
 
 normed_data <- normed_data |>
   dplyr::select(-time_n) |>
