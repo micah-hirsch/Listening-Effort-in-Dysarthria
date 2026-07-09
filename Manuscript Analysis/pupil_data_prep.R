@@ -18,6 +18,7 @@ library(zoo) # install.packages("zoo")
 library(knitr) # install.packages("knitr")
 library(dtw) # install.packages("dtw")
 library(gsignal) # install.packages("gsignal")
+library(signal)
 
 # Set the working directory to load data
 
@@ -122,98 +123,68 @@ pupil_data |>
 
 # Filtering out rows before the trial start and after the response cue
 
-## Extracting trial start times
-trial_start <- pupil_data |>
-  dplyr::filter(grepl("TRIAL_START", sample_message)) |>
-  dplyr::select(subject, trial, start_time = timestamp)
+audio_lengths <- rio::import("C:\\Users\\mehirsch\\Documents\\GitHub\\Listening-Effort-in-Dysarthria\\Manuscript Analysis\\Cleaned Data\\audio_lengths.csv")
 
 ## Extracting phrase start times
-phrase_start <- pupil_data |>
+time_landmarks <- pupil_data |>
+  full_join(audio_lengths, by = c("speaker", "code")) |>
+  dplyr::filter(practicetrial != "Practice") |>
   dplyr::filter(grepl("PHRASE_START", sample_message)) |>
-  dplyr::select(subject, trial, phrase_start = timestamp)
+  dplyr::mutate(
+    phrase_start = timestamp,
+    trial_start = floor(phrase_start - 3000),
+    phrase_end = round(phrase_start + duration_ms),
+    trial_end = round(phrase_end + 3000)) |>
+  dplyr::select(subject, trial, phrase_start:trial_end)
 
-## Extracting phrase end times
-phrase_end <- pupil_data |>
-  dplyr::filter(grepl("PHRASE_END", sample_message)) |>
-  dplyr::select(subject, trial, phrase_end = timestamp)
-
-## Extracting trial end times (e.g. time response cue was presented)
-trial_end <- pupil_data |>
-  dplyr::filter(grepl("RESPONSE_CUE", sample_message)) |>
-  dplyr::select(subject, trial, end_time = timestamp)
-
-## Merging the dfs together 
-time_landmarks <- trial_start |>
-  dplyr::left_join(phrase_start, by = c("subject", "trial")) |>
-  dplyr::left_join(phrase_end, by = c("subject", "trial")) |>
-  dplyr::left_join(trial_end, by = c("subject", "trial"))
-
-rm(trial_start, trial_end, phrase_start, phrase_end)
-
-pupil_data <- dplyr::left_join(pupil_data, time_landmarks, by = c("subject", "trial"))
-
-samples <- pupil_data |>
-  dplyr::filter(speaker == "Control") |>
-  dplyr::filter(targetphrase == "account for who could knock") |>
-  dplyr::mutate(pupil = dplyr::na_if(pupil, "."),
-                pupil = as.numeric(pupil)) |>
-  dplyr::group_by(subject) |>
-  summarize(n = n())
-  
-  ggplot() +
-  aes(x = timestamp,
-      y = pupil) +
-  geom_line(aes(group = subject), color = "black", alpha = 0.6) +
-  #geom_line(data = control_templates, aes(x = time_ms, y = mean_pupil), color = "red", linewidth = 2) +
-  #scale_x_continuous(breaks = seq(from = -3000, to = 8000, by = 500)) +
-  #coord_cartesian(xlim = c(4700, 5000)) +
-  theme_bw()
-
-rm(time_landmarks)
 
 ## Filter out unneeded rows and trials
 trimmed_pupil_data <- pupil_data |>
+  dplyr::left_join(time_landmarks, by = c("subject", "trial")) |>
   ## Filtering out rows before trial start and after trial end
-  dplyr::filter(timestamp >= start_time & timestamp <= end_time) |>
+  dplyr::filter(timestamp >= trial_start & timestamp <= trial_end) |>
   ## Removing practice trials from df
-  dplyr::filter(practicetrial != 'Practice') |>
   dplyr::select(!practicetrial) |>
   ## Aligning data to onset of phrase presentation
   dplyr::mutate(time = timestamp - phrase_start,
                 pupil = dplyr::na_if(pupil, "."),
                 pupil = as.numeric(pupil)) |>
   ## Removing unneeded variables
-  dplyr::select(!c(timestamp, start_time:end_time)) |>
-  dplyr::relocate(time, .after = pupil) |>
-  dplyr::group_by(subject, targetphrase) |>
-  dplyr::ungroup()
+  dplyr::select(!c(timestamp, phrase_start:trial_end)) |>
+  dplyr::relocate(time, .after = pupil)
 
-samps <- trimmed_pupil_data |>
-  dplyr::filter(speaker == "Control") |>
-  dplyr::filter(targetphrase == "account for who could knock") |>
-  dplyr::group_by(subject) |>
-  summarize(n = n())
-
-  
-rm(pupil_data)
-
-trimmed_pupil_data |>
+control_traj <- pupil_smoothed|>
   dplyr::filter(speaker == "Control") |>
   dplyr::filter(targetphrase == "account for who could knock") |>
   ggplot() +
   aes(x = time,
-      y = pupil) +
-  geom_line(aes(group = subject), color = "black", alpha = 0.6) +
+      y = smoothed_pupil) +
+  geom_line(aes(group = subject), color = "black", alpha = 0.7) +
   #geom_line(data = control_templates, aes(x = time_ms, y = mean_pupil), color = "red", linewidth = 2) +
   scale_x_continuous(breaks = seq(from = -3000, to = 8000, by = 500)) +
-  coord_cartesian(xlim = c(-3000, -2000)) +
+  coord_cartesian(xlim = c(4000, 5000)) +
   theme_bw()
+
+rm(pupil_data, samps, time_landmarks, phrase_start, audio_lengths)
 
  # Smooth Data
 
-## 10 Hz moving average filter
+## 10 Hz low pass filter
+samp_rate <- 1000
+cutoff <- 10
+filter_order <- 1
+
+nyquist <- samp_rate/2
+w_c <- cutoff/nyquist
+
+butter <- butter(filter_order, w_c, type = "low")
+
 pupil_smoothed <- trimmed_pupil_data |>
-  dplyr::mutate(smoothed_pupil = moving_average_pupil(pupil, n = 50)) |>
+  dplyr::mutate(
+    temp_clean = na.approx(pupil, na.rm = F),
+    temp_clean = na.locf(na.locf(temp_clean, na.rm = F), fromLast = T),
+    smoothed_pupil = filter(filt = butter, x = temp_clean),
+    smoothed_pupil = ifelse(is.na(pupil), NA_real_, smoothed_pupil)) |>
   ## Selecting relevant variables
   dplyr::select(c(subject, trial, sample_message, time, 
                   code, speaker, targetphrase, counterbalance, pupil,
@@ -343,11 +314,11 @@ mad_removal <- baseline_pupil |>
   dplyr::mutate(MAD = calc_mad(speed, n=16)) |>
   dplyr::filter(speed < MAD)
 
-## Proportion of rows removed (as of 6/17/2026: 1.01%)
+## Proportion of rows removed (as of 6/17/2026: 0.45%)
 ((nrow(baseline_pupil) - nrow(mad_removal)) / nrow(baseline_pupil)) * 100
 
 ## Removing unneeded items from the environment
-rm(baseline_pupil, interp, pupil_extend, smoothed, trimmed_pupil_data, trial_check)
+rm(baseline_pupil, interp, pupil_blinks, pupil_extend, pupil_smoothed, trimmed_pupil_data, trial_check)
 
 # Outlier Flags
 
@@ -500,35 +471,7 @@ control_templates <- downsampled |>
   dplyr::filter(speaker == "Control") |>
   group_by(targetphrase, time_ms) |>
   summarize(mean_pupil = mean(pupil), .groups = "drop") |>
-  nest(template_data = c(time_ms, mean_pupil)) |>
-  dplyr::filter(targetphrase == "account for who could knock") |>
-  unnest(template_data)
-
-control_traj <- downsampled |>
-  dplyr::filter(speaker == "Control") |>
-  dplyr::filter(targetphrase == "account for who could knock") |>
-  ggplot() +
-  aes(x = time_ms,
-      y = pupil) +
-  geom_line(aes(group = subject), color = "grey", alpha = 0.4) +
-  geom_line(data = control_templates, aes(x = time_ms, y = mean_pupil), color = "red", linewidth = 2) +
-  scale_x_continuous(breaks = seq(from = -3000, to = 8000, by = 500)) +
-  coord_cartesian(xlim = c(4700, 5000)) +
-  theme_bw()
-
-control_traj
-
-templates <- control_templates |>
-  unnest(template_data) |>
-  ggplot() +
-  aes(x = time_ms,
-      y = mean_pupil,
-      color = targetphrase) +
-  geom_line(linewidth = 1) +
-  scale_x_continuous(breaks = seq(from = -3000, to = 8000, by = 500)) +
-  theme_bw()
-
-templates
+  nest(template_data = c(time_ms, mean_pupil))
 
 dtw_speakers <- function(als_time, als_pupil, current_phrase, templates) {
   
