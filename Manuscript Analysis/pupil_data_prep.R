@@ -2,7 +2,7 @@
 
 # Author: Micah E. Hirsch, mhirsch@fsu.edu
 
-## Date: 6/17/2026
+## Date: 7/10/2026
 
 ## Purpose: To prepare the pupil dilation data for analysis.
 
@@ -18,7 +18,7 @@ library(zoo) # install.packages("zoo")
 library(knitr) # install.packages("knitr")
 library(dtw) # install.packages("dtw")
 library(gsignal) # install.packages("gsignal")
-library(signal)
+library(signal) # install.packages("signal")
 
 # Set the working directory to load data
 
@@ -173,7 +173,13 @@ pupil_smoothed <- trimmed_pupil_data |>
   dplyr::mutate(
     temp_clean = na.approx(pupil, na.rm = F),
     temp_clean = na.locf(na.locf(temp_clean, na.rm = F), fromLast = T),
-    smoothed_pupil = purrr::map_dbl(list(temp_clean), ~filtfilt(filt = butter, x = .x)),
+    smoothed_pupil = {
+      f_val <- dplyr::first(temp_clean)
+      l_val <- dplyr::last(temp_clean)
+      padded <- c(rep(f_val, 300), temp_clean, rep(l_val, 300))
+      filtered <- filtfilt(filt = butter, x = padded)
+      filtered[301:(length(filtered) - 300)] # Slices back to original length
+    }, 
     smoothed_pupil = ifelse(is.na(pupil), NA_real_, smoothed_pupil)) |>
   dplyr::ungroup() |>
   ## Selecting relevant variables
@@ -181,6 +187,18 @@ pupil_smoothed <- trimmed_pupil_data |>
                   code, speaker, targetphrase, counterbalance, pupil,
                   smoothed_pupil)) |>
   dplyr::relocate(smoothed_pupil, .after = time)
+
+interp |>
+  dplyr::filter(speaker == "ALS") |>
+  dplyr::filter(targetphrase == "account for who could knock") |>
+  ggplot() +
+  aes(
+    x = time,
+    y = final_pupil,
+    group = subject) +
+  geom_line(alpha = .6) +
+  #coord_cartesian(xlim = c(4000, 5000)) +
+  theme_bw()
 
 pupil_blinks <- pupil_smoothed |>
   dplyr::group_by(subject, targetphrase) |>
@@ -208,9 +226,6 @@ pupil_extend <- pupil_blinks |>
   extended = ifelse(near_blink, NA_real_, smoothed_pupil)
   )
 
-starts <- pupil_extend |>
-  group_by(subject, trial) |>
-  dplyr::filter(time == max(time))
 
 # Detect amount of missing data per trial due to blinks
 
@@ -248,12 +263,13 @@ pupil_extend <- pupil_extend |>
 
 ## Linear interpolation
 interp <- pupil_extend |>
-  dplyr::mutate(interp = na.approx(extended, maxgap = 500, na.rm = F),
-                pupil_final = na.locf(interp, na.rm = F), fromLast = T)
+  dplyr::group_by(subject, trial) |>
+  dplyr::mutate(interp = na.approx(extended, maxgap = 1000, na.rm = F),
+                final_pupil = na.locf(na.locf(interp, na.rm = FALSE), fromLast = TRUE))
 
 # Baseline Pupil Correction
 
-baseline_pupil <- baseline_correction_pupil(interp, pupil_colname = "pupil_final",
+baseline_pupil <- baseline_correction_pupil(interp, pupil_colname = "final_pupil",
                                             baseline_window = c(-500, 0))
 
 rm(butter, interp, missing, missing_pupil, pupil_blinks, pupil_extend, pupil_smoothed, trimmed_pupil_data,
