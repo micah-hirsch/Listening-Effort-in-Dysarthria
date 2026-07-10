@@ -153,19 +153,7 @@ trimmed_pupil_data <- pupil_data |>
   dplyr::select(!c(timestamp, phrase_start:trial_end)) |>
   dplyr::relocate(time, .after = pupil)
 
-control_traj <- pupil_smoothed|>
-  dplyr::filter(speaker == "Control") |>
-  dplyr::filter(targetphrase == "account for who could knock") |>
-  ggplot() +
-  aes(x = time,
-      y = smoothed_pupil) +
-  geom_line(aes(group = subject), color = "black", alpha = 0.7) +
-  #geom_line(data = control_templates, aes(x = time_ms, y = mean_pupil), color = "red", linewidth = 2) +
-  scale_x_continuous(breaks = seq(from = -3000, to = 8000, by = 500)) +
-  coord_cartesian(xlim = c(4000, 5000)) +
-  theme_bw()
-
-rm(pupil_data, samps, time_landmarks, phrase_start, audio_lengths)
+rm(pupil_data, time_landmarks, audio_lengths)
 
  # Smooth Data
 
@@ -180,11 +168,14 @@ w_c <- cutoff/nyquist
 butter <- butter(filter_order, w_c, type = "low")
 
 pupil_smoothed <- trimmed_pupil_data |>
+  dplyr::group_by(subject, trial) |>
+  dplyr::arrange(time, .by_group = T) |>
   dplyr::mutate(
     temp_clean = na.approx(pupil, na.rm = F),
     temp_clean = na.locf(na.locf(temp_clean, na.rm = F), fromLast = T),
-    smoothed_pupil = filter(filt = butter, x = temp_clean),
+    smoothed_pupil = purrr::map_dbl(list(temp_clean), ~filtfilt(filt = butter, x = .x)),
     smoothed_pupil = ifelse(is.na(pupil), NA_real_, smoothed_pupil)) |>
+  dplyr::ungroup() |>
   ## Selecting relevant variables
   dplyr::select(c(subject, trial, sample_message, time, 
                   code, speaker, targetphrase, counterbalance, pupil,
@@ -207,10 +198,19 @@ pupil_blinks <- pupil_smoothed |>
 ## Deblinking
 pupil_extend <- pupil_blinks |>
   dplyr::group_by(subject, trial) |>
-  dplyr::mutate(extendpupil = extend_blinks(smoothed_pupil, 
-                                            fillback = 50, 
-                                            fillforward = 160, 
-                                            hz = 1000))
+  dplyr::mutate(
+    near_blink = rollapply(
+      is.na(smoothed_pupil),
+      width = list(-160:50),
+      FUN = any,
+      partial = T
+    ),
+  extended = ifelse(near_blink, NA_real_, smoothed_pupil)
+  )
+
+starts <- pupil_extend |>
+  group_by(subject, trial) |>
+  dplyr::filter(time == max(time))
 
 # Detect amount of missing data per trial due to blinks
 
@@ -247,78 +247,17 @@ pupil_extend <- pupil_extend |>
   dplyr::filter(percent_missing < 50)
 
 ## Linear interpolation
-interp <- interpolate_pupil(pupil_extend,
-                            extendblinks = T, 
-                            type = "linear", 
-                            hz = 1000)
-
-trial_plots_raw <- pupil_extend |>
-  tidyr::pivot_longer(
-    cols = c(pupil, extendpupil),
-    names_to = "pupil_type",
-    values_to = "pupil_val"
-  ) |>
-  dplyr::group_by(subject, speaker, targetphrase) |>
-  tidyr::nest() |>
-  dplyr::ungroup() |>
-  dplyr::mutate(
-    plot = purrr::pmap(list(subject, speaker, targetphrase, data), 
-                       function(sub, spk, phrase, df) {
-                         ggplot(df, aes(x = time, y = pupil_val, color = pupil_type)) +
-                           geom_line() +
-                           theme_bw() +
-                           coord_cartesian(ylim = c(0, 3000)) +
-                           facet_wrap("pupil_type") +
-                           labs(
-                             title = paste0("Subject: ", sub, " | Speaker: ", spk),
-                             subtitle = paste0("Phrase: ", phrase),
-                             x = "Time (ms)",
-                             y = "Pupil Dilation"
-                           ) +
-                           theme(plot.subtitle = element_text(face = "italic"))
-                       })
-  )
-
-dir.create("trial_plots_raw", showWarnings=F)
-
-purrr::walk2(
-  .x = trial_plots_raw$plot,
-  .y = paste0("trial_plots_raw/", 
-              trial_plots_raw$subject, "_", 
-              trial_plots_raw$speaker, "_", 
-              # Using stringr to clean up the phrase for the filename
-              stringr::str_replace_all(tolower(trial_plots_raw$targetphrase), "[^a-z0-9]", "_"), 
-              ".png"),
-  .f = function(current_plot, filename) {
-    ggsave(
-      filename = filename,
-      plot = current_plot,
-      width = 9,
-      height = 4.5,
-      dpi = 150
-    )
-  }
-)
+interp <- pupil_extend |>
+  dplyr::mutate(interp = na.approx(extended, maxgap = 500, na.rm = F),
+                pupil_final = na.locf(interp, na.rm = F), fromLast = T)
 
 # Baseline Pupil Correction
 
-baseline_pupil <- baseline_correction_pupil(interp, pupil_colname = "interp",
+baseline_pupil <- baseline_correction_pupil(interp, pupil_colname = "pupil_final",
                                             baseline_window = c(-500, 0))
 
-# Artifact Rejection
-
-## Looking for rapid changes in pupil dilation using median absolute deviation
-mad_removal <- baseline_pupil |>
-  dplyr::group_by(subject, trial) |>
-  dplyr::mutate(speed = speed_pupil(baselinecorrectedp, time)) |>
-  dplyr::mutate(MAD = calc_mad(speed, n=16)) |>
-  dplyr::filter(speed < MAD)
-
-## Proportion of rows removed (as of 6/17/2026: 0.45%)
-((nrow(baseline_pupil) - nrow(mad_removal)) / nrow(baseline_pupil)) * 100
-
-## Removing unneeded items from the environment
-rm(baseline_pupil, interp, pupil_blinks, pupil_extend, pupil_smoothed, trimmed_pupil_data, trial_check)
+rm(butter, interp, missing, missing_pupil, pupil_blinks, pupil_extend, pupil_smoothed, trimmed_pupil_data,
+   cutoff, filter_order, nyquist, samp_rate, w_c)
 
 # Outlier Flags
 
@@ -344,113 +283,31 @@ peak_pupil_dev <- mad_removal |>
                 peak_min = mean_peak - (2*sd_peak))
 
 ## Trial-by-trial Baseline Deviation
-baseline_flags <- mad_removal |>
-  dplyr::select(subject, trial, baseline) |>
-  dplyr::distinct() |>
-  dplyr::group_by(subject) |>
-  dplyr::mutate(speed = speed_pupil(baseline, trial),
-                MAD = calc_mad(speed, n=16)) |>
-  dplyr::ungroup()
+
 
 ## Odd Pupil Slope Detection
 
-slope_df <- mad_removal |>
-  ### Limiting range to first 500 ms after stimulus onset
-  dplyr::filter(time >= 0 & time <= 500) |>
-  group_by(subject, trial) |>
-  ### Calculating change in pupil dilation (i.e. slope) in the first 500 ms
-  dplyr::mutate(pupil_slope = (last(baselinecorrectedp) - first(baselinecorrectedp))/ (last(time) - first(time))) |>
-  dplyr::ungroup()
-
-
-### Visually determining a cutoff point for steep downward slope by plotting the histogram
-### Based on this visualization, pupil slope change greater than -.55 will be the cutoff
-slope_df |>
-  dplyr::select(subject, trial, speaker, pupil_slope) |>
-  distinct() |>
-  ggplot() +
-  aes(x = pupil_slope,
-      fill = speaker,
-      color = speaker) +
-  geom_histogram() +
-  geom_vline(xintercept = -.55)
-
-### Calculating mean and sd of pupil slopes (M = .0178, sd = .167)
-slope_df |>
-  distinct() |>
-  dplyr::summarize(mean = mean(pupil_slope,),
-                   sd = sd(pupil_slope))
-
-### Flagging Trials with Steep Negative Pupil Dilation Slopes
-slope_df <- slope_df |>
-  dplyr::mutate(steep_slope = ifelse(pupil_slope <= -.55, TRUE, FALSE))
 
 ## Creating Flag Variables and merging with original df
 
+
 ### Baseline Deviation
 
-baseline_dev <- baseline_dev |>
-  dplyr::select(subject, base_min, base_max) 
-
-mad_removal <- mad_removal |>
-  dplyr::left_join(baseline_dev, by = "subject") |>
-  dplyr::mutate(base_dev = ifelse(baseline < base_min | baseline > base_max, TRUE, FALSE)) 
-
-### Peak Pupil Deviation
-  
-peak_pupil_dev <- peak_pupil_dev |>
-  dplyr::select(subject, peak_min, peak_max) 
-
-mad_removal <- mad_removal |>
-  dplyr::left_join(peak_pupil_dev, by = "subject") |>
-  dplyr::group_by(subject, trial) |>
-  dplyr::mutate(peak_dev = ifelse(max(baselinecorrectedp) < peak_min | max(baselinecorrectedp) > peak_max, TRUE, FALSE)) |>
-  dplyr::ungroup()
 
 ### Trial by Trial Baseline Deviation
 
-baseline_flags <- baseline_flags |>
-  mutate(trial_base_dev = ifelse(speed >= MAD, TRUE, FALSE)) |>
-  dplyr::select(subject, trial, trial_base_dev)
-
-mad_removal <- mad_removal |>
-  dplyr::left_join(baseline_flags, by = c("subject", "trial"))
 
 ### Steep Pupil Slope
 
-slope_df <- slope_df |>
-  dplyr::select(subject, trial, steep_slope) |>
-  dplyr::distinct()
 
-mad_removal <- mad_removal |>
-  dplyr::left_join(slope_df, by = c("subject", "trial"))
-
-### Removing Extra Variables
-
-mad_removal <- mad_removal |>
-  dplyr::select(!c(base_min, base_max, peak_min, peak_max))
-
-### Identifying outlier trials that will be removed (18 trials)
-removed_df <- mad_removal |>
-  group_by(subject, trial) |>
-  dplyr::filter(rowSums(across(base_dev:steep_slope)) >= 2)
-
-removed_df <- removed_df |>
-  dplyr::select(subject, trial, speaker) |>
-  dplyr::distinct()
 
 ### Filtering out those responses 
 
-filtered_df <- mad_removal |>
-  group_by(subject, trial) |>
-  dplyr::filter(rowSums(across(base_dev:steep_slope)) < 2)
 
-# Removing unneeded objects from the environment
-rm(baseline_dev, baseline_flags, mad_removal, peak_pupil_dev, removed_df, slope_df)
 
 # Downsampling using fraction resampling
 
-downsampled <- filtered_df |>
+downsampled <- baseline_pupil |>
   group_by(subject, trial) |>
   dplyr::reframe(
     pupil = gsignal::resample(baselinecorrectedp, 1, 2),
@@ -458,7 +315,7 @@ downsampled <- filtered_df |>
   ) |>
   ungroup()
 
-filtered_df <- filtered_df |>
+filtered_df <- baseline_pupil |>
   dplyr::select(subject, trial, code, speaker, targetphrase, counterbalance) |>
   dplyr::distinct() 
 
